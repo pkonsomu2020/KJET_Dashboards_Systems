@@ -1,0 +1,41 @@
+{
+  "name": "kjet-api",
+  "version": "1.0.0",
+  "description": "KJET Co-Investment Dashboard — Node.js API",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --forceExit",
+    "test:smoke": "node tests/smoke.test.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "db:reset": "node scripts/reset.js"
+  },
+  "dependencies": {
+    "better-auth": "^1.2.8",
+    "compression": "^1.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "googleapis": "^144.0.0",
+    "helmet": "^8.0.0",
+    "ioredis": "^5.6.1",
+    "mammoth": "^1.13.0",
+    "morgan": "^1.10.0",
+    "pdf-parse": "^2.4.5",
+    "pg": "^8.14.1",
+    "xlsx": "^0.18.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "node-fetch": "^3.3.2",
+    "supertest": "^7.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
