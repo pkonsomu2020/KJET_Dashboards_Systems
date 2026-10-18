@@ -20,6 +20,7 @@ import { useSession, useSignOut } from '@/hooks/useAuth';
 import type { ClusterRow } from '@/data/api';
 import { ClusterExplorer } from './explorer';
 import { ClusterProfile } from './profile';
+import { AssistantPanel } from './assistant';
 
 export type DashboardView = 'overview' | 'clusters';
 
@@ -227,7 +228,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
             </Button>
             {/* User avatar + sign-out */}
             <div className="topbar-user">
-              <div className="avatar" title={session?.name ?? 'LeadedgeConsults'}>
+              <div className="avatar" title={session?.name ?? 'Signed in'}>
                 {session?.name
                   ? session.name
                       .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -236,7 +237,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                       .map(w => w[0])
                       .join('')
                       .toUpperCase()
-                  : 'LC'}
+                  : '--'}
               </div>
               <Button
                 variant="ghost" size="icon"
@@ -370,14 +371,6 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                           </div>
                           <p className="text-xs leading-7 text-muted-foreground mt-4">The operational budget can include working capital, buildings and pre-operating expenses outside eligible machinery costs.</p>
                         </ChartPanel>
-                        <ChartPanel title="Matching rule summary" subtitle="Based on supplied financial amounts">
-                          <div className="profile-job-grid">
-                            <div><strong className="text-success">{allWithin}</strong><span>Within limits</span></div>
-                            <div><strong className="text-warning">{allReviews}</strong><span>Review required</span></div>
-                            <div><strong>{allMissing}</strong><span>Missing financials</span></div>
-                          </div>
-                          <Button asChild variant="outline" size="sm" className="mt-2"><Link to="/clusters">Open cluster explorer</Link></Button>
-                        </ChartPanel>
                       </div>
                     </>
                   )}
@@ -480,6 +473,8 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
 
           {/* ── CLUSTERS ────────────────────────────────────── */}
           {view === 'clusters' && (
+            <>
+            <AssistantPanel onSelect={setSelectedId} />
             <ClusterExplorer
               onSelect={setSelectedId}
               onRowsChange={setExportRows}
@@ -490,6 +485,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
               page={page} setPage={setPage}
               review={false}
             />
+            </>
           )}
 
           <footer className="page-footer">

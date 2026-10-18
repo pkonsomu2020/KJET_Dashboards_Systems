@@ -9,14 +9,28 @@ const BASE = `http://localhost:${process.env.PORT || 4000}`;
 let passed = 0;
 let failed = 0;
 
-async function request(method, path, body) {
+let cookie = '';
+
+async function request(method, path, body, { auth = true } = {}) {
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(auth && cookie ? { Cookie: cookie } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   const json = await res.json().catch(() => null);
-  return { status: res.status, body: json };
+  return { status: res.status, body: json, res };
+}
+
+async function signIn() {
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) throw new Error('Set ADMIN_EMAIL and ADMIN_PASSWORD in backend/.env to run the smoke tests');
+  const { status, res } = await request('POST', '/api/auth/sign-in/email', { email, password }, { auth: false });
+  if (status !== 200) throw new Error(`Smoke test sign-in failed (HTTP ${status})`);
+  cookie = (res.headers.getSetCookie?.() ?? []).map((c) => c.split(';')[0]).join('; ');
 }
 
 function assert(label, condition, detail = '') {
@@ -52,6 +66,15 @@ async function run() {
     if (status !== 200) {
       console.warn('  ⚠️  Database is down — remaining DB tests will fail.');
     }
+  }
+
+  // ── 2b. Auth is enforced, then sign in ─────────────────────
+  console.log('\n2b. Authentication');
+  {
+    const { status } = await request('GET', '/api/portfolio/summary', undefined, { auth: false });
+    assert('Unauthenticated data request returns 401', status === 401);
+    await signIn();
+    assert('Sign-in succeeded', !!cookie);
   }
 
   // ── 3. Portfolio summary ───────────────────────────────────

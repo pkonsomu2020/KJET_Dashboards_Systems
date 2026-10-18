@@ -1,7 +1,6 @@
-// dotenv MUST be the very first thing — before any other imports
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-require('dotenv').config();
+// dotenv MUST be the very first import. ES imports are hoisted, so a config() call
+// placed after them would run too late for modules that read process.env on load.
+import 'dotenv/config';
 
 import express from 'express';
 import { toNodeHandler } from 'better-auth/node';
@@ -13,21 +12,29 @@ import {
   compressionMiddleware,
   apiRateLimit,
   errorHandler,
+  requireAuth,
   notFoundHandler,
 } from './middleware/index.js';
 
 import { auth, ensureDefaultAdmin } from './auth/auth.js';
 import { checkDbConnection } from './db/pool.js';
 import { checkRedisConnection } from './cache/redis.js';
-import { initDriveClient, startChangesPoller, isDriveEnabled } from './services/driveService.js';
+import { initDriveClient, startChangesPoller, isDriveEnabled, setBroadcaster } from './services/driveService.js';
 
 import healthRouter    from './routes/health.js';
 import portfolioRouter from './routes/portfolio.js';
 import clustersRouter  from './routes/clusters.js';
 import driveRouter     from './routes/drive.js';
+import assistantRouter from './routes/assistant.js';
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
+// Behind Nginx the API must only be reachable through the proxy: bind to loopback in production
+const HOST = process.env.HOST || (process.env.NODE_ENV === 'production' ? '127.0.0.1' : undefined);
+
+// One reverse proxy (Nginx) sits in front: trust its X-Forwarded-* headers so the rate limiter
+// counts real visitors instead of treating everyone as the proxy's single IP.
+app.set('trust proxy', 1);
 
 // ── SSE clients registry (for Drive change push to browser) ──
 const sseClients = new Set();
@@ -45,6 +52,7 @@ export function broadcastDriveChange(folderIds, applicationNumbers = []) {
   }
   console.log(`[SSE] Broadcast drive:change to ${sseClients.size} clients`);
 }
+setBroadcaster(broadcastDriveChange);
 
 // ── Global middleware ─────────────────────────────────────────
 app.use(helmetMiddleware);
@@ -66,7 +74,7 @@ app.use(express.urlencoded({ extended: true }));
 // ── SSE endpoint — browser subscribes here for live Drive changes ──
 // Each open browser tab gets a persistent connection.
 // When Drive poller detects a file change, it pushes here → browser refetches folder.
-app.get('/api/drive/events', (req, res) => {
+app.get('/api/drive/events', requireAuth, (req, res) => {
   res.setHeader('Content-Type',  'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection',    'keep-alive');
@@ -93,9 +101,10 @@ app.get('/api/drive/events', (req, res) => {
 
 // ── Routes ───────────────────────────────────────────────────
 app.use('/health',        healthRouter);
-app.use('/api/portfolio', portfolioRouter);
-app.use('/api/clusters',  clustersRouter);
-app.use('/api/drive',     driveRouter);
+app.use('/api/portfolio', requireAuth, portfolioRouter);
+app.use('/api/clusters',  requireAuth, clustersRouter);
+app.use('/api/drive',     requireAuth, driveRouter);
+app.use('/api/assistant', requireAuth, assistantRouter);
 
 // ── Root ─────────────────────────────────────────────────────
 app.get('/', (_req, res) =>
@@ -123,7 +132,7 @@ async function start() {
     startChangesPoller();
   }
 
-  app.listen(PORT, () => {
+  app.listen(PORT, HOST, () => {
     console.log(`\n[KJET API] Listening on http://localhost:${PORT}`);
     console.log('[KJET API] Routes:');
     console.log('  GET  /health');
@@ -138,11 +147,12 @@ async function start() {
     console.log('  GET  /api/drive/events          (SSE — live Drive changes)');
     console.log('  GET  /api/drive/folder/:appNumber');
     console.log('  GET  /api/drive/changes');
+    console.log('  POST /api/assistant');
     console.log('  POST /api/auth/sign-up/email');
     console.log('  POST /api/auth/sign-in/email');
     console.log('  POST /api/auth/sign-out\n');
     if (!isDriveEnabled()) {
-      console.log('  ⚠️  Drive integration OFF — add service-account.json to enable\n');
+      console.log('  WARNING: Drive integration OFF — add service-account.json to enable\n');
     }
   });
 }

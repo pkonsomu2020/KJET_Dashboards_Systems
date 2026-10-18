@@ -49,3 +49,17 @@ service-account.json
 backend/service-account.json
 !*service-account*.example.json
 !backend/service-account.example.json
+backend/backups
+
+backend/document-passwords.json
+
+Email Requests
+# Server access credentials: never commit
+VPS_SORT
+*.key
+afosi-server-key
+afosi-vpn.conf
+*.dump
+
+# Server deployment files (server paths/ports): kept locally, not in the repo
+deploy

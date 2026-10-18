@@ -1,5 +1,5 @@
 /**
- * seed.js — Loads clusters.json into PostgreSQL (Phase 1 migration).
+ * seed.js — Loads clusters_data.json into PostgreSQL (Phase 1 migration).
  * Run: node scripts/seed.js
  */
 import { readFileSync } from 'fs';
@@ -11,8 +11,9 @@ import 'dotenv/config';
 const { Pool } = pg;
 const __dir = dirname(fileURLToPath(import.meta.url));
 
-// Path to the existing clusters.json in the frontend project
-const JSON_PATH = resolve(__dir, '../../src/data/clusters.json');
+const JSON_PATH = process.env.CLUSTERS_JSON_PATH
+  ? resolve(process.env.CLUSTERS_JSON_PATH)
+  : resolve(__dir, '../../DASHBOARD SYSTEM/clusters_data.json');
 
 const pool = new Pool({
   host:     process.env.PGHOST     || 'localhost',
@@ -117,7 +118,7 @@ async function seedCluster(client, c) {
 }
 
 async function seed() {
-  console.log('[seed] Reading clusters.json...');
+  console.log('[seed] Reading cluster data...');
   const clusters = JSON.parse(readFileSync(JSON_PATH, 'utf8'));
   console.log(`[seed] Found ${clusters.length} clusters.`);
 

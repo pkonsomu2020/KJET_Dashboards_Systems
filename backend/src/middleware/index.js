@@ -38,7 +38,11 @@ export const loggerMiddleware = morgan(
 );
 
 // ── Gzip compression ─────────────────────────────────────────
-export const compressionMiddleware = compression();
+// Never compress the live-update stream: compression buffers writes, so browsers would not get events
+export const compressionMiddleware = compression({
+  filter: (req, res) =>
+    !String(res.getHeader('Content-Type') ?? '').includes('text/event-stream') && compression.filter(req, res),
+});
 
 // ── Rate limiting ─────────────────────────────────────────────
 export const apiRateLimit = rateLimit({

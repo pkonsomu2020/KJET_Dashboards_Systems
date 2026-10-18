@@ -18,7 +18,8 @@ redis.on('close',   () => console.warn('[Redis] Connection closed'));
  */
 export async function checkRedisConnection() {
   try {
-    await redis.connect();
+    // Already connected (e.g. when /health is called): connecting again would throw and report "down"
+    if (redis.status !== 'ready') await redis.connect();
     const pong = await redis.ping();
     return pong === 'PONG';
   } catch {

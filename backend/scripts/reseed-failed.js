@@ -9,7 +9,9 @@ import 'dotenv/config';
 
 const { Pool } = pg;
 const __dir = dirname(fileURLToPath(import.meta.url));
-const JSON_PATH = resolve(__dir, '../../src/data/clusters.json');
+const JSON_PATH = process.env.CLUSTERS_JSON_PATH
+  ? resolve(process.env.CLUSTERS_JSON_PATH)
+  : resolve(__dir, '../../DASHBOARD SYSTEM/clusters_data.json');
 
 const RETRY = ['KJET-2026-162976', 'KJET-2026-043299'];
 

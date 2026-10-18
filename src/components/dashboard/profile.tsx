@@ -101,7 +101,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
 
   const costBreakdown = [
     { name: 'Machinery',         value: c.machinery?.reduce((s, m) => s + Number(m.total_cost_kes ?? 0), 0) ?? 0 },
-    { name: 'Bundled services',  value: c.services?.reduce((s, s2) => s + Number((s2 as any).total_cost_kes ?? 0), 0) ?? 0 },
+    { name: 'Bundled services',  value: c.services?.reduce((s, s2) => s + Number(s2.total_cost_kes ?? 0), 0) ?? 0 },
     { name: 'Additional budget', value: Math.max(0, section5 - projectCost) },
   ];
 
@@ -159,7 +159,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
 
           <section className="profile-section">
             <h3>Business model &amp; operations</h3>
-            <p>{c.business?.business_description ?? (c as any).business_description ?? 'Not supplied'}</p>
+            <p>{c.business?.business_description ?? c.business_description ?? 'Not supplied'}</p>
           </section>
 
           <section className="profile-section">
@@ -183,7 +183,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
           </section>
         </TabsContent>
 
-        {/* â”€â”€ Financials â”€â”€ */}
+        {/* Financials */}
         <TabsContent value="financials">
           <div className="profile-metrics">
             <ProfileMetric label="Eligible project cost"   value={projectCost} />
@@ -232,9 +232,9 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
             <section className="profile-section">
               <h3>Sales uplift &amp; viability</h3>
               <div className="detail-grid">
-                <Detail label="NPV"            value={money(Number((c as any).npv_kes ?? 0))} />
-                <Detail label="IRR"            value={(c as any).irr_pct ? `${(c as any).irr_pct}%` : null} />
-                <Detail label="Payback period" value={(c as any).payback_period_years ? `${(c as any).payback_period_years} years` : null} />
+                <Detail label="NPV"            value={money(Number(c.npv_kes ?? 0))} />
+                <Detail label="IRR"            value={c.irr_pct ? `${c.irr_pct}%` : null} />
+                <Detail label="Payback period" value={c.payback_period_years ? `${c.payback_period_years} years` : null} />
               </div>
             </section>
           )}
@@ -275,7 +275,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
 
           <section className="profile-section">
             <h3>Operational bottlenecks</h3>
-            <p>{c.business?.investment_needs ?? (c as any).investment_needs ?? 'Not supplied'}</p>
+            <p>{c.business?.investment_needs ?? c.investment_needs ?? 'Not supplied'}</p>
           </section>
 
           {c.services && c.services.length > 0 && c.services[0]?.description && (
@@ -363,8 +363,8 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
           <section className="profile-section">
             <h3>Authorized representative</h3>
             <div className="detail-grid">
-              <Detail label="Full name"         value={authorizedRep?.full_name ?? (c as any).governance_rep_name} />
-              <Detail label="Official position" value={authorizedRep?.position ?? (c as any).governance_rep_position} />
+              <Detail label="Full name"         value={authorizedRep?.full_name ?? c.governance_rep_name} />
+              <Detail label="Official position" value={authorizedRep?.position ?? c.governance_rep_position} />
               <div>
                 <div className="detail-label">Phone</div>
                 <a className="detail-value text-primary" href={`tel:${authorizedRep?.phone}`}>

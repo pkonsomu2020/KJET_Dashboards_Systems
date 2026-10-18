@@ -1,24 +1,21 @@
-# Insightful Dashboard
+# KJET Co-Investment Portfolio Dashboard
 
-KINDLY GO THROUGH THESE FILES AND THEN BUILD A VERY GOOD DASHBOARD THAT IS VERY INFORMATIVE BASED ON THESE INFORMATION AS IT IS.  HAVE ATTACHED A SAMPLE DASHBOARD OF WHAT I MEAN, SO BUILD THIS AND AVOID USING COLOR GRADIENTS AND USE COLID COLORS, THEN ALSO AVOID USING AI EMDASHES AND USE PROPER REACT ICONS, AND NOT EMOJIS. THEN ALSO YOU CAN INCLUDE NIGHT AND DARK THEME TOGGLE AND THE THEME COLORS ARE WHITE THAT WILL DOMINATE THE WHOLE DASHBOARD AND SOME ASPECTS OF BLUE FROM THE SAMPLE DASHBOARD
+Dashboard for the Kenya Jobs and Economic Transformation (KJET) Cohort 1: 85 micro and small enterprise clusters applying for co-investment matching grants. Implemented by MSEA.
 
-This project was built with [Lovable](https://lovable.dev).
+This project is connected to [Lovable](https://lovable.dev). Changes pushed to `main` sync back into the editor.
 
-## Build with Lovable
+## Architecture
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/93c3173e-466e-4b2f-bf95-c58323928f00).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+- **Frontend** (`src/`): TanStack Start, React 19, Tailwind 4, shadcn/ui, Recharts.
+- **Backend** (`backend/`): Express API with PostgreSQL, Redis cache, better-auth sessions and optional Google Drive sync. See [backend/SETUP.md](backend/SETUP.md) and [backend/DRIVE_SETUP.md](backend/DRIVE_SETUP.md).
+- All data endpoints require a signed-in session.
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+# backend (needs PostgreSQL, optional Redis, and backend/.env)
+cd backend && npm i && node scripts/migrate.js && node scripts/seed.js && npm run dev
+
+# frontend
+npm i && npm run dev
 ```

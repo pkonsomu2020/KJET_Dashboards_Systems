@@ -2,10 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const BASE = (import.meta.env['VITE_API_URL'] as string | undefined) ?? 'http://localhost:4000';
 
-const VALID_USERNAME = 'LeadedgeConsults';
-const VALID_PASSWORD = 'Leadedge@2026';
-const AUTH_EMAIL     = 'leadedgeconsults@kjet.local';
-const STORAGE_KEY    = 'kjet-auth-user';
+const EMAIL_DOMAIN = '@kjet.local';
 
 // ── Types ─────────────────────────────────────────────────────
 export interface AuthUser {
@@ -28,29 +25,6 @@ interface AuthResponseBody {
   user?:    AuthUser;
 }
 
-function getStoredUser(): AuthUser | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as AuthUser) : null;
-  } catch {
-    return null;
-  }
-}
-
-function setStoredUser(user: AuthUser | null) {
-  if (typeof window === 'undefined') return;
-  try {
-    if (user) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  } catch {
-    // ignore storage errors
-  }
-}
-
 // ── Fetch helpers ─────────────────────────────────────────────
 async function fetchSession(): Promise<AuthUser | null> {
   try {
@@ -60,55 +34,33 @@ async function fetchSession(): Promise<AuthUser | null> {
     });
     if (res.ok && res.status !== 204) {
       const body = (await res.json().catch(() => null)) as SessionResponse | null;
-      if (body?.user) {
-        setStoredUser(body.user);
-        return body.user;
-      }
+      if (body?.user) return body.user;
     }
   } catch {
-    // Fall back to local session if backend auth endpoint is unreachable
+    // Backend unreachable: treated as signed out. The server is the only source of truth.
   }
-  return getStoredUser();
+  return null;
 }
 
 async function signIn(username: string, password: string): Promise<AuthUser> {
-  if (username !== VALID_USERNAME || password !== VALID_PASSWORD) {
-    throw new Error('Invalid username or password');
-  }
-
-  const fallbackUser: AuthUser = {
-    id:            'leadedge-consults',
-    name:          VALID_USERNAME,
-    email:         AUTH_EMAIL,
-    emailVerified: true,
-    image:         null,
-    createdAt:     new Date().toISOString(),
-  };
-
+  const email = username.includes('@') ? username : `${username.toLowerCase()}${EMAIL_DOMAIN}`;
+  let res: Response;
   try {
-    const res = await fetch(`${BASE}/api/auth/sign-in/email`, {
+    res = await fetch(`${BASE}/api/auth/sign-in/email`, {
       method:      'POST',
       credentials: 'include',
       headers:     { 'Content-Type': 'application/json' },
-      body:        JSON.stringify({ email: AUTH_EMAIL, password }),
+      body:        JSON.stringify({ email, password }),
     });
-    if (res.ok) {
-      const body = (await res.json().catch(() => ({}))) as AuthResponseBody;
-      if (body.user) {
-        setStoredUser(body.user);
-        return body.user;
-      }
-    }
   } catch {
-    // Backend unavailable; proceed with verified local session
+    throw new Error('Cannot reach the server. Please try again.');
   }
-
-  setStoredUser(fallbackUser);
-  return fallbackUser;
+  const body = (await res.json().catch(() => ({}))) as AuthResponseBody;
+  if (!res.ok || !body.user) throw new Error('Invalid username or password');
+  return body.user;
 }
 
 async function signOut(): Promise<void> {
-  setStoredUser(null);
   try {
     await fetch(`${BASE}/api/auth/sign-out`, {
       method:      'POST',

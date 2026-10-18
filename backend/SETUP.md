@@ -63,10 +63,15 @@ GRANT ALL PRIVILEGES ON DATABASE kjet TO kjet_user;
 
 ```
 cd backend
-copy .env.example .env
+# create backend/.env (never commit it) with these variables:
+#   PORT, NODE_ENV, PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD,
+#   REDIS_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, CORS_ORIGINS,
+#   ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD,
+#   GOOGLE_SERVICE_ACCOUNT_PATH (optional, for Drive),
+#   CACHE_TTL_PORTFOLIO / CACHE_TTL_CLUSTER_LIST / CACHE_TTL_CLUSTER_DETAIL (optional)
 ```
 
-Edit `.env` and set your actual PGPASSWORD and BETTER_AUTH_SECRET:
+In `.env`, set your actual PGPASSWORD, BETTER_AUTH_SECRET (required, 32+ chars) and ADMIN_USERNAME / ADMIN_EMAIL / ADMIN_PASSWORD (the account used to sign in; email must be `<username lowercased>@kjet.local`):
 ```
 BETTER_AUTH_SECRET=<run: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
 ```
@@ -86,7 +91,7 @@ npm install
 
 ```
 node scripts/migrate.js    # creates all 19 tables
-node scripts/seed.js       # loads 85 clusters from clusters.json
+node scripts/seed.js       # loads 85 clusters from 'DASHBOARD SYSTEM/clusters_data.json'
 ```
 
 ---

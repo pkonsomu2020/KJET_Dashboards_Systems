@@ -175,6 +175,7 @@ export async function getClusterByNumber(applicationNumber) {
   // Core
   const { rows: base } = await pool.query(`
     SELECT c.*, f.*, m.*, e.*,
+      c.id AS cluster_pk,
       row_to_json(bk) AS banking
     FROM clusters c
     LEFT JOIN cluster_financials  f  ON f.cluster_id = c.id
@@ -188,7 +189,8 @@ export async function getClusterByNumber(applicationNumber) {
 
   if (!base.length) return { data: null, cached: false };
 
-  const clusterId = base[0].id;
+  // c.*, f.*, m.*, e.* all have an "id" column, so base[0].id is NOT the cluster id.
+  const clusterId = base[0].cluster_pk;
 
   // Parallel fetch of all sub-tables
   const [contacts, business, products, buyers, machinery, services,
@@ -207,7 +209,8 @@ export async function getClusterByNumber(applicationNumber) {
     pool.query('SELECT * FROM cluster_impact      WHERE cluster_id=$1 LIMIT 1',              [clusterId]),
     pool.query('SELECT * FROM cluster_risks       WHERE cluster_id=$1 ORDER BY risk_category',[clusterId]),
     pool.query('SELECT * FROM cluster_sustainability WHERE cluster_id=$1 LIMIT 1',           [clusterId]),
-    pool.query('SELECT * FROM cluster_documents   WHERE cluster_id=$1 ORDER BY section',     [clusterId]),
+    // Document text can be megabytes per cluster: the profile gets metadata only (text is read via /api/documents/:id)
+    pool.query("SELECT to_jsonb(d) - 'content_text' AS doc FROM cluster_documents d WHERE d.cluster_id=$1 ORDER BY d.section, d.original_filename", [clusterId]),
   ]);
 
   const data = {
@@ -225,7 +228,7 @@ export async function getClusterByNumber(applicationNumber) {
     impact:         impact.rows[0] || null,
     risks:          risks.rows,
     sustainability: sustainability.rows[0] || null,
-    documents:      documents.rows,
+    documents:      documents.rows.map((r) => r.doc),
   };
 
   await cacheSet(cacheKey, data, TTL.detail);

@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
-- Keep the uploaded portfolio as source-controlled JSON with no server dependency because this is a read-only, zero-setup portfolio explorer.
-- Centralize aggregation, financial compliance, filtering, and exports in the portfolio data module so every dashboard view uses the same source values and rules.
+- Portfolio data lives in PostgreSQL and is served by the authenticated Express API in `backend/`; the frontend only formats and displays it. The seed source is `DASHBOARD SYSTEM/clusters_data.json`.
+- Centralize aggregation and compliance rules in the backend services/schema (compliance is a generated column) and formatting and exports in `src/data/portfolio.ts`, so every view uses the same values.
 - Use distinct TanStack content routes with one shared dashboard shell and profile drawer so navigation has real URLs and consistent controls.
 - Define all visual roles and chart palettes in the global design tokens so both themes remain consistent and use solid colors.

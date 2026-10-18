@@ -222,3 +222,29 @@ export function fetchMeta() {
 export function fetchClusterDetail(applicationNumber: string) {
   return get<{ ok: boolean; data: ClusterDetail }>(`/api/clusters/${applicationNumber}`);
 }
+
+// ── AI assistant ──────────────────────────────────────────────
+
+export interface AssistantMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AssistantResponse {
+  ok: boolean;
+  answer: string;
+  sources: string[];
+  trace: Array<{ tool: string; args: Record<string, unknown> }>;
+}
+
+export async function askAssistant(question: string, history: AssistantMessage[]): Promise<AssistantResponse> {
+  const res = await fetch(`${BASE}/api/assistant`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ question, history }),
+  });
+  const body = (await res.json().catch(() => ({}))) as AssistantResponse & { error?: string };
+  if (!res.ok) throw new Error(body.error ?? `Assistant error ${res.status}`);
+  return body;
+}

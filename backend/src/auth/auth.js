@@ -11,8 +11,13 @@ const devOrigins =
     ? ['http://localhost:3000', 'http://localhost:4173', 'http://localhost:5173', 'http://localhost:8080']
     : [];
 
+const authSecret = process.env.BETTER_AUTH_SECRET;
+if (!authSecret || authSecret.length < 32 || authSecret.startsWith('replace_with')) {
+  throw new Error('BETTER_AUTH_SECRET must be set to a random string of at least 32 characters');
+}
+
 export const auth = betterAuth({
-  secret:  process.env.BETTER_AUTH_SECRET || 'kjet-dev-secret-change-in-production-32chars',
+  secret:  authSecret,
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:4000',
 
   // ── PostgreSQL via shared pg.Pool ─────────────────────────
@@ -36,6 +41,12 @@ export const auth = betterAuth({
       userAgent: 'user_agent',
       createdAt: 'created_at',
       updatedAt: 'updated_at',
+    },
+    expiresIn: 60 * 60 * 24 * 7,   // 7 days
+    updateAge: 60 * 60 * 24,
+    cookieCache: {
+      enabled: true,
+      maxAge:  5 * 60,
     },
   },
   account: {
@@ -84,14 +95,11 @@ export const auth = betterAuth({
     }),
   },
 
-  // ── Session ───────────────────────────────────────────────
-  session: {
-    expiresIn: 60 * 60 * 24 * 7,   // 7 days
-    updateAge: 60 * 60 * 24,
-    cookieCache: {
-      enabled: true,
-      maxAge:  5 * 60,
-    },
+
+  // Behind Nginx the real visitor address is in X-Forwarded-For: without this, login rate limiting
+  // would put every visitor into one shared bucket.
+  advanced: {
+    ipAddress: { ipAddressHeaders: ['x-forwarded-for', 'x-real-ip'] },
   },
 
   // ── Trusted origins ───────────────────────────────────────
@@ -99,17 +107,19 @@ export const auth = betterAuth({
 });
 
 /**
- * Ensures the LeadedgeConsults user exists in PostgreSQL and removes any old default user.
+ * Ensures the admin user from ADMIN_* env vars exists in PostgreSQL.
  */
 export async function ensureDefaultAdmin() {
-  const username = process.env.ADMIN_USERNAME || 'LeadedgeConsults';
-  const email    = process.env.ADMIN_EMAIL    || 'leadedgeconsults@kjet.local';
-  const password = process.env.ADMIN_PASSWORD || 'Leadedge@2026';
+  const username = process.env.ADMIN_USERNAME;
+  const email    = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!username || !email || !password) {
+    console.warn('[Auth] ADMIN_USERNAME / ADMIN_EMAIL / ADMIN_PASSWORD not set. Skipping admin seed.');
+    return;
+  }
 
   try {
-    // Remove previous default placeholder account if present
-    await pool.query("DELETE FROM auth_user WHERE email = 'admin@msea.go.ke'");
-
     const { rows } = await pool.query('SELECT id FROM auth_user WHERE email = $1 LIMIT 1', [email]);
     if (rows.length > 0) return;
 

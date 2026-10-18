@@ -34,7 +34,6 @@ router.get('/by-county', async (_req, res, next) => {
 // GET /api/portfolio/compliance
 router.get('/compliance', async (_req, res, next) => {
   try {
-    const { Pool } = await import('pg');
     const pool = (await import('../db/pool.js')).default;
     const { rows } = await pool.query(`
       SELECT compliance_status, COUNT(*) AS count
