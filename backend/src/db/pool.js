@@ -2,6 +2,10 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
+// DATE columns (e.g. registration_date) must stay plain "YYYY-MM-DD" text. By default pg turns them into
+// a local-midnight JS Date, which becomes the previous day in UTC and showed 2013-08-18 for 2013-08-19.
+pg.types.setTypeParser(1082, (value) => value);
+
 export const pool = new Pool({
   host:     process.env.PGHOST     || 'localhost',
   port:     Number(process.env.PGPORT)    || 5432,
