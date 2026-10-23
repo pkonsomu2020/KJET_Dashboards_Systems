@@ -148,8 +148,17 @@ export function ClusterExplorer({
 
       ) : viewMode === 'table' ? (
         /* ── Table ── */
-        <div className="table-scroll">
-          <table className="portfolio-table">
+        <div className="fit-wrap">
+          <table className="portfolio-table fit-table">
+            <colgroup>
+              <col style={{ width: '24%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '12%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '15%' }} />
+              <col />
+              <col style={{ width: 52 }} />
+            </colgroup>
             <thead>
               <tr>
                 <th>Cluster / application ID</th>

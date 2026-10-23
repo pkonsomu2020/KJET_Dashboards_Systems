@@ -476,3 +476,22 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 @media (max-width:760px) { .top-row { grid-template-columns:28px minmax(0,1fr); } .top-row .score-bar { grid-column:2; } .gr-why td { padding-left:20px; } .eval-facts { margin-left:0; } }
 .chart-panel + .overview-tabs { margin-top:20px; }
 .filters .chip-on { background:var(--primary-soft);color:var(--primary);border-color:var(--primary); }
+
+/* ── Tables that fit the screen: no sideways scrolling ─────── */
+.fit-wrap { overflow:visible;container-type:inline-size; }
+.fit-table { table-layout:fixed;white-space:normal; }
+.fit-table th, .fit-table td { padding:12px 12px;vertical-align:top;overflow-wrap:anywhere; }
+.fit-table .cluster-cell { min-width:0; }
+.fit-table .gr-gates { max-width:none; }
+.fit-table .score-bar { min-width:0; }
+/* switch to stacked cards when the TABLE itself gets narrow (the sidebar takes space, so the screen width is not a good guide) */
+@container (max-width: 760px) {
+  .fit-table, .fit-table tbody, .fit-table tr, .fit-table td { display:block;width:100%; }
+  .fit-table colgroup, .fit-table thead { display:none; }
+  .fit-table tr { padding:14px 16px;border-bottom:1px solid var(--border); }
+  .fit-table td { padding:5px 0;border:0; }
+  .fit-table td.gr-num { text-align:left; }
+  .gr-why td { padding:10px 16px 14px; }
+  .gr-why { padding:0 !important; }
+}
+.fit-table th.gr-num, .fit-table td.gr-num { white-space:normal; }

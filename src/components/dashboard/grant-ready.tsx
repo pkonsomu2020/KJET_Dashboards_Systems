@@ -108,11 +108,20 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
         </div>
 
         <div className="chart-panel">
-          <div className="table-scroll">
-            <table className="portfolio-table">
+          <div className="fit-wrap">
+            <table className="portfolio-table fit-table">
+              <colgroup>
+                <col style={{ width: 58 }} />
+                <col style={{ width: '21%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '15%' }} />
+                <col style={{ width: '17%' }} />
+                <col />
+                <col style={{ width: 52 }} />
+              </colgroup>
               <thead>
                 <tr>
-                  <th style={{ width: 52 }}>Rank</th>
+                  <th>Rank</th>
                   <th>Cluster / application ID</th>
                   <th>County &amp; value chain</th>
                   <th>Score</th>
