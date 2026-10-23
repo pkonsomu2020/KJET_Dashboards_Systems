@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, ShieldCheck, Download, ChevronRight,
   Search, Moon, Sun, Menu, X, Layers3, BriefcaseBusiness, CircleDollarSign,
   Handshake, TrendingUp, CalendarDays, AlertTriangle, Globe2,
-  MapPin, Users, Wallet, Loader2, LogOut,
+  MapPin, Users, Wallet, Loader2, LogOut, Award, ArrowUpRight,
 } from 'lucide-react';
 import {
   BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer,
@@ -14,24 +14,28 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { money, number, percent, exportCSV } from '@/data/portfolio';
 import {
-  usePortfolioSummary, useByChain, useByCounty,
+  usePortfolioSummary, useByChain, useByCounty, useEvaluation,
 } from '@/hooks/usePortfolio';
 import { useSession, useSignOut } from '@/hooks/useAuth';
 import type { ClusterRow } from '@/data/api';
 import { ClusterExplorer } from './explorer';
 import { ClusterProfile } from './profile';
 import { AssistantPanel } from './assistant';
+import { GrantReady } from './grant-ready';
+import { BandChip, ScoreBar } from './evaluation-ui';
 
-export type DashboardView = 'overview' | 'clusters';
+export type DashboardView = 'overview' | 'clusters' | 'grant-ready';
 
 const nav = [
   { to: '/',         label: 'Overview',        icon: LayoutDashboard, view: 'overview' },
   { to: '/clusters', label: 'Cluster explorer', icon: Building2,       view: 'clusters' },
+  { to: '/grant-ready', label: 'Grant-ready clusters', icon: Award,      view: 'grant-ready' },
 ] as const;
 
 const titles: Record<DashboardView, [string, string]> = {
   overview: ['Portfolio overview', 'Cohort 1 co-investment matching grants & business development services'],
   clusters: ['Cluster explorer',   '85 beneficiary clusters — search, filter and inspect every application'],
+  'grant-ready': ['Grant-ready clusters', 'Clusters recommended for grant support after scoring and eligibility screening'],
 };
 
 const CHART_COLORS = [
@@ -88,6 +92,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
   const [county, setCounty] = useState('');
   const [chain, setChain] = useState('');
   const [sort, setSort] = useState('name');
+  const [shortlist, setShortlist] = useState(false);
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [exportRows, setExportRows] = useState<ClusterRow[]>([]);
@@ -101,6 +106,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
   const { data: summary, isLoading: summaryLoading } = usePortfolioSummary();
   const { data: chainData, isLoading: chainLoading }  = useByChain();
   const { data: countyData, isLoading: countyLoading } = useByCounty();
+  const { data: evaluation } = useEvaluation();
 
   // Derived values — safe defaults while loading
   const s = summary;
@@ -267,9 +273,11 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
             </div>
             <div className="heading-actions">
               <span className="cohort-badge"><CalendarDays size={13} />Cohort 1 · 2026</span>
-              <Button size="sm" onClick={() => exportCSV(exportRows)} disabled={exportRows.length === 0}>
-                <Download />Export CSV
-              </Button>
+              {view !== 'grant-ready' && (
+                <Button size="sm" onClick={() => exportCSV(exportRows)} disabled={exportRows.length === 0}>
+                  <Download />Export CSV
+                </Button>
+              )}
             </div>
           </div>
 
@@ -301,6 +309,27 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                   <span>Applicant-reported</span>
                 </Metric>
               </div>
+
+              {evaluation && evaluation.data.length > 0 && (
+                <ChartPanel
+                  title="Top clusters by evaluation score"
+                  subtitle={`Grant-ready list: ${evaluation.summary.clusters} of ${evaluation.meta.evaluated} evaluated clusters, subject to due diligence and World Bank no-objection`}
+                  legend={<Button asChild variant="outline" size="sm"><Link to="/grant-ready">View all<ArrowUpRight /></Link></Button>}
+                >
+                  <div className="top-list">
+                    {evaluation.data.slice(0, 5).map((r) => (
+                      <button type="button" key={r.application_number} className="top-row" onClick={() => setSelectedId(r.application_number)}>
+                        <span className={`gr-rank ${r.shortlist_rank === 1 ? 'top' : ''}`}>{r.shortlist_rank}</span>
+                        <span style={{ minWidth: 0 }}>
+                          <div className="top-name">{r.cluster_name}</div>
+                          <div className="top-sub">{r.county} · {r.value_chain.replace(/_/g, ' ')} · <BandChip band={r.band} score={r.total_score} /></div>
+                        </span>
+                        <ScoreBar score={r.total_score} compact />
+                      </button>
+                    ))}
+                  </div>
+                </ChartPanel>
+              )}
 
               <Tabs defaultValue="investment" className="overview-tabs">
                 <TabsList className="overview-tablist">
@@ -471,6 +500,9 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
             </>
           )}
 
+          {/* ── GRANT-READY ─────────────────────────────────── */}
+          {view === 'grant-ready' && <GrantReady onSelect={setSelectedId} />}
+
           {/* ── CLUSTERS ────────────────────────────────────── */}
           {view === 'clusters' && (
             <>
@@ -482,6 +514,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
               county={county} setCounty={setCounty}
               chain={chain} setChain={setChain}
               sort={sort} setSort={setSort}
+              shortlist={shortlist} setShortlist={setShortlist}
               page={page} setPage={setPage}
               review={false}
             />

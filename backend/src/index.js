@@ -26,6 +26,9 @@ import portfolioRouter from './routes/portfolio.js';
 import clustersRouter  from './routes/clusters.js';
 import driveRouter     from './routes/drive.js';
 import assistantRouter from './routes/assistant.js';
+import evaluationRouter from './routes/evaluation.js';
+import { ensureEvaluationSchema } from './services/evaluationImport.js';
+import pool from './db/pool.js';
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -105,6 +108,7 @@ app.use('/api/portfolio', requireAuth, portfolioRouter);
 app.use('/api/clusters',  requireAuth, clustersRouter);
 app.use('/api/drive',     requireAuth, driveRouter);
 app.use('/api/assistant', requireAuth, assistantRouter);
+app.use('/api/evaluation', requireAuth, evaluationRouter);
 
 // ── Root ─────────────────────────────────────────────────────
 app.get('/', (_req, res) =>
@@ -121,6 +125,7 @@ async function start() {
   console.log(`[KJET API] DB: ${process.env.PGUSER}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}`);
 
   await checkDbConnection();
+  await ensureEvaluationSchema(pool);   // creates the (empty) evaluation table if the evaluation was never imported
   await ensureDefaultAdmin();
 
   const redisOk = await checkRedisConnection();
@@ -147,6 +152,7 @@ async function start() {
     console.log('  GET  /api/drive/events          (SSE — live Drive changes)');
     console.log('  GET  /api/drive/folder/:appNumber');
     console.log('  GET  /api/drive/changes');
+    console.log('  GET  /api/evaluation');
     console.log('  POST /api/assistant');
     console.log('  POST /api/auth/sign-up/email');
     console.log('  POST /api/auth/sign-in/email');

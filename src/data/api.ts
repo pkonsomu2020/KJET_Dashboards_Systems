@@ -86,6 +86,12 @@ export interface ClusterRow {
   jobs_today: string;
   jobs_year1: string;
   jobs_year3: string;
+  // evaluation (null until the evaluation workbook has been imported)
+  total_score: string | null;
+  eval_band: string | null;
+  eval_rank: number | null;
+  shortlisted: boolean | null;
+  shortlist_rank: number | null;
 }
 
 export interface ClusterListResponse {
@@ -99,6 +105,7 @@ export interface ClusterListResponse {
 }
 
 export interface ClusterDetail extends ClusterRow {
+  evaluation: EvaluationRow | null;
   status: string;
   physical_address: string;
   phone: string;
@@ -198,6 +205,7 @@ export interface ClusterListParams {
   sort?: string;
   q?: string;
   review?: boolean;
+  shortlist?: boolean;
   page?: number;
   limit?: number;
 }
@@ -209,6 +217,7 @@ export function fetchClusters(params: ClusterListParams = {}) {
   if (params.sort)   p.set('sort',   params.sort);
   if (params.q)      p.set('q',      params.q);
   if (params.review) p.set('review', 'true');
+  if (params.shortlist) p.set('shortlist', 'true');
   if (params.page)   p.set('page',   String(params.page));
   if (params.limit)  p.set('limit',  String(params.limit));
   const qs = p.toString();
@@ -247,4 +256,105 @@ export async function askAssistant(question: string, history: AssistantMessage[]
   const body = (await res.json().catch(() => ({}))) as AssistantResponse & { error?: string };
   if (!res.ok) throw new Error(body.error ?? `Assistant error ${res.status}`);
   return body;
+}
+
+// ── Evaluation (scores and grant-ready list from the evaluation workbook) ──
+
+type Num = string | number | null;
+
+export interface EvaluationFigureNote {
+  field: string;
+  evaluation: number;
+  drive: number;
+}
+
+export interface EvaluationRow {
+  application_number: string;
+  shortlisted: boolean | null;
+  shortlist_rank: number | null;
+  shortlist_reason: string | null;
+  total_score: Num;
+  band: string | null;
+  rank: number | null;
+  county_rank: number | null;
+  category: string | null;
+  c1_rating: Num; c1_score: Num; c1_evidence?: string | null;
+  c2_rating: Num; c2_score: Num; c2_evidence?: string | null;
+  c3_rating: Num; c3_score: Num; c3_evidence?: string | null;
+  c4_rating: Num; c4_score: Num; c4_evidence?: string | null;
+  c5_rating: Num; c5_score: Num; c5_evidence?: string | null;
+  c6_rating: Num; c6_score: Num; c6_evidence?: string | null;
+  financial_screening: string | null;
+  data_readiness: string | null;
+  eligibility: string | null;
+  due_diligence: string | null;
+  exclusion_status: string | null;
+  es_disposition: string | null;
+  system_recommendation: string | null;
+  technical_rec: string | null;
+  msea_decision: string | null;
+  approved_grant: Num;
+  wb_status: string | null;
+  conditions: string | null;
+  eval_total_cost: Num;
+  eval_grant_requested: Num;
+  max_eligible_grant: Num;
+  eval_value_chain: string | null;
+  source_file?: string | null;
+  imported_at?: string | null;
+}
+
+export interface ShortlistRow extends EvaluationRow {
+  cluster_name: string;
+  county: string;
+  constituency: string;
+  value_chain: string;
+  legal_form: string;
+  total_project_cost: Num;
+  grant_requested: Num;
+  cluster_contribution: Num;
+  total_members: Num;
+  women: Num;
+  youth: Num;
+  pwd: Num;
+  jobs_today: Num;
+  jobs_year3: Num;
+  figure_notes: EvaluationFigureNote[];
+}
+
+export interface WaitingRow {
+  application_number: string;
+  total_score: Num;
+  band: string | null;
+  rank: number | null;
+  eligibility: string | null;
+  financial_screening: string | null;
+  data_readiness: string | null;
+  system_recommendation: string | null;
+  cluster_name: string;
+  county: string;
+  value_chain: string;
+}
+
+export interface EvaluationResponse {
+  ok: boolean;
+  data: ShortlistRow[];
+  waiting: WaitingRow[];
+  summary: {
+    clusters: number;
+    average_score: number;
+    counties: number;
+    value_chains: number;
+    members: number;
+    women: number;
+    requested_per_drive: number;
+    eligible_grant: number;
+    projected_jobs_year3: number;
+  };
+  bands: Array<{ band: string; n: number }>;
+  meta: { source_file: string | null; imported_at: string | null; evaluated: number };
+}
+
+export function fetchEvaluation() {
+  return get<EvaluationResponse>('/api/evaluation');
 }

@@ -1,5 +1,5 @@
 import { useState, type ElementType } from 'react';
-import { ExternalLink, MapPin, ShieldCheck, AlertTriangle, Building2, Users, Briefcase, Wallet, Factory, Loader2, FolderOpen, FileText, Table, Image, File, RefreshCw } from 'lucide-react';
+import { ExternalLink, MapPin, ShieldCheck, AlertTriangle, Building2, Users, Briefcase, Wallet, Factory, Loader2, FolderOpen, FileText, Table, Image, File, RefreshCw, Award } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { useClusterDetail } from '@/hooks/usePortfolio';
 import { useDriveFolder, useDriveFileContent } from '@/hooks/useDrive';
 import type { ClusterRow } from '@/data/api';
 import type { DriveFile } from '@/hooks/useDrive';
+import { EvaluationTab } from './evaluation-tab';
 
 const palette = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)'];
 
@@ -121,11 +122,18 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
         <span className={`badge ${status === 'Within limits' ? 'success' : 'warning'}`}>
           {status === 'Within limits' ? <ShieldCheck size={11} /> : <AlertTriangle size={11} />} {status}
         </span>
+        {c.evaluation?.shortlisted && (
+          <span className="badge success"><Award size={11} />Grant-ready #{c.evaluation.shortlist_rank}</span>
+        )}
+        {c.evaluation && !c.evaluation.shortlisted && c.evaluation.total_score != null && (
+          <span className="badge">Evaluation score {Math.round(Number(c.evaluation.total_score))}</span>
+        )}
       </div>
 
       <Tabs defaultValue="overview">
         <TabsList className="profile-tabs">
           <TabsTrigger value="overview"><Building2 size={13} className="mr-1.5" />Overview</TabsTrigger>
+          <TabsTrigger value="evaluation"><Award size={13} className="mr-1.5" />Evaluation</TabsTrigger>
           <TabsTrigger value="financials"><Wallet size={13} className="mr-1.5" />Financials</TabsTrigger>
           <TabsTrigger value="machinery"><Factory size={13} className="mr-1.5" />Machinery</TabsTrigger>
           <TabsTrigger value="inclusion"><Users size={13} className="mr-1.5" />Inclusion</TabsTrigger>
@@ -182,6 +190,9 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
             <p>Employment figures are applicant-reported projections, not verified jobs created.</p>
           </section>
         </TabsContent>
+
+        {/* Evaluation (scores and decisions from the evaluation workbook) */}
+        <TabsContent value="evaluation"><EvaluationTab cluster={c} /></TabsContent>
 
         {/* Financials */}
         <TabsContent value="financials">

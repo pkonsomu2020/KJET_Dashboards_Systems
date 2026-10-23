@@ -6,6 +6,7 @@ import {
   fetchMeta,
   fetchClusters,
   fetchClusterDetail,
+  fetchEvaluation,
   type ClusterListParams,
 } from '@/data/api';
 
@@ -64,5 +65,15 @@ export function useClusterDetail(applicationNumber: string | null) {
     queryFn: () => fetchClusterDetail(applicationNumber!).then(r => r.data),
     enabled: !!applicationNumber,   // only fetch when a cluster is selected
     staleTime: 10 * 60 * 1000,     // 10 min — matches backend cache TTL
+  });
+}
+
+// ── Evaluation (grant-ready list) ─────────────────────────────
+
+export function useEvaluation() {
+  return useQuery({
+    queryKey: ['evaluation'],
+    queryFn: fetchEvaluation,
+    staleTime: 5 * 60 * 1000,
   });
 }

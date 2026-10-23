@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
   Search, LayoutGrid, List, ArrowUpRight, ChevronLeft,
-  ChevronRight, MapPin, RotateCcw, SearchX, Loader2,
+  ChevronRight, MapPin, RotateCcw, SearchX, Loader2, Award,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useClusters, useMeta } from '@/hooks/usePortfolio';
 import { money, number, percent } from '@/data/portfolio';
 import type { ClusterRow } from '@/data/api';
 import { SplitBar } from './profile';
+import { BandChip, ScoreBar } from './evaluation-ui';
 
 const PAGE_SIZE = 20;
 
@@ -18,6 +19,7 @@ interface Props {
   county: string;   setCounty: (c: string) => void;
   chain: string;    setChain:  (c: string) => void;
   sort: string;     setSort:   (s: string) => void;
+  shortlist: boolean; setShortlist: (v: boolean) => void;
   page: number;     setPage:   (p: number) => void;
   review?: boolean;
 }
@@ -28,6 +30,7 @@ export function ClusterExplorer({
   county, setCounty,
   chain, setChain,
   sort, setSort,
+  shortlist, setShortlist,
   page, setPage,
   review = false,
 }: Props) {
@@ -38,6 +41,7 @@ export function ClusterExplorer({
     ...(county  ? { county: county  } : {}),
     ...(chain   ? { chain:  chain   } : {}),
     ...(review  ? { review: true    } : {}),
+    ...(shortlist ? { shortlist: true } : {}),
     sort,
     page,
     limit: PAGE_SIZE,
@@ -54,7 +58,7 @@ export function ClusterExplorer({
     onRowsChange?.(rows);
   }, [rows]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  const clear = () => { setQuery(''); setCounty(''); setChain(''); setSort('name'); setPage(1); };
+  const clear = () => { setQuery(''); setCounty(''); setChain(''); setSort('name'); setShortlist(false); setPage(1); };
 
   return (
     <section className="explorer">
@@ -114,8 +118,14 @@ export function ClusterExplorer({
           <option value="cost">Project cost: highest</option>
           <option value="grant">Grant: highest</option>
           <option value="members">Members: highest</option>
+          <option value="score">Evaluation score: highest</option>
         </select>
-        {(query || county || chain) && (
+        <Button type="button" variant="outline" size="sm" aria-pressed={shortlist}
+          className={shortlist ? 'chip-on' : ''} title="Show only the clusters recommended for grant support"
+          onClick={() => { setShortlist(!shortlist); setPage(1); }}>
+          <Award />Grant-ready only
+        </Button>
+        {(query || county || chain || shortlist) && (
           <Button variant="ghost" size="icon" title="Clear filters" aria-label="Clear filters" onClick={clear}>
             <RotateCcw />
           </Button>
@@ -147,6 +157,7 @@ export function ClusterExplorer({
                 <th>Project cost</th>
                 <th>Grant / cash split</th>
                 <th>Membership</th>
+                <th>Evaluation</th>
                 <th aria-label="Profile" />
               </tr>
             </thead>
@@ -190,6 +201,18 @@ export function ClusterExplorer({
                     </span>
                   </td>
                   <td>
+                    {c.total_score != null ? (
+                      <>
+                        <ScoreBar score={c.total_score} compact />
+                        <span className="gr-sub">
+                          {c.shortlisted
+                            ? <span className="badge success"><Award size={10} />Grant-ready #{c.shortlist_rank}</span>
+                            : <BandChip band={c.eval_band} score={c.total_score} />}
+                        </span>
+                      </>
+                    ) : <span className="muted-small">Not scored</span>}
+                  </td>
+                  <td>
                     <Button variant="ghost" size="icon"
                       aria-label={`View profile of ${c.cluster_name}`}
                       title="View full profile & financials"
@@ -210,6 +233,7 @@ export function ClusterExplorer({
             <article className="cluster-card" key={c.application_number}>
               <h3>{c.cluster_name}</h3>
               <span className="cluster-id">{c.application_number}</span>
+              {c.shortlisted && <span className="badge success" style={{ width: 'fit-content', marginTop: 6 }}><Award size={10} />Grant-ready #{c.shortlist_rank}</span>}
               <div className="card-location"><MapPin size={12} />{c.county} · {c.ward}</div>
               <span className="badge" title={c.value_chain}>
                 {c.value_chain.length > 30 ? c.value_chain.slice(0, 28) + '…' : c.value_chain}
@@ -223,6 +247,7 @@ export function ClusterExplorer({
                 <span>{Number(c.grant_share_pct).toFixed(1)}% grant</span>
                 <span>{Number(c.cluster_share_pct).toFixed(1)}% cash</span>
               </div>
+              {c.total_score != null && <div className="mt-3"><ScoreBar score={c.total_score} compact /></div>}
               <p className="text-[10px] text-muted-foreground mt-4">
                 {number(Number(c.total_members))} members ·{' '}
                 {percent(Number(c.women), Number(c.total_members)).toFixed(1)}% women ·{' '}

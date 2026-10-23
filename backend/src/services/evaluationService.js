@@ -1,0 +1,73 @@
+import pool from '../db/pool.js';
+import { cacheGet, cacheSet } from '../cache/redis.js';
+
+const TTL = Number(process.env.CACHE_TTL_PORTFOLIO) || 300;
+
+const COLUMNS = `
+  ev.application_number, ev.shortlisted, ev.shortlist_rank, ev.shortlist_reason,
+  ev.total_score, ev.band, ev.rank, ev.county_rank, ev.category,
+  ev.c1_rating, ev.c1_score, ev.c2_rating, ev.c2_score, ev.c3_rating, ev.c3_score,
+  ev.c4_rating, ev.c4_score, ev.c5_rating, ev.c5_score, ev.c6_rating, ev.c6_score,
+  ev.financial_screening, ev.data_readiness, ev.eligibility, ev.due_diligence, ev.exclusion_status, ev.es_disposition,
+  ev.system_recommendation, ev.technical_rec, ev.msea_decision, ev.approved_grant, ev.wb_status, ev.conditions,
+  ev.eval_total_cost, ev.eval_grant_requested, ev.max_eligible_grant, ev.eval_value_chain,
+  c.cluster_name, c.county, c.constituency, c.value_chain, c.legal_form,
+  f.total_project_cost, f.grant_requested, f.cluster_contribution,
+  m.total_members, m.women, m.youth, m.pwd,
+  e.jobs_today, e.jobs_year3`;
+
+const FROM = `
+  FROM cluster_evaluation ev
+  JOIN clusters c ON c.application_number = ev.application_number
+  LEFT JOIN cluster_financials f ON f.cluster_id = c.id
+  LEFT JOIN cluster_membership m ON m.cluster_id = c.id
+  LEFT JOIN cluster_employment e ON e.cluster_id = c.id`;
+
+/** Where the evaluation's figures differ from what the application (Drive) says. */
+function figureNotes(r) {
+  const notes = [];
+  const d = (a, b) => a != null && b != null && Math.abs(Number(a) - Number(b)) > 1;
+  if (d(r.eval_total_cost, r.total_project_cost)) notes.push({ field: 'project cost', evaluation: Number(r.eval_total_cost), drive: Number(r.total_project_cost) });
+  if (d(r.eval_grant_requested, r.grant_requested)) notes.push({ field: 'grant requested', evaluation: Number(r.eval_grant_requested), drive: Number(r.grant_requested) });
+  return notes;
+}
+
+/** The grant-ready shortlist, with portfolio-level context. */
+export async function getShortlist() {
+  const cacheKey = 'evaluation:shortlist';
+  const cached = await cacheGet(cacheKey);
+  if (cached) return { ...cached, cached: true };
+
+  const [{ rows }, { rows: waiting }, { rows: bands }, { rows: [meta] }] = await Promise.all([
+    pool.query(`SELECT ${COLUMNS} ${FROM} WHERE ev.shortlisted ORDER BY ev.shortlist_rank, ev.total_score DESC`),
+    // Scored 70 or more but not on the list: eligibility is still on hold or unresolved
+    pool.query(`SELECT ev.application_number, ev.total_score, ev.band, ev.rank, ev.eligibility, ev.financial_screening,
+                       ev.data_readiness, ev.system_recommendation, c.cluster_name, c.county, c.value_chain
+                FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number
+                WHERE ev.band = 'Recommended' AND NOT COALESCE(ev.shortlisted, FALSE)
+                ORDER BY ev.total_score DESC, c.cluster_name`),
+    pool.query('SELECT band, COUNT(*)::int AS n FROM cluster_evaluation GROUP BY band ORDER BY MIN(-total_score)'),
+    pool.query('SELECT MAX(source_file) AS source_file, MAX(imported_at) AS imported_at, COUNT(*)::int AS evaluated FROM cluster_evaluation'),
+  ]);
+  const data = rows.map((r) => ({ ...r, figure_notes: figureNotes(r) }));
+  const sum = (k) => data.reduce((s, r) => s + Number(r[k] ?? 0), 0);
+  const result = {
+    data,
+    waiting,
+    summary: {
+      clusters: data.length,
+      average_score: data.length ? Math.round((sum('total_score') / data.length) * 10) / 10 : 0,
+      counties: new Set(data.map((r) => r.county)).size,
+      value_chains: new Set(data.map((r) => r.value_chain)).size,
+      members: sum('total_members'),
+      women: sum('women'),
+      requested_per_drive: sum('grant_requested'),
+      eligible_grant: sum('max_eligible_grant'),
+      projected_jobs_year3: sum('jobs_year3'),
+    },
+    bands,
+    meta,
+  };
+  await cacheSet(cacheKey, result, TTL);
+  return { ...result, cached: false };
+}

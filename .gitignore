@@ -63,3 +63,7 @@ afosi-vpn.conf
 
 # Server deployment files (server paths/ports): kept locally, not in the repo
 deploy
+
+# Confidential evaluation workbooks (scores and funding decisions): never commit
+KJET_CoInvestment_Evaluation_Tool*.xlsx
+*.xlsx

@@ -89,12 +89,12 @@ export async function getByCounty() {
 }
 
 // ── Cluster list (with filters) ───────────────────────────────
-export async function getClusters({ county, chain, sort, q, review, page, limit }) {
+export async function getClusters({ county, chain, sort, q, review, shortlist, page, limit }) {
   const pageNum  = Math.max(1, parseInt(page)  || 1);
   const pageSize = Math.min(100, parseInt(limit) || 20);
   const offset   = (pageNum - 1) * pageSize;
 
-  const cacheKey = `clusters:list:${county}:${chain}:${sort}:${q}:${review}:${pageNum}:${pageSize}`;
+  const cacheKey = `clusters:list:${county}:${chain}:${sort}:${q}:${review}:${shortlist}:${pageNum}:${pageSize}`;
   const cached   = await cacheGet(cacheKey);
   if (cached) return { ...cached, cached: true };
 
@@ -105,6 +105,7 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
   if (county) { conditions.push(`c.county = $${idx++}`); params.push(county); }
   if (chain)  { conditions.push(`c.value_chain = $${idx++}`); params.push(chain); }
   if (review) { conditions.push(`f.compliance_status != 'Within limits'`); }
+  if (shortlist) { conditions.push('ev.shortlisted = TRUE'); }
   if (q) {
     conditions.push(`(
       c.cluster_name ILIKE $${idx} OR
@@ -120,6 +121,7 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
   const order = sort === 'cost'    ? 'f.total_project_cost DESC'
               : sort === 'grant'   ? 'f.grant_requested DESC'
               : sort === 'members' ? 'm.total_members DESC'
+              : sort === 'score'   ? 'ev.total_score DESC NULLS LAST, c.cluster_name ASC'
               :                     'c.cluster_name ASC';
 
   const dataQ = `
@@ -133,11 +135,13 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
       f.machinery_source, f.lead_time,
       f.compliance_status,
       m.total_members, m.men, m.women, m.youth, m.pwd,
-      e.jobs_today, e.jobs_year1, e.jobs_year3
+      e.jobs_today, e.jobs_year1, e.jobs_year3,
+      ev.total_score, ev.band AS eval_band, ev.rank AS eval_rank, ev.shortlisted, ev.shortlist_rank
     FROM clusters c
     LEFT JOIN cluster_financials f  ON f.cluster_id = c.id
     LEFT JOIN cluster_membership m  ON m.cluster_id = c.id
     LEFT JOIN cluster_employment e  ON e.cluster_id = c.id
+    LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
     ${where}
     ORDER BY ${order}
     LIMIT $${idx} OFFSET $${idx + 1}
@@ -146,6 +150,7 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
   const countQ = `
     SELECT COUNT(*) FROM clusters c
     LEFT JOIN cluster_financials f ON f.cluster_id = c.id
+    LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
     ${where}
   `;
 
@@ -195,7 +200,7 @@ export async function getClusterByNumber(applicationNumber) {
   // Parallel fetch of all sub-tables
   const [contacts, business, products, buyers, machinery, services,
          quotations, pl, cashflow, balancesheet, impact,
-         risks, sustainability, documents] = await Promise.all([
+         risks, sustainability, documents, evaluation] = await Promise.all([
     pool.query('SELECT * FROM cluster_contacts    WHERE cluster_id=$1 ORDER BY contact_type', [clusterId]),
     pool.query('SELECT * FROM cluster_business    WHERE cluster_id=$1 LIMIT 1',              [clusterId]),
     pool.query('SELECT * FROM cluster_products    WHERE cluster_id=$1 ORDER BY product_order',[clusterId]),
@@ -211,6 +216,8 @@ export async function getClusterByNumber(applicationNumber) {
     pool.query('SELECT * FROM cluster_sustainability WHERE cluster_id=$1 LIMIT 1',           [clusterId]),
     // Document text can be megabytes per cluster: the profile gets metadata only (text is read via /api/documents/:id)
     pool.query("SELECT to_jsonb(d) - 'content_text' AS doc FROM cluster_documents d WHERE d.cluster_id=$1 ORDER BY d.section, d.original_filename", [clusterId]),
+    // Evaluation results (separate dataset, loaded from the evaluation workbook)
+    pool.query('SELECT * FROM cluster_evaluation WHERE application_number=$1', [applicationNumber]),
   ]);
 
   const data = {
@@ -229,6 +236,7 @@ export async function getClusterByNumber(applicationNumber) {
     risks:          risks.rows,
     sustainability: sustainability.rows[0] || null,
     documents:      documents.rows.map((r) => r.doc),
+    evaluation:     evaluation.rows[0] || null,
   };
 
   await cacheSet(cacheKey, data, TTL.detail);

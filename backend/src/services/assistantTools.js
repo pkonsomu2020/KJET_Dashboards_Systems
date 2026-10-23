@@ -277,7 +277,60 @@ async function getDocument({ document_id, offset, length }) {
   };
 }
 
+// ── Evaluation tools (scores and grant-ready list from the evaluation workbook) ──
+
+const EVAL_NOTE = 'Source: the evaluation workbook, not the application. Recommended clusters remain subject to due diligence, environmental and social clearance, and World Bank no-objection. Do not call a cluster approved or funded unless msea_decision or approved_grant below says so.';
+
+const EVAL_LIST = `
+  ev.application_number, c.cluster_name, c.county, c.value_chain, ev.total_score, ev.band, ev.rank,
+  ev.shortlisted, ev.shortlist_rank, ev.eligibility, ev.financial_screening, ev.data_readiness, ev.due_diligence,
+  ev.es_disposition, ev.system_recommendation, ev.technical_rec, ev.max_eligible_grant`;
+
+async function getEvaluation({ application_number }) {
+  const { rows } = await pool.query(
+    `SELECT ev.*, c.cluster_name, c.county, c.value_chain, f.total_project_cost AS drive_total_project_cost, f.grant_requested AS drive_grant_requested
+       FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number
+       LEFT JOIN cluster_financials f ON f.cluster_id = c.id WHERE ev.application_number = $1`,
+    [String(application_number ?? '').trim()]);
+  if (!rows.length) return { found: false, application_number, note: 'This cluster has no evaluation results in the database.' };
+  return { found: true, note: EVAL_NOTE, evaluation: rows[0] };
+}
+
+async function listShortlist() {
+  const [{ rows }, { rows: waiting }] = await Promise.all([
+    pool.query(`SELECT ${EVAL_LIST} FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number WHERE ev.shortlisted ORDER BY ev.shortlist_rank`),
+    pool.query(`SELECT ev.application_number, c.cluster_name, ev.total_score, ev.eligibility FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number WHERE ev.band = 'Recommended' AND NOT COALESCE(ev.shortlisted, FALSE) ORDER BY ev.total_score DESC`),
+  ]);
+  return {
+    note: EVAL_NOTE,
+    rule: 'The grant-ready list is the clusters scoring 70 or more out of 100 whose eligibility check is PASS.',
+    total_grant_ready: rows.length,
+    clusters: rows,
+    scored_70_plus_but_not_listed: { total: waiting.length, reason: 'eligibility check still on hold', clusters: waiting.slice(0, 30) },
+  };
+}
+
+async function rankByScore(args) {
+  const limit = Math.min(MAX_ROWS, Math.max(1, Number(args.limit) || 10));
+  const where = [];
+  const params = [];
+  const add = (sql, v) => { params.push(v); where.push(sql.replace('?', `$${params.length}`)); };
+  if (args.band) add('ev.band ILIKE ?', args.band);
+  if (args.eligibility) add('ev.eligibility = ?', String(args.eligibility).toUpperCase());
+  if (args.county) add('c.county ILIKE ?', args.county);
+  if (args.value_chain) add('c.value_chain ILIKE ?', `%${args.value_chain}%`);
+  const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+  const [{ rows }, { rows: [count] }] = await Promise.all([
+    pool.query(`SELECT ${EVAL_LIST} FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number ${clause} ORDER BY ev.total_score DESC NULLS LAST, c.cluster_name LIMIT ${limit}`, params),
+    pool.query(`SELECT COUNT(*)::int AS total FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number ${clause}`, params),
+  ]);
+  return { note: EVAL_NOTE, total_matching: count.total, clusters: rows };
+}
+
 export const toolImpl = {
+  get_evaluation: getEvaluation,
+  list_shortlist: listShortlist,
+  rank_by_score: rankByScore,
   list_documents: listDocuments,
   search_documents: searchDocuments,
   get_document: getDocument,
@@ -289,6 +342,39 @@ export const toolImpl = {
 };
 
 export const toolDefinitions = [
+  {
+    type: 'function',
+    function: {
+      name: 'list_shortlist',
+      description: 'The grant-ready list from the evaluation: clusters scoring 70+ with eligibility PASS, ranked, with gates and recommendations. Also lists clusters that scored 70+ but are on hold. Use for any question about which clusters are qualified, recommended or grant-ready.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_evaluation',
+      description: 'The full evaluation of ONE cluster: total score, band, ranks, the six criterion scores and written justifications, every screening gate, recommendations, conditions, and the evaluation figures next to the Drive figures.',
+      parameters: { type: 'object', properties: { application_number: { type: 'string' } }, required: ['application_number'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'rank_by_score',
+      description: 'Rank clusters by evaluation score (all 85, not only the grant-ready list), optionally filtered by band, eligibility (PASS, HOLD, FAIL), county or value chain.',
+      parameters: {
+        type: 'object',
+        properties: {
+          limit: { type: 'integer' },
+          band: { type: 'string', enum: ['Recommended', 'Referred with Comments', 'Rejected'] },
+          eligibility: { type: 'string', enum: ['PASS', 'HOLD', 'FAIL'] },
+          county: { type: 'string' },
+          value_chain: { type: 'string' },
+        },
+      },
+    },
+  },
   {
     type: 'function',
     function: {
@@ -380,6 +466,7 @@ export const toolDefinitions = [
 export function extractApplicationNumbers(result) {
   const out = new Set();
   if (result?.cluster?.application_number) out.add(result.cluster.application_number);
+  if (result?.evaluation?.application_number) out.add(result.evaluation.application_number);
   if (result?.total_files > 0 && typeof result.application_number === 'string') out.add(result.application_number);
   for (const d of result?.documents ?? []) if (d.application_number) out.add(d.application_number);
   for (const c of result?.clusters ?? []) if (c.application_number) out.add(c.application_number);

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClustersRouteImport } from './routes/clusters'
+import { Route as GrantReadyRouteImport } from './routes/grant-ready'
 import { Route as LoginRouteImport } from './routes/login'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const ClustersRoute = ClustersRouteImport.update({
   path: '/clusters',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GrantReadyRoute = GrantReadyRouteImport.update({
+  id: '/grant-ready',
+  path: '/grant-ready',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -32,30 +38,34 @@ const LoginRoute = LoginRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clusters': typeof ClustersRoute
+  '/grant-ready': typeof GrantReadyRoute
   '/login': typeof LoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clusters': typeof ClustersRoute
+  '/grant-ready': typeof GrantReadyRoute
   '/login': typeof LoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clusters': typeof ClustersRoute
+  '/grant-ready': typeof GrantReadyRoute
   '/login': typeof LoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clusters' | '/login'
+  fullPaths: '/' | '/clusters' | '/grant-ready' | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clusters' | '/login'
-  id: '__root__' | '/' | '/clusters' | '/login'
+  to: '/' | '/clusters' | '/grant-ready' | '/login'
+  id: '__root__' | '/' | '/clusters' | '/grant-ready' | '/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClustersRoute: typeof ClustersRoute
+  GrantReadyRoute: typeof GrantReadyRoute
   LoginRoute: typeof LoginRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClustersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/grant-ready': {
+      id: '/grant-ready'
+      path: '/grant-ready'
+      fullPath: '/grant-ready'
+      preLoaderRoute: typeof GrantReadyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClustersRoute: ClustersRoute,
+  GrantReadyRoute: GrantReadyRoute,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
