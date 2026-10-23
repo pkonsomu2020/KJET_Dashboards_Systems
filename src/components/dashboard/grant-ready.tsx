@@ -64,9 +64,6 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
   }
 
   const s = data.summary;
-  const imported = data.meta.imported_at
-    ? new Date(data.meta.imported_at).toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' })
-    : null;
 
   return (
     <>
@@ -195,12 +192,6 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
           </div>
         </div>
       </section>
-
-      <p className="gr-foot">
-        Source: {data.meta.source_file ?? 'evaluation workbook'}{imported ? `, loaded ${imported}` : ''}. Scores follow the evaluation
-        scorecard (six weighted criteria, 100 points). Where the evaluation and the application on Drive show different figures, both are
-        shown and the application data is never overwritten.
-      </p>
     </>
   );
 }

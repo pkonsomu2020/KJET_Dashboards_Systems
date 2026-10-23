@@ -523,7 +523,6 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
 
           <footer className="page-footer">
             <span>Republic of Kenya · Micro and Small Enterprises Authority · KJET Component 2</span>
-            <span>Source: Cohort 1 applications · All amounts in KES</span>
           </footer>
         </main>
       </div>
