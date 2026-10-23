@@ -79,10 +79,9 @@ describe('Grant-ready page', () => {
     expect(screen.getByText('71')).toBeTruthy();
   });
 
-  it('shows warnings openly instead of hiding them', () => {
+  it('flags figures that differ from Drive and has no status checks column', () => {
     renderPage();
-    expect(screen.getByText('Not eligible')).toBeTruthy();          // Besko-style E&S result
-    expect(screen.getByText('Gaps outstanding')).toBeTruthy();
+    expect(screen.queryByText('Status checks')).toBeNull();
     expect(screen.getByText('Figures differ from Drive')).toBeTruthy();
   });
 

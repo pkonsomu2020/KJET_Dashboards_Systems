@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { money, number, percent } from '@/data/portfolio';
 import { useEvaluation } from '@/hooks/usePortfolio';
 import type { ShortlistRow } from '@/data/api';
-import { BandChip, GateChip, ScoreBar } from './evaluation-ui';
+import { BandChip, ScoreBar } from './evaluation-ui';
 
 function exportShortlist(rows: ShortlistRow[]) {
   const head = [
@@ -72,7 +72,7 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
         <div>
           <strong>Recommended for grant support, not yet funded.</strong> These {s.clusters} clusters scored 70 or more out of 100 and
           passed eligibility. Each one remains subject to due diligence, environmental and social clearance, and World Bank
-          no-objection. Check the status chips before relying on a cluster.
+          no-objection.
         </div>
       </div>
 
@@ -112,10 +112,9 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
             <table className="portfolio-table fit-table">
               <colgroup>
                 <col style={{ width: 58 }} />
-                <col style={{ width: '21%' }} />
-                <col style={{ width: '12%' }} />
-                <col style={{ width: '15%' }} />
+                <col style={{ width: '28%' }} />
                 <col style={{ width: '17%' }} />
+                <col style={{ width: '20%' }} />
                 <col />
                 <col style={{ width: 52 }} />
               </colgroup>
@@ -126,7 +125,6 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
                   <th>County &amp; value chain</th>
                   <th>Score</th>
                   <th className="gr-num">Maximum eligible grant</th>
-                  <th>Status checks</th>
                   <th aria-label="Profile" />
                 </tr>
               </thead>
@@ -164,13 +162,6 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
                           )}
                         </td>
                         <td>
-                          <div className="gr-gates">
-                            <GateChip label="Finance" value={r.financial_screening} />
-                            <GateChip label="Due diligence" value={r.due_diligence} />
-                            <GateChip label="E&S" value={r.es_disposition} empty="Pending" />
-                          </div>
-                        </td>
-                        <td>
                           <Button variant="ghost" size="icon" aria-label={`View profile of ${r.cluster_name}`}
                             title="Open full profile and evaluation" onClick={() => onSelect(r.application_number)}>
                             <ArrowUpRight className="text-primary" />
@@ -179,7 +170,7 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
                       </tr>
                       {isOpen && (
                         <tr className="gr-why">
-                          <td colSpan={7}>
+                          <td colSpan={6}>
                             {r.shortlist_reason && <p style={{ margin: 0, color: 'var(--foreground)' }}><strong>Why it is on the list: </strong>{r.shortlist_reason}</p>}
                             <ul>
                               <li><strong>System recommendation:</strong> {r.system_recommendation ?? 'Not stated'}</li>
