@@ -297,16 +297,12 @@ async function getEvaluation({ application_number }) {
 }
 
 async function listShortlist() {
-  const [{ rows }, { rows: waiting }] = await Promise.all([
-    pool.query(`SELECT ${EVAL_LIST} FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number WHERE ev.shortlisted ORDER BY ev.shortlist_rank`),
-    pool.query(`SELECT ev.application_number, c.cluster_name, ev.total_score, ev.eligibility FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number WHERE ev.band = 'Recommended' AND NOT COALESCE(ev.shortlisted, FALSE) ORDER BY ev.total_score DESC`),
-  ]);
+  const { rows } = await pool.query(`SELECT ${EVAL_LIST} FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number WHERE ev.shortlisted ORDER BY ev.shortlist_rank`);
   return {
     note: EVAL_NOTE,
     rule: 'The grant-ready list is the clusters scoring 70 or more out of 100 whose eligibility check is PASS.',
     total_grant_ready: rows.length,
     clusters: rows,
-    scored_70_plus_but_not_listed: { total: waiting.length, reason: 'eligibility check still on hold', clusters: waiting.slice(0, 30) },
   };
 }
 
@@ -346,7 +342,7 @@ export const toolDefinitions = [
     type: 'function',
     function: {
       name: 'list_shortlist',
-      description: 'The grant-ready list from the evaluation: clusters scoring 70+ with eligibility PASS, ranked, with gates and recommendations. Also lists clusters that scored 70+ but are on hold. Use for any question about which clusters are qualified, recommended or grant-ready.',
+      description: 'The grant-ready list from the evaluation: clusters scoring 70+ with eligibility PASS, ranked, with gates and recommendations. Use for any question about which clusters are qualified, recommended or grant-ready.',
       parameters: { type: 'object', properties: {} },
     },
   },

@@ -53,7 +53,6 @@ const sample = {
       figure_notes: [{ field: 'grant requested', evaluation: 7938000, drive: 8038000 }],
     },
   ],
-  waiting: [{ application_number: 'KJET-2026-000009', cluster_name: 'GAMMA HOLD', county: 'Kiambu', value_chain: 'Dairy', total_score: 88, band: 'Recommended', rank: null, eligibility: 'HOLD', financial_screening: 'PASS', data_readiness: 'READY', system_recommendation: 'Hold – eligibility clarification' }],
   summary: { clusters: 2, average_score: 83.5, counties: 2, value_chains: 2, members: 200, women: 80, requested_per_drive: 8038500, eligible_grant: 7938500, projected_jobs_year3: 60 },
   bands: [{ band: 'Recommended', n: 3 }],
   meta: { source_file: 'workbook.xlsx', imported_at: '2026-10-24T10:00:00Z', evaluated: 85 },
@@ -94,9 +93,10 @@ describe('Grant-ready page', () => {
     expect(screen.getByText(/Highest score in the portfolio/)).toBeTruthy();
   });
 
-  it('explains high scorers that are on hold', () => {
+  it('lists only the grant-ready clusters (nothing on hold)', () => {
     renderPage();
-    expect(screen.getByText(/Scored 70 or more, eligibility still on hold \(1\)/)).toBeTruthy();
-    expect(screen.getByText('GAMMA HOLD')).toBeTruthy();
+    expect(screen.queryByText(/eligibility still on hold/)).toBeNull();
+    expect(screen.queryByText('GAMMA HOLD')).toBeNull();
+    expect(screen.getAllByText('Why this cluster')).toHaveLength(2);
   });
 });

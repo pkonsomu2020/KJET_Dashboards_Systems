@@ -322,24 +322,9 @@ export interface ShortlistRow extends EvaluationRow {
   figure_notes: EvaluationFigureNote[];
 }
 
-export interface WaitingRow {
-  application_number: string;
-  total_score: Num;
-  band: string | null;
-  rank: number | null;
-  eligibility: string | null;
-  financial_screening: string | null;
-  data_readiness: string | null;
-  system_recommendation: string | null;
-  cluster_name: string;
-  county: string;
-  value_chain: string;
-}
-
 export interface EvaluationResponse {
   ok: boolean;
   data: ShortlistRow[];
-  waiting: WaitingRow[];
   summary: {
     clusters: number;
     average_score: number;

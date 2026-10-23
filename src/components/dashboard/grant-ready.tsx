@@ -41,7 +41,6 @@ function Tile({ label, value, icon: Icon, children }: { label: string; value: st
 export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string) => void }) {
   const { data, isLoading, error } = useEvaluation();
   const [open, setOpen] = useState<string | null>(null);
-  const [showAllWaiting, setShowAllWaiting] = useState(false);
 
   if (isLoading) {
     return (
@@ -65,7 +64,6 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
   }
 
   const s = data.summary;
-  const waiting = showAllWaiting ? data.waiting : data.waiting.slice(0, 8);
   const imported = data.meta.imported_at
     ? new Date(data.meta.imported_at).toLocaleDateString('en-KE', { day: '2-digit', month: 'short', year: 'numeric' })
     : null;
@@ -197,69 +195,6 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
           </div>
         </div>
       </section>
-
-      {data.waiting.length > 0 && (
-        <section className="gr-section">
-          <div className="gr-section-head">
-            <div>
-              <h2>Scored 70 or more, eligibility still on hold ({data.waiting.length})</h2>
-              <p>
-                These clusters reached the recommended score but are not on the list yet, because the eligibility check is still open
-                (clarifications outstanding). They can move up once eligibility is cleared.
-              </p>
-            </div>
-          </div>
-          <div className="chart-panel">
-            <div className="table-scroll">
-              <table className="portfolio-table">
-                <thead>
-                  <tr>
-                    <th>Cluster / application ID</th>
-                    <th>County &amp; value chain</th>
-                    <th>Score</th>
-                    <th>Why not listed yet</th>
-                    <th aria-label="Profile" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {waiting.map((w) => (
-                    <tr key={w.application_number}>
-                      <td>
-                        <div className="cluster-name">{w.cluster_name}<span className="cluster-id">{w.application_number}</span></div>
-                      </td>
-                      <td>
-                        {w.county}
-                        <div className="mt-1.5"><span className="badge">{w.value_chain.replace(/_/g, ' ')}</span></div>
-                      </td>
-                      <td><ScoreBar score={w.total_score} compact /></td>
-                      <td>
-                        <div className="gr-gates">
-                          <GateChip label="Eligibility" value={w.eligibility} />
-                          <GateChip label="Finance" value={w.financial_screening} />
-                        </div>
-                      </td>
-                      <td>
-                        <Button variant="ghost" size="icon" aria-label={`View profile of ${w.cluster_name}`}
-                          title="Open full profile and evaluation" onClick={() => onSelect(w.application_number)}>
-                          <ArrowUpRight className="text-primary" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {data.waiting.length > 8 && (
-              <div className="table-footer">
-                <span>Showing {waiting.length} of {data.waiting.length}</span>
-                <Button variant="outline" size="sm" onClick={() => setShowAllWaiting((v) => !v)}>
-                  {showAllWaiting ? 'Show fewer' : `Show all ${data.waiting.length}`}
-                </Button>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
 
       <p className="gr-foot">
         Source: {data.meta.source_file ?? 'evaluation workbook'}{imported ? `, loaded ${imported}` : ''}. Scores follow the evaluation

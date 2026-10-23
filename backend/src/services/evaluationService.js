@@ -38,14 +38,8 @@ export async function getShortlist() {
   const cached = await cacheGet(cacheKey);
   if (cached) return { ...cached, cached: true };
 
-  const [{ rows }, { rows: waiting }, { rows: bands }, { rows: [meta] }] = await Promise.all([
+  const [{ rows }, { rows: bands }, { rows: [meta] }] = await Promise.all([
     pool.query(`SELECT ${COLUMNS} ${FROM} WHERE ev.shortlisted ORDER BY ev.shortlist_rank, ev.total_score DESC`),
-    // Scored 70 or more but not on the list: eligibility is still on hold or unresolved
-    pool.query(`SELECT ev.application_number, ev.total_score, ev.band, ev.rank, ev.eligibility, ev.financial_screening,
-                       ev.data_readiness, ev.system_recommendation, c.cluster_name, c.county, c.value_chain
-                FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number
-                WHERE ev.band = 'Recommended' AND NOT COALESCE(ev.shortlisted, FALSE)
-                ORDER BY ev.total_score DESC, c.cluster_name`),
     pool.query('SELECT band, COUNT(*)::int AS n FROM cluster_evaluation GROUP BY band ORDER BY MIN(-total_score)'),
     pool.query('SELECT MAX(source_file) AS source_file, MAX(imported_at) AS imported_at, COUNT(*)::int AS evaluated FROM cluster_evaluation'),
   ]);
@@ -53,7 +47,6 @@ export async function getShortlist() {
   const sum = (k) => data.reduce((s, r) => s + Number(r[k] ?? 0), 0);
   const result = {
     data,
-    waiting,
     summary: {
       clusters: data.length,
       average_score: data.length ? Math.round((sum('total_score') / data.length) * 10) / 10 : 0,
