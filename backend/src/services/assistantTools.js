@@ -279,12 +279,12 @@ async function getDocument({ document_id, offset, length }) {
 
 // ── Evaluation tools (scores and grant-ready list from the evaluation workbook) ──
 
-const EVAL_NOTE = 'Source: the evaluation workbook, not the application. Recommended clusters remain subject to due diligence, environmental and social clearance, and World Bank no-objection. Do not call a cluster approved or funded unless msea_decision or approved_grant below says so.';
+const EVAL_NOTE = 'Scores, ranks and decisions come from the evaluation workbook; all amounts come from the application on Drive (drive_total_project_cost, drive_grant_requested). Recommended clusters remain subject to due diligence, environmental and social clearance, and World Bank no-objection. Do not call a cluster approved or funded unless msea_decision or approved_grant below says so.';
 
 const EVAL_LIST = `
   ev.application_number, c.cluster_name, c.county, c.value_chain, ev.total_score, ev.band, ev.rank,
   ev.shortlisted, ev.shortlist_rank, ev.eligibility, ev.financial_screening, ev.data_readiness, ev.due_diligence,
-  ev.es_disposition, ev.system_recommendation, ev.technical_rec, ev.max_eligible_grant`;
+  ev.es_disposition, ev.system_recommendation, ev.technical_rec`;
 
 async function getEvaluation({ application_number }) {
   const { rows } = await pool.query(
@@ -293,7 +293,8 @@ async function getEvaluation({ application_number }) {
        LEFT JOIN cluster_financials f ON f.cluster_id = c.id WHERE ev.application_number = $1`,
     [String(application_number ?? '').trim()]);
   if (!rows.length) return { found: false, application_number, note: 'This cluster has no evaluation results in the database.' };
-  return { found: true, note: EVAL_NOTE, evaluation: rows[0] };
+  const { eval_total_cost, eval_grant_requested, max_eligible_grant, ...evaluation } = rows[0];   // amounts come from Drive only
+  return { found: true, note: EVAL_NOTE, evaluation };
 }
 
 async function listShortlist() {

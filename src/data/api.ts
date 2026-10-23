@@ -262,12 +262,6 @@ export async function askAssistant(question: string, history: AssistantMessage[]
 
 type Num = string | number | null;
 
-export interface EvaluationFigureNote {
-  field: string;
-  evaluation: number;
-  drive: number;
-}
-
 export interface EvaluationRow {
   application_number: string;
   shortlisted: boolean | null;
@@ -296,9 +290,6 @@ export interface EvaluationRow {
   approved_grant: Num;
   wb_status: string | null;
   conditions: string | null;
-  eval_total_cost: Num;
-  eval_grant_requested: Num;
-  max_eligible_grant: Num;
   eval_value_chain: string | null;
   source_file?: string | null;
   imported_at?: string | null;
@@ -319,7 +310,6 @@ export interface ShortlistRow extends EvaluationRow {
   pwd: Num;
   jobs_today: Num;
   jobs_year3: Num;
-  figure_notes: EvaluationFigureNote[];
 }
 
 export interface EvaluationResponse {
@@ -333,7 +323,7 @@ export interface EvaluationResponse {
     members: number;
     women: number;
     requested_per_drive: number;
-    eligible_grant: number;
+    project_cost: number;
     projected_jobs_year3: number;
   };
   bands: Array<{ band: string; n: number }>;

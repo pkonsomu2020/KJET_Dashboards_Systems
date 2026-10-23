@@ -36,24 +36,23 @@ const base = {
   financial_screening: 'PASS', data_readiness: 'READY', eligibility: 'PASS', due_diligence: 'In progress',
   exclusion_status: null, es_disposition: null, system_recommendation: 'Recommended – subject to DD / E&S clearance',
   technical_rec: 'Recommended', msea_decision: null, approved_grant: null, wb_status: null, conditions: null,
-  eval_total_cost: '1000', eval_grant_requested: '500', eval_value_chain: 'Dairy', constituency: 'X', legal_form: 'cooperative',
+  eval_value_chain: 'Dairy', constituency: 'X', legal_form: 'cooperative',
   total_project_cost: '1000', grant_requested: '500', cluster_contribution: '500', total_members: 100, women: 40, youth: 20, pwd: 1,
   jobs_today: 10, jobs_year3: 30, c1_rating: 4, c1_score: 16, c2_rating: 4, c2_score: 32, c3_rating: 4, c3_score: 12,
-  c4_rating: 4, c4_score: 8, c5_rating: 4, c5_score: 8, c6_rating: 4, c6_score: 4, figure_notes: [],
+  c4_rating: 4, c4_score: 8, c5_rating: 4, c5_score: 8, c6_rating: 4, c6_score: 4,
 } as unknown as ShortlistRow;
 
 const sample = {
   ok: true,
   data: [
-    { ...base, application_number: 'KJET-2026-000001', cluster_name: 'ALPHA DAIRY', county: 'Nyeri', value_chain: 'Dairy', total_score: 96, shortlist_rank: 1, max_eligible_grant: '500', shortlist_reason: 'Highest score in the portfolio.' },
+    { ...base, application_number: 'KJET-2026-000001', cluster_name: 'ALPHA DAIRY', county: 'Nyeri', value_chain: 'Dairy', total_score: 96, shortlist_rank: 1, grant_requested: '500', total_project_cost: '1000', shortlist_reason: 'Highest score in the portfolio.' },
     {
       ...base, application_number: 'KJET-2026-000002', cluster_name: 'BETA STONE', county: 'Baringo', value_chain: 'Construction', total_score: 71, shortlist_rank: 2,
-      max_eligible_grant: '7938000', grant_requested: '8038000', es_disposition: 'Not eligible', due_diligence: 'Gaps outstanding',
+      total_project_cost: '15876000', grant_requested: '8038000', es_disposition: 'Not eligible', due_diligence: 'Gaps outstanding',
       financial_screening: 'FOLLOW-UP: data error', system_recommendation: 'Not recommended – safeguards', shortlist_reason: 'Clear fit for the priority value chain.',
-      figure_notes: [{ field: 'grant requested', evaluation: 7938000, drive: 8038000 }],
     },
   ],
-  summary: { clusters: 2, average_score: 83.5, counties: 2, value_chains: 2, members: 200, women: 80, requested_per_drive: 8038500, eligible_grant: 7938500, projected_jobs_year3: 60 },
+  summary: { clusters: 2, average_score: 83.5, counties: 2, value_chains: 2, members: 200, women: 80, requested_per_drive: 8038500, project_cost: 16000000, projected_jobs_year3: 60 },
   bands: [{ band: 'Recommended', n: 3 }],
   meta: { source_file: 'workbook.xlsx', imported_at: '2026-10-24T10:00:00Z', evaluated: 85 },
 } as unknown as EvaluationResponse;
@@ -79,10 +78,11 @@ describe('Grant-ready page', () => {
     expect(screen.getByText('71')).toBeTruthy();
   });
 
-  it('flags figures that differ from Drive and has no status checks column', () => {
+  it('shows Drive amounts and has no status checks column', () => {
     renderPage();
     expect(screen.queryByText('Status checks')).toBeNull();
-    expect(screen.getByText('Figures differ from Drive')).toBeTruthy();
+    expect(screen.queryByText('Figures differ from Drive')).toBeNull();
+    expect(screen.getByText(/8,038,000/)).toBeTruthy();
   });
 
   it('expands a row to show why the cluster is listed', () => {

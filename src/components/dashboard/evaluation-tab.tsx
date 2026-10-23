@@ -1,4 +1,3 @@
-import { Info } from 'lucide-react';
 import { money } from '@/data/portfolio';
 import type { ClusterDetail } from '@/data/api';
 import { BandChip, CRITERIA, GateChip, scoreTone } from './evaluation-ui';
@@ -26,9 +25,6 @@ export function EvaluationTab({ cluster: c }: { cluster: ClusterDetail }) {
   }
 
   const score = Number(e.total_score);
-  const differs = (a: unknown, b: unknown) => a != null && b != null && Math.abs(Number(a) - Number(b)) > 1;
-  const costDiffers = differs(e.eval_total_cost, c.total_project_cost);
-  const grantDiffers = differs(e.eval_grant_requested, c.grant_requested);
 
   return (
     <>
@@ -82,34 +78,14 @@ export function EvaluationTab({ cluster: c }: { cluster: ClusterDetail }) {
         </div>
       </section>
 
-      <section className="profile-section">
-        <h3>Recommendations and decisions</h3>
-        <div className="detail-grid">
-          <Field label="System recommendation" value={e.system_recommendation} />
-          <Field label="Technical recommendation" value={e.technical_rec} />
-          <Field label="MSEA decision" value={e.msea_decision ?? 'Not yet decided'} />
-          <Field label="World Bank status" value={e.wb_status ?? 'Not yet submitted'} />
-          <Field label="Approved grant" value={amount(e.approved_grant) ?? 'Not yet approved'} />
-          <Field label="Category" value={e.category} />
-        </div>
-        {e.conditions && <p style={{ marginTop: 6 }}><strong style={{ color: 'var(--foreground)' }}>Conditions: </strong>{e.conditions}</p>}
-      </section>
 
       <section className="profile-section">
-        <h3>Figures: evaluation and application</h3>
+        <h3>Figures (application on Drive)</h3>
         <div className="detail-grid">
-          <Field label="Project cost (evaluation)" value={amount(e.eval_total_cost)} />
-          <Field label="Project cost (application on Drive)" value={amount(c.total_project_cost)} />
-          <Field label="Grant requested (evaluation)" value={amount(e.eval_grant_requested)} />
-          <Field label="Grant requested (application on Drive)" value={amount(c.grant_requested)} />
-          <Field label="Maximum eligible grant (evaluation)" value={amount(e.max_eligible_grant)} />
+          <Field label="Project cost" value={amount(c.total_project_cost)} />
+          <Field label="Grant requested" value={amount(c.grant_requested)} />
+          <Field label="Cluster contribution" value={amount(c.cluster_contribution)} />
         </div>
-        {(costDiffers || grantDiffers) && (
-          <div className="notice">
-            <Info size={16} />
-            <span>The evaluation and the application on Drive show different {[costDiffers && 'project cost', grantDiffers && 'grant requested'].filter(Boolean).join(' and ')}. Both are shown as recorded; the application data has not been changed.</span>
-          </div>
-        )}
       </section>
 
       <section className="profile-section">
@@ -125,7 +101,7 @@ export function EvaluationTab({ cluster: c }: { cluster: ClusterDetail }) {
         })}
       </section>
 
-      <p className="gr-foot">Source: {e.source_file ?? 'evaluation workbook'}. Scores and decisions come from the evaluation workbook, not from the application.</p>
+      <p className="gr-foot">Source: {e.source_file ?? 'evaluation workbook'}. Scores and decisions come from the evaluation workbook; amounts come from the application on Drive.</p>
     </>
   );
 }

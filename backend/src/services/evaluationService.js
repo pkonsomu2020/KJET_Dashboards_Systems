@@ -10,7 +10,6 @@ const COLUMNS = `
   ev.c4_rating, ev.c4_score, ev.c5_rating, ev.c5_score, ev.c6_rating, ev.c6_score,
   ev.financial_screening, ev.data_readiness, ev.eligibility, ev.due_diligence, ev.exclusion_status, ev.es_disposition,
   ev.system_recommendation, ev.technical_rec, ev.msea_decision, ev.approved_grant, ev.wb_status, ev.conditions,
-  ev.eval_total_cost, ev.eval_grant_requested, ev.max_eligible_grant, ev.eval_value_chain,
   c.cluster_name, c.county, c.constituency, c.value_chain, c.legal_form,
   f.total_project_cost, f.grant_requested, f.cluster_contribution,
   m.total_members, m.women, m.youth, m.pwd,
@@ -23,16 +22,7 @@ const FROM = `
   LEFT JOIN cluster_membership m ON m.cluster_id = c.id
   LEFT JOIN cluster_employment e ON e.cluster_id = c.id`;
 
-/** Where the evaluation's figures differ from what the application (Drive) says. */
-function figureNotes(r) {
-  const notes = [];
-  const d = (a, b) => a != null && b != null && Math.abs(Number(a) - Number(b)) > 1;
-  if (d(r.eval_total_cost, r.total_project_cost)) notes.push({ field: 'project cost', evaluation: Number(r.eval_total_cost), drive: Number(r.total_project_cost) });
-  if (d(r.eval_grant_requested, r.grant_requested)) notes.push({ field: 'grant requested', evaluation: Number(r.eval_grant_requested), drive: Number(r.grant_requested) });
-  return notes;
-}
-
-/** The grant-ready shortlist, with portfolio-level context. */
+/** The grant-ready shortlist. Scores and decisions come from the evaluation; every amount comes from the application data synced from Drive. */
 export async function getShortlist() {
   const cacheKey = 'evaluation:shortlist';
   const cached = await cacheGet(cacheKey);
@@ -43,7 +33,7 @@ export async function getShortlist() {
     pool.query('SELECT band, COUNT(*)::int AS n FROM cluster_evaluation GROUP BY band ORDER BY MIN(-total_score)'),
     pool.query('SELECT MAX(source_file) AS source_file, MAX(imported_at) AS imported_at, COUNT(*)::int AS evaluated FROM cluster_evaluation'),
   ]);
-  const data = rows.map((r) => ({ ...r, figure_notes: figureNotes(r) }));
+  const data = rows;
   const sum = (k) => data.reduce((s, r) => s + Number(r[k] ?? 0), 0);
   const result = {
     data,
@@ -55,7 +45,7 @@ export async function getShortlist() {
       members: sum('total_members'),
       women: sum('women'),
       requested_per_drive: sum('grant_requested'),
-      eligible_grant: sum('max_eligible_grant'),
+      project_cost: sum('total_project_cost'),
       projected_jobs_year3: sum('jobs_year3'),
     },
     bands,

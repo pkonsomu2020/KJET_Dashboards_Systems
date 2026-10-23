@@ -12,12 +12,12 @@ import { BandChip, ScoreBar } from './evaluation-ui';
 function exportShortlist(rows: ShortlistRow[]) {
   const head = [
     'Rank', 'Application number', 'Cluster name', 'County', 'Value chain', 'Score (/100)', 'Band',
-    'Maximum eligible grant (evaluation, KES)', 'Grant requested (Drive, KES)', 'Financial screening', 'Due diligence',
+    'Project cost (Drive, KES)', 'Grant requested (Drive, KES)', 'Financial screening', 'Due diligence',
     'E&S disposition', 'System recommendation', 'Why this cluster',
   ];
   const csv = [head, ...rows.map((r) => [
     r.shortlist_rank, r.application_number, r.cluster_name, r.county, r.value_chain, r.total_score, r.band,
-    r.max_eligible_grant, r.grant_requested, r.financial_screening, r.due_diligence, r.es_disposition,
+    r.total_project_cost, r.grant_requested, r.financial_screening, r.due_diligence, r.es_disposition,
     r.system_recommendation, r.shortlist_reason,
   ])].map((line) => line.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
   const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
@@ -83,9 +83,8 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
         <Tile label="Average score" value={`${s.average_score}`} icon={ShieldCheck}>
           <span>out of 100 · range {Math.round(Math.min(...data.data.map((r) => Number(r.total_score))))} to {Math.round(Math.max(...data.data.map((r) => Number(r.total_score))))}</span>
         </Tile>
-        <Tile label="Maximum eligible grant" value={money(s.eligible_grant)} icon={Wallet}>
-          <span>per evaluation</span>
-          <span className="badge">Requested {money(s.requested_per_drive)}</span>
+        <Tile label="Grant requested" value={money(s.requested_per_drive)} icon={Wallet}>
+          <span>of {money(s.project_cost)} project cost</span>
         </Tile>
         <Tile label="Counties covered" value={String(s.counties)} icon={MapPin}>
           <span>{s.value_chains} value chains</span>
@@ -124,7 +123,7 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
                   <th>Cluster / application ID</th>
                   <th>County &amp; value chain</th>
                   <th>Score</th>
-                  <th className="gr-num">Maximum eligible grant</th>
+                  <th className="gr-num">Grant requested</th>
                   <th aria-label="Profile" />
                 </tr>
               </thead>
@@ -152,14 +151,8 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
                         </td>
                         <td><ScoreBar score={r.total_score} /><span className="gr-sub"><BandChip band={r.band} score={r.total_score} /></span></td>
                         <td className="gr-num">
-                          <strong>{r.max_eligible_grant != null ? money(Number(r.max_eligible_grant), false) : 'Not stated'}</strong>
-                          <span className="gr-sub">Requested (Drive): {r.grant_requested != null ? money(Number(r.grant_requested), false) : 'n/a'}</span>
-                          {r.figure_notes.length > 0 && (
-                            <span className="gr-note"
-                              title={r.figure_notes.map((n) => `${n.field}: evaluation ${money(n.evaluation, false)}, Drive ${money(n.drive, false)}`).join('\n')}>
-                              <Info size={11} />Figures differ from Drive
-                            </span>
-                          )}
+                          <strong>{r.grant_requested != null ? money(Number(r.grant_requested), false) : 'n/a'}</strong>
+                          <span className="gr-sub">Project cost: {r.total_project_cost != null ? money(Number(r.total_project_cost), false) : 'n/a'}</span>
                         </td>
                         <td>
                           <Button variant="ghost" size="icon" aria-label={`View profile of ${r.cluster_name}`}
@@ -177,9 +170,6 @@ export function GrantReady({ onSelect }: { onSelect: (applicationNumber: string)
                               <li><strong>Technical recommendation:</strong> {r.technical_rec ?? 'Not stated'}</li>
                               <li><strong>Eligibility:</strong> {r.eligibility ?? 'Not stated'} · <strong>Data readiness:</strong> {r.data_readiness ?? 'Not stated'}</li>
                               <li><strong>MSEA decision:</strong> {r.msea_decision ?? 'Not yet decided'} · <strong>World Bank:</strong> {r.wb_status ?? 'Not yet submitted'}</li>
-                              {r.figure_notes.map((n) => (
-                                <li key={n.field}><strong>Figures differ from Drive ({n.field}):</strong> the evaluation uses {money(n.evaluation, false)}; the application on Drive shows {money(n.drive, false)}.</li>
-                              ))}
                             </ul>
                           </td>
                         </tr>
