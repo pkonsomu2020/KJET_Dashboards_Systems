@@ -123,9 +123,8 @@ for (const [a, r] of live) {
 }
 
 // ── ranks: independent ordering of the eligible clusters ──
-const eligible = [...live.values()].filter((r) => r.eligibility === 'PASS').sort((x, y) => (y.score - x.score) || (y.criteria[1].score - x.criteria[1].score) || (y.criteria[0].score - x.criteria[0].score) || (y.criteria[5].score - x.criteria[5].score));
-eligible.forEach((r, i) => check('rank among eligible', r.rank === i + 1, `${r.application_number}: ${r.rank} vs ${i + 1}`));
-check('not-eligible clusters are not ranked', [...live.values()].filter((r) => r.eligibility !== 'PASS').every((r) => r.rank == null), 'a non-eligible cluster has a rank');
+const eligible = [...live.values()].sort((x, y) => (y.score - x.score) || (x.cluster_name < y.cluster_name ? -1 : x.cluster_name > y.cluster_name ? 1 : 0));
+eligible.forEach((r, i) => check('rank by score of all 85 (as in the report)', r.rank === i + 1, `${r.application_number}: ${r.rank} vs ${i + 1}`));
 
 // ── overview totals add up to the list ──
 const all = [...live.values()];

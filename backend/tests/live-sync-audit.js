@@ -56,6 +56,8 @@ const live = new Map();
 }
 check('live API returns every cluster', list.total === 85 && live.size === 85, `total=${list.total}, detail pages=${live.size}`);
 
+const portal = new Map((await pool.query('SELECT application_number a, portal_men, portal_women FROM cluster_evaluation')).rows.map((r) => [r.a, r]));
+
 // ── read Drive ───────────────────────────────────────────────
 await initDriveClient();
 const { rows: dbClusters } = await pool.query('SELECT application_number a, google_drive_folder g FROM clusters ORDER BY 1');
@@ -152,8 +154,12 @@ for (const [a, d] of drive) {
   for (const id of dbDocs.keys()) check('files: nothing extra that Drive no longer has', d.files.some((f) => f.id === id), `${a}: ${dbDocs.get(id).original_filename}`);
 
   sum.cost += N('Total project cost') ?? 0; sum.grant += N('Grant requested') ?? 0; sum.contribution += N('Cluster contribution') ?? 0;
-  sum.budget += N('Budget total') ?? 0; sum.members += (N('Total members men') ?? 0) + (N('Total members women') ?? 0);
-  sum.women += N('Total members women') ?? 0; // an application reporting more than 5,000 jobs is left out of the jobs totals (not plausible), as the dashboard does
+  sum.budget += N('Budget total') ?? 0;
+  // membership totals are the portal register's figures (the sheet's Register tab) where it has them, as the selection report totals them; otherwise the application's
+  const pr = portal.get(a);
+  const men = pr?.portal_men ?? N('Total members men') ?? 0, women = pr?.portal_women ?? N('Total members women') ?? 0;
+  sum.members += men + women; sum.women += women;
+  // an application reporting more than 5,000 jobs is left out of the jobs totals (not plausible), as the dashboard does
   if (Math.max(N('Jobs today') ?? 0, N('Jobs year1') ?? 0, N('Jobs year3') ?? 0) <= 5000) sum.y3 += Math.round(N('Jobs year3') ?? 0);
 }
 
@@ -164,8 +170,8 @@ check('dashboard totals: eligible cost', near(summary.cost, sum.cost), `live=${s
 check('dashboard totals: grant requested', near(summary.grant, sum.grant), `live=${summary.grant} drive=${sum.grant}`);
 check('dashboard totals: cluster contribution', near(summary.contribution, sum.contribution), `live=${summary.contribution} drive=${sum.contribution}`);
 check('dashboard totals: section 5 budget', near(summary.budget, sum.budget), `live=${summary.budget} drive=${sum.budget}`);
-check('dashboard totals: members', Number(summary.members) === sum.members, `live=${summary.members} drive=${sum.members}`);
-check('dashboard totals: women', Number(summary.women) === sum.women, `live=${summary.women} drive=${sum.women}`);
+check('dashboard totals: members (portal register)', Number(summary.members) === sum.members, `live=${summary.members} expected=${sum.members}`);
+check('dashboard totals: women (portal register)', Number(summary.women) === sum.women, `live=${summary.women} expected=${sum.women}`);
 check('dashboard totals: jobs year 3', Number(summary.jobs_year3) === sum.y3, `live=${summary.jobs_year3} drive=${sum.y3}`);
 
 // ── is the live poller running? ──

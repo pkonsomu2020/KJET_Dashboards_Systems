@@ -51,7 +51,7 @@ const alpha = {
 } as EvalRow;
 const beta = {
   ...alpha, application_number: 'KJET-2026-000002', cluster_name: 'BETA STONE', county: 'Baringo', value_chain: 'Construction', score: 48, band: 'Rejected',
-  rank: null, county_rank: null, eligibility: 'HOLD', tests: tests('Hold'),
+  rank: 60, county_rank: 2, eligibility: 'HOLD', tests: tests('Hold'),
   financial: fin({
     result: 'NON-COMPLIANT: <50% cash', total: 15876000, grant: 8038000, contribution: 7838000, cluster_share: 0.4937, meets_50_percent_cash: false,
     contribution_shortfall: 100000, grant_above_max: 100000, issues: ['Cluster cash share is 49.4%, below the 50% minimum'],
@@ -131,7 +131,7 @@ describe('Evaluation pages', () => {
   it('scorecard shows the named assessor and reviewer when a row is opened', () => {
     const detail = {
       ...alpha, criteria: alpha.criteria.map((k) => ({ ...k, label: 'x', justification: null, indicators: [] })), eligibility_tests: [], eligibility_reasons: null, evidence_files: null,
-      expert_remarks: null, evaluator_finance: {}, financial_detail: {}, eligible_clusters: 11, source: {},
+      expert_remarks: null, evaluator_finance: {}, financial_detail: {}, clusters_ranked: 85, source: {},
       assessment: { assessor: 'BRENDA', assessed_on: '2026-10-25', reviewer: 'JANETRIX', reviewed_on: '2026-10-25', eligibility_assessor: null, eligibility_assessed_on: null },
     };
     const qc = new QueryClient();

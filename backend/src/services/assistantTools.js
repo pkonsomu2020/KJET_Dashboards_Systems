@@ -131,11 +131,11 @@ async function portfolioStats(args) {
     COALESCE(SUM(f.section5_budget_total),0) AS section5_budget_total,
     COALESCE(SUM(f.grant_requested),0) AS grant_requested,
     COALESCE(SUM(f.cluster_contribution),0) AS cluster_contribution,
-    COALESCE(SUM(m.total_members),0)::int AS total_members,
-    COALESCE(SUM(m.men),0)::int AS men,
-    COALESCE(SUM(m.women),0)::int AS women,
-    COALESCE(SUM(m.youth),0)::int AS youth,
-    COALESCE(SUM(m.pwd),0)::int AS pwd,
+    COALESCE(SUM(COALESCE(ev.portal_men + ev.portal_women, m.total_members)),0)::int AS total_members,
+    COALESCE(SUM(COALESCE(ev.portal_men, m.men)),0)::int AS men,
+    COALESCE(SUM(COALESCE(ev.portal_women, m.women)),0)::int AS women,
+    COALESCE(SUM(COALESCE(ev.portal_youth, m.youth)),0)::int AS youth,
+    COALESCE(SUM(COALESCE(ev.portal_pwd, m.pwd)),0)::int AS pwd,
     COALESCE(SUM(e.jobs_today) FILTER (WHERE COALESCE(GREATEST(e.jobs_today, e.jobs_year1, e.jobs_year3), 0) <= 5000),0)::int AS jobs_today,
     COALESCE(SUM(e.jobs_year1) FILTER (WHERE COALESCE(GREATEST(e.jobs_today, e.jobs_year1, e.jobs_year3), 0) <= 5000),0)::int AS jobs_year1,
     COALESCE(SUM(e.jobs_year3) FILTER (WHERE COALESCE(GREATEST(e.jobs_today, e.jobs_year1, e.jobs_year3), 0) <= 5000),0)::int AS jobs_year3,
@@ -143,10 +143,10 @@ async function portfolioStats(args) {
   if (args.group_by && GROUPS[args.group_by]) {
     const g = GROUPS[args.group_by];
     const { rows } = await pool.query(
-      `SELECT ${g} AS group_name, ${totals} ${FROM} ${clause} GROUP BY ${g} ORDER BY clusters DESC, group_name`, params);
+      `SELECT ${g} AS group_name, ${totals} ${FROM} LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number ${clause} GROUP BY ${g} ORDER BY clusters DESC, group_name`, params);
     return { group_by: args.group_by, groups: rows };
   }
-  const { rows } = await pool.query(`SELECT ${totals} ${FROM} ${clause}`, params);
+  const { rows } = await pool.query(`SELECT ${totals} ${FROM} LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number ${clause}`, params);
   return { totals: rows[0], note: 'Jobs totals leave out applications reporting more than 5,000 jobs (not plausible); jobs_excluded_applications counts them.' };
 }
 
@@ -285,7 +285,7 @@ const EVAL_NOTE = 'Scores, ranks, bands, eligibility tests E1-E10 and justificat
 
 const slim = (d) => ({
   application_number: d.application_number, cluster_name: d.cluster_name, county: d.county, value_chain: d.value_chain,
-  score: d.score, band: d.band, rank_among_eligible: d.rank, eligibility: d.eligibility,
+  score: d.score, band: d.band, rank_by_score_of_all: d.rank, eligibility: d.eligibility,
   eligibility_tests: d.tests, financial_screening: d.financial.result, category: d.financial.category,
   matching_grant_requested: d.financial.grant, total_project_cost: d.financial.total, cluster_cash_contribution: d.financial.contribution,
   meets_50_percent_cash: d.financial.meets_50_percent_cash, contribution_shortfall: d.financial.contribution_shortfall, financial_issues: d.financial.issues,
@@ -300,7 +300,7 @@ async function getEvaluation({ application_number }) {
 
 async function listEligible() {
   const { data } = await getEvaluationList();
-  const rows = data.filter((d) => d.rank != null).sort((a, b) => a.rank - b.rank);
+  const rows = data.filter((d) => d.eligibility === 'PASS').sort((a, b) => a.rank - b.rank);
   return {
     note: EVAL_NOTE,
     rule: 'Clusters whose eligibility check is PASS, ranked by score. This is a ranking, not a funding decision: selection is made by MSEA.',

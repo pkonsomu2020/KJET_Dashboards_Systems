@@ -181,7 +181,7 @@ export async function getEvaluationDetail(applicationNumber) {
   const [{ rows: crit }, { rows: elig }, { rows: [{ n: peers }] }] = await Promise.all([
     pool.query('SELECT code, criterion, label, weight, rating FROM cluster_eval_criteria WHERE application_number = $1 ORDER BY code', [app]),
     pool.query('SELECT test, label, hint, decision FROM cluster_eval_eligibility WHERE application_number = $1 ORDER BY LENGTH(test), test', [app]),
-    pool.query('SELECT COUNT(*)::int AS n FROM cluster_evaluation WHERE eligibility = \'PASS\''),
+    pool.query('SELECT COUNT(*)::int AS n FROM cluster_evaluation WHERE total_score IS NOT NULL'),
   ]);
   const tests = Object.fromEntries(elig.map((t) => [t.test, t.decision]));
   const base = shapeRow(r, tests);
@@ -204,7 +204,7 @@ export async function getEvaluationDetail(applicationNumber) {
     },
     evaluator_finance: { result: r.workbook_financial_result, category: r.fs_category, document_check: r.fs_doc_check, issues: r.fs_issues, note: r.fs_note },
     financial_detail: fin,
-    eligible_clusters: peers,
+    clusters_ranked: peers,
     source: { file: r.source_file, imported_at: r.imported_at },
   };
 }

@@ -153,8 +153,8 @@ export function ScoreHero({ d }: { d: EvalDetail }) {
         <div style={{ marginTop: 8 }}><BandChip band={d.band} score={d.score} /></div>
       </div>
       <div className="eval-facts">
-        <div><strong>{d.rank != null ? `#${d.rank} of ${d.eligible_clusters}` : 'Not ranked'}</strong><span>Among eligible clusters</span></div>
-        <div><strong>{d.county_rank != null ? `#${d.county_rank}` : 'Not ranked'}</strong><span>In {d.county}</span></div>
+        <div><strong>{d.rank != null ? `#${d.rank} of ${d.clusters_ranked}` : 'Not scored'}</strong><span>Rank by score</span></div>
+        <div><strong>{d.county_rank != null ? `#${d.county_rank}` : 'Not scored'}</strong><span>In {d.county}</span></div>
       </div>
       <div className="eval-gates">
         <StatusChip value={d.eligibility} empty="Eligibility pending" />

@@ -23,7 +23,9 @@ const cmp = (group, item, report, dash, tol = 0.05) => results.push({ group, ite
 // ── dashboard-side figures ──
 const { rows: fin } = await pool.query(`SELECT c.application_number a, c.legal_form lf, f.total_project_cost t, f.cluster_contribution cc, f.grant_requested g,
   m.total_members tm, m.women w, m.youth y, m.pwd p FROM clusters c LEFT JOIN cluster_financials f ON f.cluster_id=c.id LEFT JOIN cluster_membership m ON m.cluster_id=c.id`);
-const F = new Map(fin.map((r) => [r.a, r]));
+const portal = new Map((await pool.query('SELECT application_number a, portal_men, portal_women, portal_youth, portal_pwd FROM cluster_evaluation')).rows.map((r) => [r.a, r]));
+// membership is the portal register's figures where the sheet has them (as in the report), else the application's
+const F = new Map(fin.map((r) => { const p = portal.get(r.a); return [r.a, { ...r, tm: p?.portal_men != null ? p.portal_men + p.portal_women : r.tm, w: p?.portal_women ?? r.w, y: p?.portal_youth ?? r.y, p: p?.portal_pwd ?? r.p }]; }));
 const sum = (arr, fn) => arr.reduce((s, x) => s + (fn(x) ?? 0), 0);
 const M = 1e6;
 // amounts are the application amounts as evaluated (the evaluation sheet), as in the report; members come from the application files
@@ -56,7 +58,7 @@ cmp('Annex B', 'window equals the category from Drive', 85 - winDiffs.length, 85
 cmp('Annex B', 'screening result equals the dashboard', 85 - screenDiffs.length, 85);
 
 // ── rank order: the report ranks all 85 by score ──
-const order = [...D].sort((a, b) => (b.score - a.score) || ((b.criteria[1].score ?? 0) - (a.criteria[1].score ?? 0)) || ((b.criteria[0].score ?? 0) - (a.criteria[0].score ?? 0)) || ((b.criteria[5].score ?? 0) - (a.criteria[5].score ?? 0)));
+const order = [...D].sort((x, y) => x.rank - y.rank);
 const repOrder = annex.map((r) => r[1]);
 cmp('Annex B', 'rank order of all 85 (same position)', repOrder.filter((a, i) => order[i]?.application_number === a).length, 85, 4);
 

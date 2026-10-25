@@ -133,11 +133,23 @@ for (let r = 6; r <= 120; r++) {
 }
 check('screening compared on all 85 clusters', compared === 85, String(compared));
 
-// ── Ranks among eligible clusters, recomputed independently; no funding selection is stored ──
-const eligible = sheetScores.filter((s) => s.elig === 'PASS').sort((a, b) => (b.total - a.total) || (b.c2 - a.c2) || (b.c1 - a.c1) || (b.c6 - a.c6));
-eligible.forEach((s, i) => check(`${s.app} rank`, byApp.get(s.app).rank === i + 1, `${byApp.get(s.app).rank} vs ${i + 1}`));
-check('not-eligible clusters are not ranked', db.filter((d) => d.eligibility !== 'PASS').every((d) => d.rank == null));
+// ── Rank of all 85 by score (as in the report's Annex B), recomputed independently; no funding selection is stored ──
+const nameBy = Object.fromEntries(db.map((d) => [d.application_number, ''])); for (let r = 6; r <= 120; r++) { const a = norm(cell('SCORECARD', `C${r}`)); if (a.startsWith('KJET-')) nameBy[a] = String(cell('SCORECARD', `D${r}`)); }
+const byMeritAll = [...sheetScores].sort((a, b) => (b.total - a.total) || (nameBy[a.app] < nameBy[b.app] ? -1 : nameBy[a.app] > nameBy[b.app] ? 1 : 0));
+byMeritAll.forEach((s, i) => check(`${s.app} rank`, byApp.get(s.app).rank === i + 1, `${byApp.get(s.app).rank} vs ${i + 1}`));
 check('no cluster is marked as selected for funding', db.every((d) => !d.shortlisted && d.shortlist_rank == null));
+
+// ── Membership from the portal register: Register tab, B app, U men, V women, W youth, X PWD ──
+for (let r = 6; r <= 120; r++) {
+  const app = norm(cell('Register', `B${r}`));
+  if (!app.startsWith('KJET-')) continue;
+  const d = byApp.get(app);
+  const iv = (ref) => { const v = cell('Register', ref); return v === '' ? null : Math.round(Number(v)); };
+  check(`${app} portal men`, d.portal_men === iv(`U${r}`), `${d.portal_men} vs ${iv(`U${r}`)}`);
+  check(`${app} portal women`, d.portal_women === iv(`V${r}`), `${d.portal_women} vs ${iv(`V${r}`)}`);
+  check(`${app} portal youth`, d.portal_youth === iv(`W${r}`), `${d.portal_youth} vs ${iv(`W${r}`)}`);
+  check(`${app} portal PWD`, d.portal_pwd === iv(`X${r}`), `${d.portal_pwd} vs ${iv(`X${r}`)}`);
+}
 
 // ── The named primary assessor and expert reviewer, as the report says the dashboard publishes them ──
 for (let r = 6; r <= 120; r++) {

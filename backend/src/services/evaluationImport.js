@@ -70,6 +70,10 @@ export async function ensureEvaluationSchema(db) {
       ADD COLUMN IF NOT EXISTS fs_issues          TEXT,
       ADD COLUMN IF NOT EXISTS fs_note            TEXT,
       ADD COLUMN IF NOT EXISTS fs_category        TEXT,
+      ADD COLUMN IF NOT EXISTS portal_men         INTEGER,
+      ADD COLUMN IF NOT EXISTS portal_women       INTEGER,
+      ADD COLUMN IF NOT EXISTS portal_youth       INTEGER,
+      ADD COLUMN IF NOT EXISTS portal_pwd         INTEGER,
       ADD COLUMN IF NOT EXISTS assessed_on        DATE,
       ADD COLUMN IF NOT EXISTS reviewed_on        DATE,
       ADD COLUMN IF NOT EXISTS eligibility_assessor TEXT,
@@ -261,16 +265,31 @@ function parseEvaluationWorkbook(wb, sourceFile) {
     rows.push(row);
   }
 
-  // Ranks among eligible (PASS) clusters; ties broken by C2, then C1, then C6 weighted score (the workbook's tie-break order)
-  const byMerit = (a, b) => (b.total_score - a.total_score) || (b.c2_score - a.c2_score) || (b.c1_score - a.c1_score) || (b.c6_score - a.c6_score);
-  const eligible = rows.filter((r) => r.eligibility === 'PASS' && r.total_score != null).sort(byMerit);
-  eligible.forEach((r, i) => { r.rank = i + 1; });
+  // Rank of all clusters by total score, exactly as the selection report's Annex B orders them: equal scores are listed by
+  // cluster name (plain, case-sensitive A to Z). The county rank is the same ordering within the cluster's county.
+  const nameOf = new Map(scoreRows.map((r) => [String(r[scCol.app]).trim(), String(r[s('Cluster name')] ?? '')]));
+  const byMerit = (a, b) => (b.total_score - a.total_score) || (nameOf.get(a.application_number) < nameOf.get(b.application_number) ? -1 : nameOf.get(a.application_number) > nameOf.get(b.application_number) ? 1 : 0);
+  const scored = rows.filter((r) => r.total_score != null).sort(byMerit);
+  scored.forEach((r, i) => { r.rank = i + 1; });
   const seenInCounty = new Map();
   const countyOf = new Map(scoreRows.map((r) => [String(r[scCol.app]).trim(), clean(r[s('County')])]));
-  for (const r of eligible) {
+  for (const r of scored) {
     const k = countyOf.get(r.application_number);
     seenInCounty.set(k, (seenInCounty.get(k) ?? 0) + 1);
     r.county_rank = seenInCounty.get(k);
+  }
+
+  // Membership as recorded in the portal register (the sheet's Register tab): the figures the selection report totals
+  const reg = sheetRows(wb, 'Register');
+  const rc = columnFinder(reg[4], 'Register');
+  const regCol = { app: rc('Application No.'), men: rc('Members – men'), women: rc('Members – women'), youth: rc('Members – youth'), pwd: rc('Members – PWD') };
+  const regByApp = new Map(reg.slice(5).filter((r) => String(r[regCol.app]).startsWith('KJET-')).map((r) => [String(r[regCol.app]).trim(), r]));
+  for (const r of rows) {
+    const g = regByApp.get(r.application_number);
+    r.portal_men = g ? intOrNull(g[regCol.men]) : null;
+    r.portal_women = g ? intOrNull(g[regCol.women]) : null;
+    r.portal_youth = g ? intOrNull(g[regCol.youth]) : null;
+    r.portal_pwd = g ? intOrNull(g[regCol.pwd]) : null;
   }
   return { rows, criteria, eligibility, sourceFile, minScore };
 }

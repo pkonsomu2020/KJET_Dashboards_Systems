@@ -447,7 +447,7 @@ export function ScorecardPage({ onSelect }: { onSelect: (a: string) => void }) {
                             ))}
                           </div>
                         </td>
-                        <td><ScoreBar score={r.score} compact />{r.rank != null && <span className="gr-sub">#{r.rank} among eligible</span>}</td>
+                        <td><ScoreBar score={r.score} compact />{r.rank != null && <span className="gr-sub">#{r.rank} of 85 by score</span>}</td>
                         <td>
                           <BandChip band={r.band} score={r.score} />
                         </td>

@@ -30,11 +30,12 @@ export async function getPortfolioSummary() {
       COALESCE(SUM(f.grant_requested),0)     AS grant,
       COALESCE(SUM(f.cluster_contribution),0) AS contribution,
       COALESCE(SUM(f.section5_budget_total),0) AS budget,
-      COALESCE(SUM(m.total_members),0)       AS members,
-      COALESCE(SUM(m.women),0)               AS women,
-      COALESCE(SUM(m.men),0)                 AS men,
-      COALESCE(SUM(m.youth),0)               AS youth,
-      COALESCE(SUM(m.pwd),0)                 AS pwd,
+      -- membership totals are the portal register's figures (the sheet's Register tab), as the selection report totals them
+      COALESCE(SUM(COALESCE(ev.portal_men + ev.portal_women, m.total_members)),0) AS members,
+      COALESCE(SUM(COALESCE(ev.portal_women, m.women)),0)               AS women,
+      COALESCE(SUM(COALESCE(ev.portal_men, m.men)),0)                 AS men,
+      COALESCE(SUM(COALESCE(ev.portal_youth, m.youth)),0)               AS youth,
+      COALESCE(SUM(COALESCE(ev.portal_pwd, m.pwd)),0)                 AS pwd,
       COALESCE(SUM(e.jobs_today) FILTER (WHERE ${JOBS_OK}),0)  AS jobs_today,
       COALESCE(SUM(e.jobs_year1) FILTER (WHERE ${JOBS_OK}),0)  AS jobs_year1,
       COALESCE(SUM(e.jobs_year3) FILTER (WHERE ${JOBS_OK}),0)  AS jobs_year3,
@@ -48,6 +49,7 @@ export async function getPortfolioSummary() {
     LEFT JOIN cluster_financials f  ON f.cluster_id = c.id
     LEFT JOIN cluster_membership m  ON m.cluster_id = c.id
     LEFT JOIN cluster_employment e  ON e.cluster_id = c.id
+    LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
   `);
 
   const result = rows[0];

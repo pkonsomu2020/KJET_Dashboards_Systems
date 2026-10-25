@@ -133,7 +133,7 @@ export async function buildEvaluationReport(applicationNumber) {
   });
   doc.y = by + 68;
   facts([
-    ['Rank among eligible clusters', d.rank != null ? `${d.rank} of ${d.eligible_clusters}${d.county_rank ? ` (${d.county_rank} in ${d.county})` : ''}` : 'Not ranked (not eligible)'],
+    ['Rank by score', d.rank != null ? `${d.rank} of ${d.clusters_ranked}${d.county_rank ? ` (${d.county_rank} in ${d.county})` : ''}` : 'Not scored'],
   ]);
   para('This report records the evaluation scores and findings. Approval for financing rests with the Director General/CEO of MSEA, after review by the Independent Evaluation Technical Panel (IETP) and onsite verification.', { size: 8, color: COLORS.muted });
 
