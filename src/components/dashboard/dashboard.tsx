@@ -41,7 +41,7 @@ const titles: Record<DashboardView, [string, string]> = {
   overview: ['Portfolio overview', 'Cohort 1 co-investment matching grants & business development services'],
   clusters: ['Cluster profile',   '85 beneficiary clusters — search, filter and inspect every application'],
   evaluation:  ['Evaluation overview', 'Screening, eligibility and scoring of every cluster, read live from the evaluation sheet'],
-  financial:   ['Financial screening', 'The 50-50 co-investment rule and Window 1 and Window 2 limits, checked against each application on Drive'],
+  financial:   ['Financial screening', 'The 50-50 co-investment rule and Window 1 and Window 2 limits, checked for every application'],
   eligibility: ['Eligibility', 'The ten eligibility tests (E1 to E10) for every cluster, with the reasons'],
   scorecard:   ['Scoring', 'Scores of every cluster against the six evaluation criteria'],
 };
@@ -406,7 +406,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                             <div><div className="metric-label">Section 5 budget</div><div className="metric-value">{money(allBudget)}</div></div>
                             <div><div className="metric-label">Project cost (Section 3)</div><div className="metric-value">{money(allCost)}</div></div>
                           </div>
-                          <p className="text-xs leading-7 text-muted-foreground mt-4">The operational budget can include working capital, buildings and pre-operating expenses outside eligible machinery costs.</p>
+                          <p className="text-xs leading-7 text-muted-foreground mt-4">The operational budget can include working capital, buildings and pre-operating expenses outside the machinery and equipment and bundled services costs.</p>
                         </ChartPanel>
                       </div>
                     </>
@@ -490,7 +490,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                     <AlertTriangle size={18} />
                     <span>
                       <strong>{allReviews} applications require matching-rule review; {allMissing} have missing project costs.</strong><br />
-                      Grant must be at most 50% and KES 32M; cluster cash at least 50%.
+                      The matching grant must be at most 50% of the total project cost and within the Window ceiling (KES 5M for Window 1, KES 32M for Window 2); the cluster cash contribution must be at least 50%.
                     </span>
                   </div>
                   <div className="analytics-grid">

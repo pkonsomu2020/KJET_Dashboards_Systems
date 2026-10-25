@@ -288,9 +288,9 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
                         <td>{fin.category}</td>
                         <td className="gr-num">
                           <strong>{kes(fin.grant)}</strong>
-                          <span className="gr-sub">grant requested</span>
+                          <span className="gr-sub">matching grant requested</span>
                           <span className="gr-sub">cost {kes(fin.total)} · cash {kes(fin.contribution)}</span>
-                          {fin.drive.differs && <span className="gr-sub ev-sheetdiff" title={`Application on Drive today: cost ${kes(fin.drive.total)}, cash ${kes(fin.drive.contribution)}, grant ${kes(fin.drive.grant)}`}>Drive today: grant {kes(fin.drive.grant)}</span>}
+                          {fin.drive.differs && <span className="gr-sub ev-sheetdiff" title={`Current application: cost ${kes(fin.drive.total)}, cluster cash contribution ${kes(fin.drive.contribution)}, matching grant ${kes(fin.drive.grant)}`}>Current application: matching grant {kes(fin.drive.grant)}</span>}
                         </td>
                         <td>
                           <strong className={fin.meets_50_percent_cash === false ? 'ev-bad' : undefined}>{pct(fin.cluster_share)}</strong>

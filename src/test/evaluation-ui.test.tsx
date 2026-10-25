@@ -95,7 +95,7 @@ describe('Evaluation pages', () => {
     expect(screen.queryByText(/Live from the online evaluation sheet/)).toBeNull();
   });
 
-  it('financial screening shows Drive figures, the cash share and the shortfall, largest shortfall first', () => {
+  it('financial screening shows the evaluation figures, the cluster cash share and the shortfall, largest shortfall first', () => {
     renderWith(<FinancialScreeningPage onSelect={() => {}} />);
     const names = screen.getAllByText(/ALPHA DAIRY|BETA STONE/).map((n) => n.textContent ?? '');
     expect(names[0]).toContain('BETA STONE');

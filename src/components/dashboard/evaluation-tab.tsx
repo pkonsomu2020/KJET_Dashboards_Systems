@@ -41,7 +41,7 @@ export function EvaluationTab({ applicationNumber }: { applicationNumber: string
         <ScorePanel d={d} />
       </section>
 
-      <p className="gr-foot">Scores and findings come from the evaluation sheet; amounts and the 50-50 checks are worked out from the application on Drive. Recommended clusters are provisionally recommended: they remain subject to review by the Independent Evaluation Technical Panel (IETP), onsite verification and approval for financing by the MSEA Director General/CEO.</p>
+      <p className="gr-foot">Scores and findings come from the evaluation sheet; amounts and the 50-50 checks are worked out from the figures in the current application. Recommended clusters are provisionally recommended: they remain subject to review by the Independent Evaluation Technical Panel (IETP), onsite verification and approval for financing by the MSEA Director General/CEO.</p>
     </>
   );
 }

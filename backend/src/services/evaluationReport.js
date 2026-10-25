@@ -1,7 +1,7 @@
 /**
  * evaluationReport.js
  *
- * Builds one cluster's evaluation report as a PDF: summary, Drive figures, financial screening,
+ * Builds one cluster's evaluation report as a PDF: summary, application figures, financial screening,
  * eligibility tests E1-E10 with reasons, and the scorecard with every rating and justification.
  * The named primary assessor and expert reviewer are shown, as the selection report says they are published.
  */
@@ -137,7 +137,7 @@ export async function buildEvaluationReport(applicationNumber) {
   ]);
   para('This report records the evaluation scores and findings. Approval for financing rests with the Director General/CEO of MSEA, after review by the Independent Evaluation Technical Panel (IETP) and onsite verification.', { size: 8, color: COLORS.muted });
 
-  // ── Figures the evaluation was made on, with Drive today beside them ──
+  // ── Figures the evaluation was made on, with the current application beside them ──
   const f = d.financial_detail;
   h2('1. Application figures (as evaluated)');
   facts([
@@ -146,7 +146,7 @@ export async function buildEvaluationReport(applicationNumber) {
     ['Cluster cash contribution', kes(f.figures.contribution)],
     ['Machinery subtotal', kes(f.figures.machinery)],
     ['Services subtotal', kes(f.figures.services)],
-    ...(d.financial.drive.differs ? [['Application on Drive today', `cost ${kes(d.financial.drive.total)}, grant ${kes(d.financial.drive.grant)}, cash ${kes(d.financial.drive.contribution)}`, COLORS.hold]] : []),
+    ...(d.financial.drive.differs ? [['Current application', `cost ${kes(d.financial.drive.total)}, matching grant ${kes(d.financial.drive.grant)}, cluster cash contribution ${kes(d.financial.drive.contribution)}`, COLORS.hold]] : []),
     ['Members / women / youth', `${d.members ?? 'n/a'} / ${d.women ?? 'n/a'} / ${d.youth ?? 'n/a'}`],
     ['Jobs today / year 3 (applicant-reported)', `${d.jobs_today ?? 'n/a'} / ${d.jobs_year3 ?? 'n/a'}`],
   ]);
@@ -212,7 +212,7 @@ export async function buildEvaluationReport(applicationNumber) {
   else doc.moveDown(2);
 
   // ── Footer on every page ──
-  const stamp = `Generated ${new Date().toISOString().slice(0, 10)}  |  Scores and findings: ${clean(d.source.file ?? 'evaluation sheet')}  |  Amounts: application data on Drive`;
+  const stamp = `Generated ${new Date().toISOString().slice(0, 10)}  |  Scores and findings: ${clean(d.source.file ?? 'evaluation sheet')}  |  Amounts: the Co-investment Application`;
   const range = doc.bufferedPageRange();
   for (let i = range.start; i < range.start + range.count; i++) {
     doc.switchToPage(i);

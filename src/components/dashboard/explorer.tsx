@@ -228,8 +228,8 @@ export function ClusterExplorer({
               </div>
               <SplitBar cluster={c} />
               <div className="flex justify-between text-[9px] text-muted-foreground">
-                <span>{Number(c.grant_share_pct).toFixed(1)}% grant</span>
-                <span>{Number(c.cluster_share_pct).toFixed(1)}% cash</span>
+                <span>{Number(c.grant_share_pct).toFixed(1)}% matching grant</span>
+                <span>{Number(c.cluster_share_pct).toFixed(1)}% cluster cash</span>
               </div>
               <p className="text-[10px] text-muted-foreground mt-4">
                 {number(Number(c.total_members))} members ·{' '}

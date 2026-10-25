@@ -27,7 +27,7 @@ export function SplitBar({ cluster, large = false }: {
   return (
     <div
       className={`split-track ${large ? 'financial-split' : ''}`}
-      aria-label={`Grant ${Number(cluster.grant_share_pct).toFixed(1)}%, cluster cash ${Number(cluster.cluster_share_pct).toFixed(1)}%`}
+      aria-label={`Matching grant ${Number(cluster.grant_share_pct).toFixed(1)}%, cluster cash contribution ${Number(cluster.cluster_share_pct).toFixed(1)}%`}
     >
       <span className="grant" style={{ width: `${grantPct}%` }} />
       <span className="cash"  style={{ width: `${cashPct}%` }} />
@@ -225,7 +225,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
               <AlertTriangle size={16} />
               <div>
                 <strong>{status}</strong><br />
-                Grant must not exceed 50% of eligible costs or KES 32M. Cluster cash must be at least 50%.
+                The matching grant must be at most 50% of the total project cost and within the Window ceiling (KES 5M for Window 1, KES 32M for Window 2); the cluster cash contribution must be at least 50%.
               </div>
             </div>
             {Math.abs(grantReq + clusterCon - projectCost) > 0.01 && (

@@ -41,7 +41,7 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
           <Row label="Services subtotal" value={kes(f.figures.services)} />
           {d.financial.drive.differs && (
             <>
-              <h4 style={{ marginTop: 12 }}>Application on Drive today</h4>
+              <h4 style={{ marginTop: 12 }}>Current application</h4>
               <Row label="Total project cost" value={kes(d.financial.drive.total)} tone="warn" />
               <Row label="Matching grant requested" value={kes(d.financial.drive.grant)} tone="warn" />
               <Row label="Cluster cash contribution" value={kes(d.financial.drive.contribution)} tone="warn" />
@@ -71,7 +71,7 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
       </div>
       <div className="ev-result"><span>Screening result</span><StatusChip value={f.result} /></div>
       {d.evaluator_finance.result && d.evaluator_finance.result !== f.result && (
-        <p className="ev-note"><strong>Evaluation sheet result: </strong>{d.evaluator_finance.result}. The sheet screened this cluster on the figures it held at the time; the result above uses the application figures on Drive today.</p>
+        <p className="ev-note"><strong>Evaluation sheet result: </strong>{d.evaluator_finance.result}. The sheet screened this cluster on the figures it held at the time; the result above uses the figures in the current application.</p>
       )}
       {f.issues.length > 0 && (
         <div className="ev-issues">
