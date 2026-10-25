@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { downloadEvaluationReport, downloadEvaluationReports } from '@/data/api';
 
 /** Downloads one cluster's evaluation report as a PDF. */
-export function ReportButton({ applicationNumber, clusterName, label, size = 'icon' }: {
-  applicationNumber: string; clusterName: string; label?: string; size?: 'icon' | 'sm';
+export function ReportButton({ applicationNumber, clusterName, label = 'Download report' }: {
+  applicationNumber: string; clusterName: string; label?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -16,10 +16,10 @@ export function ReportButton({ applicationNumber, clusterName, label, size = 'ic
   };
   const title = failed ? 'The report could not be created. Try again.' : `Download the evaluation report of ${clusterName} (PDF)`;
   return (
-    <Button type="button" variant={size === 'icon' ? 'ghost' : 'outline'} size={size} disabled={busy} onClick={run}
-      aria-label={`Download evaluation report of ${clusterName}`} title={title} className={failed ? 'report-failed' : ''}>
-      {busy ? <Loader2 className="animate-spin" /> : <FileDown className={size === 'icon' ? 'text-primary' : ''} />}
-      {label}
+    <Button type="button" variant="outline" size="sm" disabled={busy} onClick={run}
+      aria-label={`Download evaluation report of ${clusterName}`} title={title} className={`report-btn ${failed ? 'report-failed' : ''}`}>
+      {busy ? <Loader2 className="animate-spin" /> : <FileDown />}
+      {busy ? 'Preparing...' : failed ? 'Try again' : label}
     </Button>
   );
 }

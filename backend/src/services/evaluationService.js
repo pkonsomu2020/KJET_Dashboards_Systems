@@ -9,6 +9,7 @@ import pool from '../db/pool.js';
 import { cacheGet, cacheSet } from '../cache/redis.js';
 import { screenFinancials, RULES } from './financialScreening.js';
 import { getEvaluationSheetStatus } from './evaluationSheet.js';
+import { splitCriterionNotes, splitEligibilityNotes } from './evaluationNotes.js';
 
 const TTL = Number(process.env.CACHE_TTL_EVALUATION) || 60;
 
@@ -178,9 +179,9 @@ export async function getEvaluationDetail(applicationNumber) {
     criteria: CRITERIA.map((c, i) => ({
       code: c.code, label: c.label, weight: c.weight,
       rating: n(r[`c${i + 1}_rating`]), score: n(r[`c${i + 1}_score`]), justification: r[`c${i + 1}_evidence`],
-      indicators: crit.filter((x) => x.criterion === c.code).map((x) => ({ code: x.code, label: x.label, weight: n(x.weight), rating: n(x.rating) })),
+      indicators: crit.filter((x) => x.criterion === c.code).map((x) => ({ code: x.code, label: x.label, weight: n(x.weight), rating: n(x.rating), note: splitCriterionNotes(r[`c${i + 1}_evidence`])[x.code] ?? null })),
     })),
-    eligibility_tests: elig,
+    eligibility_tests: elig.map((t) => ({ ...t, note: splitEligibilityNotes(r.eligibility_reasons)[t.test] ?? null })),
     eligibility_reasons: r.eligibility_reasons,
     evidence_files: r.evidence_ids,
     expert_remarks: r.expert_remarks,

@@ -85,16 +85,16 @@ export function EligibilityPanel({ d }: { d: EvalDetail }) {
               <span>{t.label}</span>
               <StatusChip value={t.decision} empty="Pending" />
             </div>
-            <p>{t.hint ?? 'Nothing recorded.'}</p>
+            {t.hint && <p className="ev-hint"><em>Data check</em>{t.hint}</p>}
+            {t.note ? <p className="ev-assessor"><em>Assessor's note</em>{t.note}</p> : !t.hint && <p className="ev-hint">Nothing recorded.</p>}
           </div>
         ))}
       </div>
       <div className="ev-result"><span>Eligibility status</span><StatusChip value={d.eligibility} /></div>
-      {d.eligibility_reasons && (
+      {d.evidence_files && (
         <details className="eval-evidence">
-          <summary><span>Assessment notes and evidence</span></summary>
-          <p>{d.eligibility_reasons.replace(/\s(E(?:10|[1-9]) \((?:Pass|Hold|Fail)\):)/g, '\n$1')}</p>
-          {d.evidence_files && <p><strong>Evidence files: </strong>{d.evidence_files}</p>}
+          <summary><span>Evidence files</span></summary>
+          <p>{d.evidence_files}</p>
         </details>
       )}
     </div>
@@ -112,19 +112,20 @@ export function ScorePanel({ d }: { d: EvalDetail }) {
               <span>{k.code}: {k.label} <small className="text-muted-foreground">weight {k.weight}</small></span>
               <strong>{k.score ?? '-'} / {k.weight}</strong>
             </summary>
-            <table className="ev-ind">
-              <tbody>
-                {k.indicators.map((i) => (
-                  <tr key={i.code}>
-                    <td>{i.code}</td>
-                    <td>{i.label}</td>
-                    <td className="ev-w">{i.weight}%</td>
-                    <td className="ev-r"><span className={`rating tone-${i.rating == null ? 'neutral' : i.rating >= 4 ? 'good' : i.rating >= 3 ? 'warn' : 'bad'}`}>{i.rating ?? '-'}</span> / 5</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p>{k.justification ? k.justification.replace(/\s(C[1-6]\.\d \(\d\):)/g, '\n$1') : 'No justification recorded.'}</p>
+            <div className="ev-inds">
+              {k.indicators.map((i) => (
+                <div key={i.code} className="ev-ind-card">
+                  <div className="ev-ind-head">
+                    <strong>{i.code}</strong>
+                    <span>{i.label}</span>
+                    <small>{i.weight}%</small>
+                    <span className="ev-ind-rating"><b className={`rating tone-${i.rating == null ? 'neutral' : i.rating >= 4 ? 'good' : i.rating >= 3 ? 'warn' : 'bad'}`}>{i.rating ?? '-'}</b> / 5</span>
+                  </div>
+                  {i.note && <p>{i.note}</p>}
+                </div>
+              ))}
+              {!k.indicators.some((i) => i.note) && <p className="ev-assessor">{k.justification ?? 'No justification recorded.'}</p>}
+            </div>
           </details>
         ))}
       </div>

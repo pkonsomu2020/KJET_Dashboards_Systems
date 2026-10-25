@@ -83,6 +83,25 @@ export async function buildEvaluationReport(applicationNumber) {
     doc.fillColor(COLORS.ink).moveDown(0.3);
   };
 
+  /** A titled block with a status on the right and labelled lines underneath (one per test or sub-indicator). */
+  const card = (title, status, statusColor, lines) => {
+    const body = lines.filter(([, text]) => text);
+    const bodyH = body.reduce((h, [, text]) => h + doc.heightOfString(clean(text), { width: W - 24, fontSize: 8.5, lineGap: 1.5 }) + 12, 0);
+    room(24 + Math.min(bodyH, 90));
+    const y = doc.y;
+    doc.rect(M, y, W, 20).fill(COLORS.soft);
+    doc.rect(M, y, 3, 20).fill(statusColor);
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(COLORS.ink).text(clean(title), M + 10, y + 5.5, { width: W - 90, lineBreak: false, ellipsis: true });
+    if (status) doc.font('Helvetica-Bold').fontSize(9).fillColor(statusColor).text(clean(status), M + W - 76, y + 5.5, { width: 68, align: 'right', lineBreak: false });
+    doc.y = y + 24;
+    for (const [label, text] of body) {
+      if (label) doc.font('Helvetica-Bold').fontSize(7.5).fillColor(COLORS.muted).text(clean(label).toUpperCase(), M + 10, doc.y, { width: W - 20 });
+      doc.font('Helvetica').fontSize(8.5).fillColor(COLORS.ink).text(clean(text), M + 10, doc.y + 1, { width: W - 24, lineGap: 1.5 });
+      doc.moveDown(0.5);
+    }
+    doc.moveDown(0.25);
+  };
+
   // ── Title band ──
   doc.rect(0, 0, doc.page.width, 92).fill(COLORS.band);
   doc.font('Helvetica').fontSize(9).fillColor('#bcd3da').text('KJET CO-INVESTMENT  |  EVALUATION REPORT', M, 24);
@@ -152,14 +171,13 @@ export async function buildEvaluationReport(applicationNumber) {
 
   // ── Eligibility ──
   h2('3. Eligibility (tests E1 to E10)');
-  table([{ title: 'Test', width: 3 }, { title: 'Decision', width: 1.3 }, { title: 'What the data showed', width: 5 }],
-    d.eligibility_tests.map((t) => [`${t.test}  ${t.label}`, { text: t.decision ?? 'Pending', bold: true, color: tone(t.decision) }, (t.hint ?? '').split('\n')[0].slice(0, 220)]));
+  d.eligibility_tests.forEach((t) => {
+    card(`${t.test}  ${t.label}`, t.decision ?? 'Pending', tone(t.decision), [
+      ['Data check', (() => { const h = (t.hint ?? '').split(/\r?\n/)[0]; return h.length > 260 ? `${h.slice(0, 257)}...` : h || null; })()],
+      ["Assessor's note", t.note],
+    ]);
+  });
   facts([['Eligibility status', d.eligibility ?? 'Not assessed', statusTone(d.eligibility)]]);
-  if (d.eligibility_reasons) {
-    doc.moveDown(0.4);
-    para('Assessment notes', { bold: true });
-    para(d.eligibility_reasons.replace(/\s(E(?:10|[1-9]) \((?:Pass|Hold|Fail)\):)/g, '\n$1'), { size: 8.5 });
-  }
 
   // ── Scorecard ──
   h2('4. Scorecard (weighted assessment)');
@@ -167,15 +185,16 @@ export async function buildEvaluationReport(applicationNumber) {
     [...d.criteria.map((k) => [`${k.code}  ${k.label}`, `${k.weight}`, k.rating != null ? String(k.rating) : 'n/a', k.score != null ? `${k.score} / ${k.weight}` : 'n/a']),
       [{ text: 'Total', bold: true }, { text: '100', bold: true }, '', { text: score != null ? `${score} / 100` : 'n/a', bold: true }]]);
   for (const k of d.criteria) {
-    room(70);
-    doc.moveDown(0.5);
-    para(`${k.code}  ${k.label}   (${k.score ?? 'n/a'} of ${k.weight})`, { bold: true, color: COLORS.band });
-    table([{ title: 'Sub-indicator', width: 7 }, { title: 'Weight in criterion', width: 1.6 }, { title: 'Rating', width: 1 }],
-      k.indicators.map((i) => [`${i.code}  ${i.label}`, `${i.weight}%`, i.rating != null ? String(i.rating) : 'n/a']));
-    if (k.justification) {
-      para('Justification', { bold: true, size: 8.5 });
-      para(k.justification.replace(/\s(C[1-6]\.\d \(\d\):)/g, '\n$1'), { size: 8.5 });
-    }
+    room(60);
+    doc.moveDown(0.6);
+    para(`${k.code}  ${k.label}   (${k.score ?? 'n/a'} of ${k.weight} points)`, { bold: true, color: COLORS.band });
+    doc.moveDown(0.3);
+    const noted = k.indicators.some((i) => i.note);
+    k.indicators.forEach((i) => {
+      const rt = i.rating == null ? COLORS.muted : i.rating >= 4 ? COLORS.pass : i.rating >= 3 ? COLORS.hold : COLORS.fail;
+      card(`${i.code}  ${i.label}  (${i.weight}%)`, i.rating != null ? `${i.rating} / 5` : 'n/a', rt, noted ? [["Assessor's note", i.note]] : []);
+    });
+    if (!noted && k.justification) card('Justification', '', COLORS.muted, [[null, k.justification]]);
   }
 
   if (d.expert_remarks || d.moderation_note) {

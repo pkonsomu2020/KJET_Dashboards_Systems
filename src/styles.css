@@ -564,3 +564,21 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .report-failed { color:var(--danger); }
 @media (max-width:980px) { .ev-cols { grid-template-columns:1fr; } .ev-tests { grid-template-columns:1fr; } }
 @container (max-width: 760px) { .crit-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .ev-actions-cell { justify-content:flex-start; } }
+
+/* ── Report button and the organised assessor notes ── */
+.report-btn { font-weight:600;gap:6px;white-space:nowrap;border-color:var(--primary);color:var(--primary);background:var(--primary-soft); }
+.report-btn:hover:not(:disabled) { background:var(--primary);color:var(--primary-foreground); }
+.profile-link { font-size:11px;color:var(--muted-foreground);justify-content:flex-start;gap:4px;height:26px;padding:0 8px; }
+.ev-actions-cell { flex-direction:column;align-items:stretch;gap:4px; }
+.ev-ready-row { grid-template-columns:minmax(0,1fr) 150px auto; }
+@media (max-width:760px) { .ev-ready-row { grid-template-columns:minmax(0,1fr) auto; } }
+.ev-hint, .ev-assessor { margin:8px 0 0;font-size:11px;line-height:1.65;color:var(--muted-foreground);overflow-wrap:anywhere;white-space:pre-line; }
+.ev-hint em, .ev-assessor em { display:block;font-style:normal;font-size:9.5px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted-foreground);opacity:.8;margin-bottom:2px; }
+.ev-assessor { color:var(--foreground);padding-left:10px;border-left:2px solid var(--primary); }
+.ev-inds { display:flex;flex-direction:column;gap:8px;padding:2px 14px 14px; }
+.ev-ind-card { border:1px solid var(--border);border-radius:7px;padding:9px 12px;background:var(--background); }
+.ev-ind-head { display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;font-size:11.5px; }
+.ev-ind-head strong { font-variant-numeric:tabular-nums; }
+.ev-ind-head small { color:var(--muted-foreground); }
+.ev-ind-rating { white-space:nowrap;color:var(--muted-foreground);font-size:11px; }
+.ev-ind-card p { margin:7px 0 0;padding-left:10px;border-left:2px solid var(--primary);font-size:11px;line-height:1.65;color:var(--foreground);overflow-wrap:anywhere; }

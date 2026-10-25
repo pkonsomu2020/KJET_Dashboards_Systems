@@ -23,7 +23,7 @@ export function EvaluationTab({ applicationNumber }: { applicationNumber: string
     <>
       <ScoreHero d={d} />
       <div className="ev-actions">
-        <ReportButton applicationNumber={d.application_number} clusterName={d.cluster_name} size="sm" label="Download evaluation report (PDF)" />
+        <ReportButton applicationNumber={d.application_number} clusterName={d.cluster_name} label="Download report (PDF)" />
       </div>
 
       <section className="profile-section">
