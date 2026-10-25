@@ -166,7 +166,10 @@ for (const a of live.keys()) {
     for (const c of d.criteria) for (const i of c.indicators) check('detail: sub-indicator rating = sheet', close(i.rating, cell('SCORECARD', `${cols[i.code]}${sr}`)), `${a} ${i.code}`);
     check('detail: expert remarks = sheet column', norm(d.expert_remarks) === norm(cell('SCORECARD', `BE${sr}`)), a);
   }
-  check('names: no assessor or reviewer field in the detail', !/"(assessor|reviewer)[a-z_]*":/i.test(JSON.stringify(d ?? {})), a);
+  if (d && sr) {
+    check('names: primary assessor = sheet', norm(d.assessment?.assessor) === norm(cell('SCORECARD', `BA${sr}`)), a);
+    check('names: expert reviewer = sheet', norm(d.assessment?.reviewer) === norm(cell('SCORECARD', `BD${sr}`)), a);
+  }
 }
 const pdf = await fetch(`${BASE}/api/evaluation/clusters/${[...live.keys()][0]}/report.pdf`, { headers: { Cookie: cookie, Origin: BASE } });
 const buf = Buffer.from(await pdf.arrayBuffer());

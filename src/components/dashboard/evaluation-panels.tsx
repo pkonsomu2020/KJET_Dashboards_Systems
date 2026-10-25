@@ -102,6 +102,7 @@ export function EligibilityPanel({ d }: { d: EvalDetail }) {
         ))}
       </div>
       <div className="ev-result"><span>Eligibility status</span><StatusChip value={d.eligibility} /></div>
+      {d.assessment.eligibility_assessor && <p className="ev-note"><strong>Assessed by: </strong>{d.assessment.eligibility_assessor}{d.assessment.eligibility_assessed_on ? ` · ${d.assessment.eligibility_assessed_on}` : ''}</p>}
       {d.evidence_files && (
         <details className="eval-evidence">
           <summary><span>Evidence files</span></summary>
@@ -114,8 +115,13 @@ export function EligibilityPanel({ d }: { d: EvalDetail }) {
 
 /** Scorecard: six weighted criteria, their sub-indicator ratings and the written justification. */
 export function ScorePanel({ d }: { d: EvalDetail }) {
+  const a = d.assessment;
   return (
     <div className="ev-panel">
+      <div className="ev-signoff">
+        <span><em>Primary assessor</em>{a.assessor ?? 'Not recorded'}{a.assessed_on ? ` · ${a.assessed_on}` : ''}</span>
+        <span><em>Expert reviewer</em>{a.reviewer ?? 'Not yet reviewed'}{a.reviewed_on ? ` · ${a.reviewed_on}` : ''}</span>
+      </div>
       <div className="eval-criteria">
         {d.criteria.map((k) => (
           <details key={k.code} className="eval-evidence">

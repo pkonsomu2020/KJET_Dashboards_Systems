@@ -70,6 +70,10 @@ export async function ensureEvaluationSchema(db) {
       ADD COLUMN IF NOT EXISTS fs_issues          TEXT,
       ADD COLUMN IF NOT EXISTS fs_note            TEXT,
       ADD COLUMN IF NOT EXISTS fs_category        TEXT,
+      ADD COLUMN IF NOT EXISTS assessed_on        DATE,
+      ADD COLUMN IF NOT EXISTS reviewed_on        DATE,
+      ADD COLUMN IF NOT EXISTS eligibility_assessor TEXT,
+      ADD COLUMN IF NOT EXISTS eligibility_assessed_on DATE,
       ADD COLUMN IF NOT EXISTS eval_machinery     NUMERIC,
       ADD COLUMN IF NOT EXISTS eval_services      NUMERIC,
       ADD COLUMN IF NOT EXISTS eval_contribution  NUMERIC,
@@ -108,6 +112,12 @@ const numOrNull = (v) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 };
+/** Excel stores a date as a day number (46319 is 25 October 2026); returns YYYY-MM-DD, or null for anything else. */
+const excelDate = (v) => {
+  const n = numOrNull(v);
+  if (n == null || n < 30000 || n > 80000) return null;
+  return new Date(Math.round((n - 25569) * 86400000)).toISOString().slice(0, 10);
+};
 const intOrNull = (v) => { const n = numOrNull(v); return n == null ? null : Math.round(n); };
 
 function sheetRows(wb, name) {
@@ -143,7 +153,8 @@ export function readEvaluationBuffer(buffer, sourceFile) {
  * (E1-E10 and the status) and Financial_Screening (the evaluator's findings). Nothing is taken from
  * Final_Decision: it only repeats these tabs and breaks when columns move. Ranks among the
  * eligible clusters are worked out here from the scores. Selecting clusters for funding is a decision
- * for MSEA and is not made here. Names of assessors and reviewers are not read.
+ * for MSEA and is not made here. The named primary assessor and expert reviewer are read, as the
+ * selection report says the dashboard publishes them.
  */
 function parseEvaluationWorkbook(wb, sourceFile) {
   // ── SCORECARD (header on row 5) ──
@@ -155,6 +166,10 @@ function parseEvaluationWorkbook(wb, sourceFile) {
   };
   const optional = (name) => { try { return s(name); } catch { return -1; } };
   scCol.expertRemarks = optional('Expert remarks');
+  scCol.assessor = optional('Primary assessor');
+  scCol.assessedOn = optional('Date');
+  scCol.reviewer = optional('Expert reviewer') >= 0 ? optional('Expert reviewer') : optional('Independent reviewer');
+  scCol.reviewedOn = optional('Review date');
   for (let c = 1; c <= 6; c++) {
     scCol[`c${c}r`] = s(`C${c} rating`);
     scCol[`c${c}s`] = s(`C${c} weighted`);
@@ -181,7 +196,8 @@ function parseEvaluationWorkbook(wb, sourceFile) {
     if (hi < 0 || di < 0) throw new Error(`Eligibility: columns for test E${n} not found: has the workbook layout changed?`);
     eTests.push({ n, test: `E${n}`, label: eh[hi].replace(/^E\d+ – /, '').replace(/ – system hint$/, ''), hint: hi, decision: di });
   }
-  const elCol = { app: e('Application No.'), reasons: e('Reasons for Fail / Hold'), evidence: e('Evidence IDs') };
+  const elOpt = (name) => { try { return e(name); } catch { return -1; } };
+  const elCol = { app: e('Application No.'), reasons: e('Reasons for Fail / Hold'), evidence: e('Evidence IDs'), assessor: elOpt('Assessor'), date: elOpt('Date') };
   const eligByApp = new Map(el.slice(5).filter((r) => String(r[elCol.app]).startsWith('KJET-')).map((r) => [String(r[elCol.app]).trim(), r]));
 
   // ── Financial_Screening: the evaluator's findings (result, category, document check, issues, note); amounts come from Drive ──
@@ -217,6 +233,12 @@ function parseEvaluationWorkbook(wb, sourceFile) {
       eligibility: clean(sr[scCol.elig]) ?? (er ? clean(er[e('ELIGIBILITY STATUS')]) : null),
       total_score: numOrNull(sr[scCol.total]), band: clean(sr[scCol.band]),
       expert_remarks: scCol.expertRemarks >= 0 ? clean(sr[scCol.expertRemarks]) : null,
+      assessor: scCol.assessor >= 0 ? clean(sr[scCol.assessor]) : null,
+      assessed_on: scCol.assessedOn >= 0 ? excelDate(sr[scCol.assessedOn]) : null,
+      reviewer: scCol.reviewer >= 0 ? clean(sr[scCol.reviewer]) : null,
+      reviewed_on: scCol.reviewedOn >= 0 ? excelDate(sr[scCol.reviewedOn]) : null,
+      eligibility_assessor: er && elCol.assessor >= 0 ? clean(er[elCol.assessor]) : null,
+      eligibility_assessed_on: er && elCol.date >= 0 ? excelDate(er[elCol.date]) : null,
       moderation_note: clean(sr[scCol.moderation]),
       eligibility_reasons: er ? clean(er[elCol.reasons]) : null,
       evidence_ids: er ? clean(er[elCol.evidence]) : null,

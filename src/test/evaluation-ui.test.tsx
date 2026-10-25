@@ -128,9 +128,21 @@ describe('Evaluation pages', () => {
     expect(screen.getAllByText('C2').length).toBeGreaterThan(0);
   });
 
-  it('does not show assessor or reviewer names anywhere', () => {
-    const { container } = renderWith(<ScorecardPage onSelect={() => {}} />);
-    expect(container.textContent).not.toMatch(/assessor|reviewer/i);
+  it('scorecard shows the named assessor and reviewer when a row is opened', () => {
+    const detail = {
+      ...alpha, criteria: alpha.criteria.map((k) => ({ ...k, label: 'x', justification: null, indicators: [] })), eligibility_tests: [], eligibility_reasons: null, evidence_files: null,
+      expert_remarks: null, evaluator_finance: {}, financial_detail: {}, eligible_clusters: 11, source: {},
+      assessment: { assessor: 'BRENDA', assessed_on: '2026-10-25', reviewer: 'JANETRIX', reviewed_on: '2026-10-25', eligibility_assessor: null, eligibility_assessed_on: null },
+    };
+    const qc = new QueryClient();
+    qc.setQueryData(['evaluation', 'list'], list);
+    qc.setQueryData(['evaluation', 'detail', alpha.application_number], detail);
+    render(<QueryClientProvider client={qc}><ScorecardPage onSelect={() => {}} /></QueryClientProvider>);
+    fireEvent.click(screen.getAllByText('Show the ratings')[0]!);
+    expect(screen.getByText(/BRENDA/)).toBeTruthy();
+    expect(screen.getByText(/JANETRIX/)).toBeTruthy();
+    expect(screen.getByText('Primary assessor')).toBeTruthy();
+    expect(screen.getByText('Expert reviewer')).toBeTruthy();
   });
 
   it('the county filter limits every list page to that county', () => {

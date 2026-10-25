@@ -2,8 +2,8 @@
  * evaluationService.js
  *
  * Serves the evaluation: scores and findings from the evaluation workbook (online sheet), amounts and
- * the 50-50 checks from the application data synced from Drive. Names of assessors and reviewers are
- * never read or returned.
+ * the 50-50 checks from the application data synced from Drive. The named assessor and expert reviewer
+ * are returned, as the selection report says the dashboard publishes them.
  */
 import pool from '../db/pool.js';
 import { cacheGet, cacheSet } from '../cache/redis.js';
@@ -177,7 +177,7 @@ export async function getEvaluationOverview(countyFilter = '') {
 export async function getEvaluationDetail(applicationNumber) {
   const app = String(applicationNumber ?? '').trim();
   const { rows } = await pool.query(`SELECT ${BASE}, ev.c1_evidence, ev.c2_evidence, ev.c3_evidence, ev.c4_evidence, ev.c5_evidence, ev.c6_evidence,
-      ev.eligibility_reasons, ev.evidence_ids, ev.fs_note, ev.fs_issues, ev.fs_category, ev.expert_remarks, ev.source_file, ev.imported_at
+      ev.eligibility_reasons, ev.evidence_ids, ev.fs_note, ev.fs_issues, ev.fs_category, ev.expert_remarks, ev.assessor, ev.assessed_on, ev.reviewer, ev.reviewed_on, ev.eligibility_assessor, ev.eligibility_assessed_on, ev.source_file, ev.imported_at
     ${FROM} WHERE ev.application_number = $1`, [app]);
   if (!rows.length) return null;
   const r = rows[0];
@@ -200,6 +200,11 @@ export async function getEvaluationDetail(applicationNumber) {
     eligibility_reasons: r.eligibility_reasons,
     evidence_files: r.evidence_ids,
     expert_remarks: r.expert_remarks,
+    assessment: {
+      assessor: r.assessor, assessed_on: r.assessed_on ? String(r.assessed_on).slice(0, 10) : null,
+      reviewer: r.reviewer, reviewed_on: r.reviewed_on ? String(r.reviewed_on).slice(0, 10) : null,
+      eligibility_assessor: r.eligibility_assessor, eligibility_assessed_on: r.eligibility_assessed_on ? String(r.eligibility_assessed_on).slice(0, 10) : null,
+    },
     evaluator_finance: { result: r.workbook_financial_result, category: r.fs_category, document_check: r.fs_doc_check, issues: r.fs_issues, note: r.fs_note },
     financial_detail: fin,
     eligible_clusters: peers,

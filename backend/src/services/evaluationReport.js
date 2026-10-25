@@ -3,7 +3,7 @@
  *
  * Builds one cluster's evaluation report as a PDF: summary, Drive figures, financial screening,
  * eligibility tests E1-E10 with reasons, and the scorecard with every rating and justification.
- * Names of assessors and reviewers are not part of the data and so never appear.
+ * The named primary assessor and expert reviewer are shown, as the selection report says they are published.
  */
 import PDFDocument from 'pdfkit';
 import { getEvaluationDetail } from './evaluationService.js';
@@ -183,9 +183,14 @@ export async function buildEvaluationReport(applicationNumber) {
     ]);
   });
   facts([['Eligibility status', d.eligibility ?? 'Not assessed', statusTone(d.eligibility)]]);
+  if (d.assessment.eligibility_assessor) facts([['Assessed by', `${d.assessment.eligibility_assessor}${d.assessment.eligibility_assessed_on ? `, ${d.assessment.eligibility_assessed_on}` : ''}`]]);
 
   // ── Scorecard ──
   h2('4. Scorecard (weighted assessment)');
+  facts([
+    ['Primary assessor', `${d.assessment.assessor ?? 'Not recorded'}${d.assessment.assessed_on ? `, ${d.assessment.assessed_on}` : ''}`],
+    ['Expert reviewer', `${d.assessment.reviewer ?? 'Not yet reviewed'}${d.assessment.reviewed_on ? `, ${d.assessment.reviewed_on}` : ''}`],
+  ]);
   table([{ title: 'Criterion', width: 6 }, { title: 'Weight', width: 1.1 }, { title: 'Rating (0-5)', width: 1.4 }, { title: 'Score', width: 1.2 }],
     [...d.criteria.map((k) => [`${k.code}  ${k.label}`, `${k.weight}`, k.rating != null ? String(k.rating) : 'n/a', k.score != null ? `${k.score} / ${k.weight}` : 'n/a']),
       [{ text: 'Total', bold: true }, { text: '100', bold: true }, '', { text: score != null ? `${score} / 100` : 'n/a', bold: true }]]);

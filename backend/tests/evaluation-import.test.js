@@ -137,8 +137,14 @@ eligible.forEach((s, i) => check(`${s.app} rank`, byApp.get(s.app).rank === i + 
 check('not-eligible clusters are not ranked', db.filter((d) => d.eligibility !== 'PASS').every((d) => d.rank == null));
 check('no cluster is marked as selected for funding', db.every((d) => !d.shortlisted && d.shortlist_rank == null));
 
-// ── Names of assessors and reviewers are never stored ──
-check('no assessor names stored', db.every((d) => d.assessor == null && d.reviewer == null));
+// ── The named primary assessor and expert reviewer, as the report says the dashboard publishes them ──
+for (let r = 6; r <= 120; r++) {
+  const app = norm(cell('SCORECARD', `C${r}`));
+  if (!app.startsWith('KJET-')) continue;
+  const d = byApp.get(app);
+  check(`${app} primary assessor`, norm(cell('SCORECARD', `BA${r}`)) === norm(d.assessor), `${cell('SCORECARD', `BA${r}`)} vs ${d.assessor}`);
+  check(`${app} expert reviewer`, norm(cell('SCORECARD', `BD${r}`)) === norm(d.reviewer), `${cell('SCORECARD', `BD${r}`)} vs ${d.reviewer}`);
+}
 
 console.log(`\nEvaluation check: ${passed} passed, ${failed} failed (${compared} clusters re-screened from the evaluation figures)`);
 await pool.end();
