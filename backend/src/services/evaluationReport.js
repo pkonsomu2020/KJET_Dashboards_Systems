@@ -122,12 +122,16 @@ export async function buildEvaluationReport(applicationNumber) {
   const by = doc.y;
   boxes.forEach(([value, label], i) => {
     const x = M + i * (bw + 6);
-    doc.roundedRect(x, by, bw, 50, 4).fill(COLORS.soft);
-    doc.font('Helvetica-Bold').fontSize(i < 2 ? 13 : 10).fillColor(i === 2 ? statusTone(d.eligibility) : i === 3 ? statusTone(d.financial.result) : COLORS.ink)
-      .text(clean(value), x + 8, by + 9, { width: bw - 16 });
-    doc.font('Helvetica').fontSize(8).fillColor(COLORS.muted).text(label, x + 8, by + 34, { width: bw - 16 });
+    const text = clean(value);
+    doc.roundedRect(x, by, bw, 56, 4).fill(COLORS.soft);
+    doc.font('Helvetica').fontSize(8).fillColor(COLORS.muted).text(label, x + 8, by + 8, { width: bw - 16, lineBreak: false });
+    // largest size at which the value fits on one line; otherwise the smallest size, wrapped onto two lines
+    doc.font('Helvetica-Bold');
+    const size = [14, 12, 10.5, 9.5].find((sz) => doc.fontSize(sz).widthOfString(text) <= bw - 16) ?? 9.5;
+    doc.fontSize(size).fillColor(i === 2 ? statusTone(d.eligibility) : i === 3 ? statusTone(d.financial.result) : COLORS.ink)
+      .text(text, x + 8, by + 23, { width: bw - 16, lineGap: 1 });
   });
-  doc.y = by + 62;
+  doc.y = by + 68;
   facts([
     ['Rank among eligible clusters', d.rank != null ? `${d.rank} of ${d.eligible_clusters}${d.county_rank ? ` (${d.county_rank} in ${d.county})` : ''}` : 'Not ranked (not eligible)'],
   ]);
