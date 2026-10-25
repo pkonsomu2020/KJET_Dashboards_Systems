@@ -244,6 +244,30 @@ function Empty() {
   return <div className="empty-state"><SearchX size={28} /><p>No clusters match these filters.</p></div>;
 }
 
+/** The three amounts of an application in one labelled list. `compare` marks the amounts that differ from the evaluation figures. */
+function FigureList({ title, grant, total, cash, compare }: {
+  title: string; grant: number | null; total: number | null; cash: number | null;
+  compare?: { grant: number | null; total: number | null; cash: number | null };
+}) {
+  const differs = (a: number | null, b: number | null | undefined) => compare != null && (a ?? null) !== (b ?? null) && Math.abs((a ?? 0) - (b ?? 0)) > 1;
+  const rows: Array<[string, number | null, boolean]> = [
+    ['Matching grant requested', grant, differs(grant, compare?.grant)],
+    ['Total project cost', total, differs(total, compare?.total)],
+    ['Cluster cash contribution', cash, differs(cash, compare?.cash)],
+  ];
+  return (
+    <dl className={`fig-list ${compare ? 'fig-current' : ''}`}>
+      <dt className="fig-title">{title}</dt><dd className="fig-title" />
+      {rows.map(([label, value, changed]) => (
+        <Fragment key={label}>
+          <dt>{label}</dt>
+          <dd className={changed ? 'fig-changed' : undefined}>{kes(value)}</dd>
+        </Fragment>
+      ))}
+    </dl>
+  );
+}
+
 // ── Financial screening ───────────────────────────────────────
 
 const FIN_RESULTS = ['PASS', 'FOLLOW-UP: data error', 'FOLLOW-UP: documents', 'FOLLOW-UP: exceeds cap', 'NON-COMPLIANT: <50% cash'];
@@ -275,8 +299,8 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
         {rows.length === 0 ? <Empty /> : (
           <div className="fit-wrap">
             <table className="portfolio-table fit-table">
-              <colgroup><col style={{ width: '22%' }} /><col style={{ width: '9%' }} /><col style={{ width: '18%' }} /><col style={{ width: '12%' }} /><col /><col style={{ width: 176 }} /></colgroup>
-              <thead><tr><th>Cluster</th><th>Window</th><th className="gr-num">Evaluation figures</th><th>Cluster cash share</th><th>Result</th><th aria-label="Actions" /></tr></thead>
+              <colgroup><col style={{ width: '19%' }} /><col style={{ width: '11%' }} /><col style={{ width: '26%' }} /><col style={{ width: '11%' }} /><col /><col style={{ width: 176 }} /></colgroup>
+              <thead><tr><th>Cluster</th><th>Window</th><th>Figures</th><th>Cluster cash share</th><th>Result</th><th aria-label="Actions" /></tr></thead>
               <tbody>
                 {rows.map((r) => {
                   const isOpen = open === r.application_number;
@@ -285,12 +309,13 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
                     <Fragment key={r.application_number}>
                       <tr>
                         <td><ClusterCell r={r} open={isOpen} toggle={() => setOpen(isOpen ? null : r.application_number)} label="Show the checks" /></td>
-                        <td>{fin.category}</td>
-                        <td className="gr-num">
-                          <strong>{kes(fin.grant)}</strong>
-                          <span className="gr-sub">matching grant requested</span>
-                          <span className="gr-sub">cost {kes(fin.total)} · cash {kes(fin.contribution)}</span>
-                          {fin.drive.differs && <span className="gr-sub ev-sheetdiff" title={`Current application: cost ${kes(fin.drive.total)}, cluster cash contribution ${kes(fin.drive.contribution)}, matching grant ${kes(fin.drive.grant)}`}>Current application: matching grant {kes(fin.drive.grant)}</span>}
+                        <td className="win-cell">{fin.category.split(' (')[0]}{fin.category.includes(' (') && <small>{fin.category.split(' (')[1]?.replace(')', '')}</small>}</td>
+                        <td>
+                          <FigureList title="Evaluation figures" grant={fin.grant} total={fin.total} cash={fin.contribution} />
+                          {fin.drive.differs && (
+                            <FigureList title="Current application" grant={fin.drive.grant} total={fin.drive.total} cash={fin.drive.contribution}
+                              compare={{ grant: fin.grant, total: fin.total, cash: fin.contribution }} />
+                          )}
                         </td>
                         <td>
                           <strong className={fin.meets_50_percent_cash === false ? 'ev-bad' : undefined}>{pct(fin.cluster_share)}</strong>

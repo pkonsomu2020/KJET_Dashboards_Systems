@@ -654,3 +654,17 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .metric-note { flex-basis:100%;font-size:9.5px;line-height:1.5;color:var(--warning);cursor:help; }
 .sector-detail { display:block;font-size:10px;line-height:1.4;color:var(--muted-foreground);font-weight:400; }
 .sector-row { align-items:flex-start; }
+
+/* Amounts of an application, one label and one value per line (Financial screening) */
+.fig-list { display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;margin:0 0 10px;font-size:11px;line-height:1.5; }
+.fig-list:last-child { margin-bottom:0; }
+.fig-list dt { color:var(--muted-foreground); }
+.fig-list dd { margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--foreground);white-space:nowrap; }
+.fig-list dt.fig-title { grid-column:1 / -1;font-size:9.5px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--foreground);padding-bottom:2px;border-bottom:1px solid var(--border); }
+.fig-list dd.fig-title { display:none; }
+.fig-current { padding:8px 10px;margin-top:8px;border-radius:6px;background:var(--warning-soft); }
+.fig-current dt.fig-title { color:var(--warning);border-bottom-color:transparent; }
+.fig-current dd.fig-changed { color:var(--warning); }
+
+.win-cell { overflow-wrap:normal !important;word-break:normal;hyphens:none; }
+.win-cell small { display:block;font-size:10px;color:var(--muted-foreground);margin-top:2px; }
