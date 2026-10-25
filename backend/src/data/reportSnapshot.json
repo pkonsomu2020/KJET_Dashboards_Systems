@@ -1,23 +1,6 @@
 {
-  "note": "Values the final selection report (KJET C1 Co-investment Selection Report) is built on, where they differ from the live evaluation sheet. The report is the reference for these; everything else follows the live sheet. Spalla values are from the sheet revision saved 25 Oct 2026 11:08 (before the expert review re-scored it).",
-  "scorecard": {
-    "KJET-2026-655159": {
-      "C2.1 Technical fit, specification and sizing (20%)": 3,
-      "C2.2 Operational plan, utilities, installation and maintenance (15%)": 3,
-      "C2.3 Cost, quotations and cost sharing (20%)": 4,
-      "C2.4 Commercial projections, off-take, IRR, payback and benefit-cost ratio (20%)": 2,
-      "C2.5 Productivity, buyer growth and technology adoption (15%)": 2,
-      "C2.6 Safety and E&S requirements of the equipment (10%)": 2,
-      "C2 rating (0–5, auto)": 3,
-      "C2 weighted (/40)": 24,
-      "C4.1 Existing production and operating activity (50%)": 3,
-      "C4.2 Market access and buyer relationships (50%)": 4,
-      "C4 rating (0–5, auto)": 4,
-      "C4 weighted (/10)": 8,
-      "TOTAL SCORE (/100)": 67,
-      "Decision band": "Referred with Comments"
-    }
-  },
+  "note": "Values the final selection report is built on, where they differ from the live evaluation sheet and the report is to be followed. Currently only E3 (all 85 Pass). Spalla Construction Workers (KJET-2026-655159) follows the live sheet (user decision 2026-10-25): the sheet is edited as the work goes on.",
+  "scorecard": {},
   "eligibility": {
     "E3": "Pass"
   }
