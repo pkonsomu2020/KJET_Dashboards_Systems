@@ -133,15 +133,11 @@ for (let r = 6; r <= 120; r++) {
 }
 check('screening compared on at least 30 clusters', compared >= 30, `${compared} compared, ${differing} differ from Drive`);
 
-// ── Ranks and the grant-ready list, recomputed independently ──
-const min = Number(cell('Parameters', 'C20'));
-check('Recommended minimum is 70', min === 70, String(min));
+// ── Ranks among eligible clusters, recomputed independently; no funding selection is stored ──
 const eligible = sheetScores.filter((s) => s.elig === 'PASS').sort((a, b) => (b.total - a.total) || (b.c2 - a.c2) || (b.c1 - a.c1) || (b.c6 - a.c6));
 eligible.forEach((s, i) => check(`${s.app} rank`, byApp.get(s.app).rank === i + 1, `${byApp.get(s.app).rank} vs ${i + 1}`));
-const ready = eligible.filter((s) => s.total >= min);
-check('grant-ready count', db.filter((d) => d.shortlisted).length === ready.length, `${db.filter((d) => d.shortlisted).length} vs ${ready.length}`);
-ready.forEach((s, i) => check(`${s.app} grant-ready`, byApp.get(s.app).shortlisted && byApp.get(s.app).shortlist_rank === i + 1));
-check('not-eligible clusters are not ranked', db.filter((d) => d.eligibility !== 'PASS').every((d) => d.rank == null && !d.shortlisted));
+check('not-eligible clusters are not ranked', db.filter((d) => d.eligibility !== 'PASS').every((d) => d.rank == null));
+check('no cluster is marked as selected for funding', db.every((d) => !d.shortlisted && d.shortlist_rank == null));
 
 // ── Names of assessors and reviewers are never stored ──
 check('no assessor names stored', db.every((d) => d.assessor == null && d.reviewer == null));

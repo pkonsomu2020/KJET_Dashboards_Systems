@@ -45,12 +45,12 @@ const criteria = [20, 40, 15, 10, 10, 5].map((w, i) => ({ code: `C${i + 1}`, wei
 
 const alpha = {
   application_number: 'KJET-2026-000001', cluster_name: 'ALPHA DAIRY', county: 'Nyeri', constituency: 'X', value_chain: 'Dairy', legal_form: 'cooperative',
-  score: 81, band: 'Recommended', rank: 1, county_rank: 1, eligibility: 'PASS', grant_ready: true, grant_ready_rank: 1,
+  score: 81, band: 'Recommended', rank: 1, county_rank: 1, eligibility: 'PASS',
   criteria, tests: tests(), financial: fin(), members: 100, women: 40, youth: 20, pwd: 1, jobs_today: 10, jobs_year3: 30,
 } as EvalRow;
 const beta = {
   ...alpha, application_number: 'KJET-2026-000002', cluster_name: 'BETA STONE', county: 'Baringo', value_chain: 'Construction', score: 48, band: 'Rejected',
-  rank: null, county_rank: null, eligibility: 'HOLD', grant_ready: false, grant_ready_rank: null, tests: tests('Hold'),
+  rank: null, county_rank: null, eligibility: 'HOLD', tests: tests('Hold'),
   financial: fin({
     result: 'NON-COMPLIANT: <50% cash', total: 15876000, grant: 8038000, contribution: 7838000, cluster_share: 0.4937, meets_50_percent_cash: false,
     contribution_shortfall: 100000, grant_above_max: 100000, issues: ['Cluster cash share is 49.4%, below the 50% minimum'],
@@ -65,15 +65,15 @@ const list = {
 
 const overview = {
   ok: true, meta: list.meta, average_score: 64.5, cash_shortfall_clusters: 1,
-  funnel: [{ stage: 'Evaluated', count: 2 }, { stage: 'Financial screening: pass', count: 1 }, { stage: 'Eligibility: pass', count: 1 }, { stage: 'Score 70 or more', count: 1 }, { stage: 'Grant-ready', count: 1 }],
+  funnel: [{ stage: 'Evaluated', count: 2 }, { stage: 'Financial screening: pass', count: 1 }, { stage: 'Eligibility: pass', count: 1 }, { stage: 'Score 70 or more', count: 1 }],
   bands: [{ band: 'Recommended', count: 1 }, { band: 'Rejected', count: 1 }], eligibility: [], categories: [],
   financial_results: [{ result: 'PASS', count: 1 }, { result: 'NON-COMPLIANT: <50% cash', count: 1 }],
   score_distribution: [{ label: '40-49', count: 1 }, { label: '80-89', count: 1 }],
   criteria_average: [{ code: 'C1', label: 'Overall cluster performance and viability', weight: 20, average: 15 }],
   tests: [{ test: 'E5', label: 'Cost share', pass: 1, hold: 1, fail: 0 }],
-  counties: [{ name: 'Nyeri', count: 1, average_score: 81, eligible: 1, grant_ready: 1 }], value_chains: [{ name: 'Dairy', count: 1, average_score: 81, eligible: 1, grant_ready: 1 }],
+  counties: [{ name: 'Nyeri', count: 1, average_score: 81, eligible: 1 }], value_chains: [{ name: 'Dairy', count: 1, average_score: 81, eligible: 1 }],
   top_issues: [{ issue: 'Cluster cash below the 50% minimum', count: 1 }],
-  grant_ready: [{ application_number: alpha.application_number, cluster_name: 'ALPHA DAIRY', county: 'Nyeri', score: 81, rank: 1 }],
+  top_eligible: [{ application_number: alpha.application_number, cluster_name: 'ALPHA DAIRY', county: 'Nyeri', score: 81, rank: 1 }],
 } as unknown as EvalOverview;
 
 function renderWith(ui: React.ReactElement) {
@@ -84,10 +84,10 @@ function renderWith(ui: React.ReactElement) {
 }
 
 describe('Evaluation pages', () => {
-  it('overview shows the funnel, the grant-ready list and a report button for each', () => {
+  it('overview shows the funnel, the top eligible clusters and a report button for each', () => {
     renderWith(<EvaluationOverview onSelect={() => {}} />);
-    expect(screen.getByText('From application to grant-ready')).toBeTruthy();
-    expect(screen.getByText('Grant-ready', { selector: '.funnel-label' })).toBeTruthy();
+    expect(screen.getByText('Screening funnel')).toBeTruthy();
+    expect(screen.queryByText(/grant-ready/i)).toBeNull();
     expect(screen.getByText('ALPHA DAIRY')).toBeTruthy();
     expect(screen.getByLabelText('Download evaluation report of ALPHA DAIRY')).toBeTruthy();
     expect(screen.getByText(/Live from the online evaluation sheet/)).toBeTruthy();
@@ -118,11 +118,11 @@ describe('Evaluation pages', () => {
     expect(within(row).getByText(/attention: E5/)).toBeTruthy();
   });
 
-  it('scorecard shows points per criterion, highest score first, and the grant-ready badge', () => {
+  it('scorecard shows points per criterion, highest score first, and no grant-ready label', () => {
     renderWith(<ScorecardPage onSelect={() => {}} />);
     const names = screen.getAllByText(/ALPHA DAIRY|BETA STONE/).map((n) => n.textContent ?? '');
     expect(names[0]).toContain('ALPHA DAIRY');
-    expect(screen.getByText(/Grant-ready #1/)).toBeTruthy();
+    expect(screen.queryByText(/grant-ready/i)).toBeNull();
     expect(screen.getAllByText('C2').length).toBeGreaterThan(0);
   });
 

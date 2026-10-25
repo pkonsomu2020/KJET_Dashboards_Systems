@@ -48,7 +48,7 @@ export async function syncEvaluationSheet({ force = false } = {}) {
     status.last_imported = new Date().toISOString();
     status.last_error = null;
     status.imported_clusters = r.imported;
-    console.log(`[Evaluation] Imported ${r.imported} clusters (${r.shortlisted} grant-ready) from the online sheet, modified ${meta.modifiedTime}`);
+    console.log(`[Evaluation] Imported ${r.imported} clusters from the online sheet, modified ${meta.modifiedTime}`);
     return r;
   } catch (err) {
     status.last_error = err.message;

@@ -90,8 +90,6 @@ export interface ClusterRow {
   total_score: string | null;
   eval_band: string | null;
   eval_rank: number | null;
-  shortlisted: boolean | null;
-  shortlist_rank: number | null;
 }
 
 export interface ClusterListResponse {
@@ -204,7 +202,6 @@ export interface ClusterListParams {
   sort?: string;
   q?: string;
   review?: boolean;
-  shortlist?: boolean;
   page?: number;
   limit?: number;
 }
@@ -216,7 +213,6 @@ export function fetchClusters(params: ClusterListParams = {}) {
   if (params.sort)   p.set('sort',   params.sort);
   if (params.q)      p.set('q',      params.q);
   if (params.review) p.set('review', 'true');
-  if (params.shortlist) p.set('shortlist', 'true');
   if (params.page)   p.set('page',   String(params.page));
   if (params.limit)  p.set('limit',  String(params.limit));
   const qs = p.toString();
@@ -295,8 +291,6 @@ export interface EvalRow {
   rank: number | null;
   county_rank: number | null;
   eligibility: string | null;
-  grant_ready: boolean;
-  grant_ready_rank: number | null;
   criteria: Array<{ code: string; weight: number; rating: number | null; score: number | null }>;
   tests: Record<string, string | null>;
   financial: EvalFinancial;
@@ -336,10 +330,10 @@ export interface EvalOverview {
   average_score: number | null;
   criteria_average: Array<{ code: string; label: string; weight: number; average: number | null }>;
   tests: Array<{ test: string; label: string; pass: number; hold: number; fail: number }>;
-  counties: Array<{ name: string; count: number; average_score: number | null; eligible: number; grant_ready: number }>;
-  value_chains: Array<{ name: string; count: number; average_score: number | null; eligible: number; grant_ready: number }>;
+  counties: Array<{ name: string; count: number; average_score: number | null; eligible: number }>;
+  value_chains: Array<{ name: string; count: number; average_score: number | null; eligible: number }>;
   top_issues: Array<{ issue: string; count: number }>;
-  grant_ready: Array<{ application_number: string; cluster_name: string; county: string; score: number; rank: number }>;
+  top_eligible: Array<{ application_number: string; cluster_name: string; county: string; score: number; rank: number }>;
   meta: EvalListResponse['meta'];
 }
 
@@ -386,5 +380,4 @@ async function download(path: string, fallbackName: string) {
 }
 export const downloadEvaluationReport = (applicationNumber: string) =>
   download(`/api/evaluation/clusters/${encodeURIComponent(applicationNumber)}/report.pdf`, `KJET-evaluation-${applicationNumber}.pdf`);
-export const downloadEvaluationReports = (scope: 'grant_ready' | 'all') =>
-  download(`/api/evaluation/reports.zip?scope=${scope}`, `KJET-evaluation-reports-${scope}.zip`);
+export const downloadEvaluationReports = () => download('/api/evaluation/reports.zip', 'KJET-evaluation-reports.zip');

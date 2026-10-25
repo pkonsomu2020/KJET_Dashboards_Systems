@@ -80,7 +80,6 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
   if (error || !o) return <Failed />;
   if (o.meta.evaluated === 0) return <div className="empty-state"><SearchX size={30} /><p>No evaluation results have been loaded yet.</p></div>;
 
-  const ready = o.funnel.find((f) => f.stage === 'Grant-ready')?.count ?? 0;
   const eligible = o.funnel.find((f) => f.stage === 'Eligibility: pass')?.count ?? 0;
   const recommended = o.bands.find((b) => b.band === 'Recommended')?.count ?? 0;
   const maxCount = o.funnel[0]?.count ?? 1;
@@ -93,13 +92,12 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
         <Tile label="Clusters evaluated" value={String(o.meta.evaluated)} icon={ClipboardCheck}><span>average score {o.average_score ?? 'n/a'} of 100</span></Tile>
         <Tile label="Eligible" value={String(eligible)} icon={ListChecks}><span>passed all ten tests</span></Tile>
         <Tile label="Recommended band" value={String(recommended)} icon={Scale}><span>scored 70 or more</span></Tile>
-        <Tile label="Grant-ready" value={String(ready)} icon={Award}><span>eligible and 70 or more</span></Tile>
         <Tile label="Financial screening pass" value={String(o.funnel[1]?.count ?? 0)} icon={CircleDollarSign}><span>of {o.meta.evaluated} clusters</span></Tile>
         <Tile label="Below 50% cash" value={String(o.cash_shortfall_clusters)} icon={TriangleAlert}><span>cluster cash share under half</span></Tile>
       </div>
 
       <div className="analytics-grid">
-        <Panel title="From application to grant-ready" subtitle="How many clusters clear each stage">
+        <Panel title="Screening funnel" subtitle="How many clusters clear each stage">
           <div className="funnel">
             {o.funnel.map((f, i) => (
               <div key={f.stage} className="funnel-row">
@@ -175,11 +173,11 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
           </ul>
         </Panel>
 
-        <Panel title="Grant-ready clusters" subtitle="Eligible and scored 70 or more, subject to due diligence and World Bank no-objection"
-          action={o.grant_ready.length > 0 ? <ReportsZipButton label="All reports (ZIP)" /> : undefined}>
-          {o.grant_ready.length === 0 ? <p className="ev-empty">No cluster meets both conditions at the moment.</p> : (
+        <Panel title="Highest-scoring eligible clusters" subtitle="A ranking by evaluation score. Selection for funding is decided by MSEA"
+          action={<ReportsZipButton label="All reports (ZIP)" />}>
+          {o.top_eligible.length === 0 ? <p className="ev-empty">No cluster has passed eligibility yet.</p> : (
             <div className="top-list">
-              {o.grant_ready.map((r) => (
+              {o.top_eligible.map((r) => (
                 <div key={r.application_number} className="top-row ev-ready-row">
                   <button type="button" className="ev-ready-main" onClick={() => onSelect(r.application_number)}>
                     <span className={`gr-rank ${r.rank === 1 ? 'top' : ''}`}>{r.rank}</span>
@@ -209,16 +207,16 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
   );
 }
 
-function GroupTable({ rows, first, format = (s: string) => s }: { rows: Array<{ name: string; count: number; average_score: number | null; eligible: number; grant_ready: number }>; first: string; format?: (s: string) => string }) {
+function GroupTable({ rows, first, format = (s: string) => s }: { rows: Array<{ name: string; count: number; average_score: number | null; eligible: number }>; first: string; format?: (s: string) => string }) {
   return (
     <div className="ev-group-wrap">
       <table className="portfolio-table ev-group">
-        <thead><tr><th>{first}</th><th className="gr-num">Clusters</th><th className="gr-num">Avg score</th><th className="gr-num">Eligible</th><th className="gr-num">Grant-ready</th></tr></thead>
+        <thead><tr><th>{first}</th><th className="gr-num">Clusters</th><th className="gr-num">Avg score</th><th className="gr-num">Eligible</th></tr></thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.name}>
               <td>{format(r.name)}</td><td className="gr-num">{r.count}</td><td className="gr-num">{r.average_score ?? '-'}</td>
-              <td className="gr-num">{r.eligible}</td><td className="gr-num">{r.grant_ready}</td>
+              <td className="gr-num">{r.eligible}</td>
             </tr>
           ))}
         </tbody>
@@ -425,7 +423,7 @@ export function EligibilityPage({ onSelect }: { onSelect: (a: string) => void })
 export function ScorecardPage({ onSelect }: { onSelect: (a: string) => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const { isLoading, error, rows, f, setF, data } = useRows(
-    (r, fl) => (!fl.a || r.band === fl.a) && (!fl.b || (fl.b === 'ready' ? r.grant_ready : r.eligibility === fl.b)),
+    (r, fl) => (!fl.a || r.band === fl.a) && (!fl.b || r.eligibility === fl.b),
     (a, b) => (b.score ?? -1) - (a.score ?? -1),
   );
   if (isLoading) return <Loading />;
@@ -442,7 +440,7 @@ export function ScorecardPage({ onSelect }: { onSelect: (a: string) => void }) {
             <option value="">All bands</option>{['Recommended', 'Referred with Comments', 'Rejected'].map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
           <select className="filter-select" aria-label="Filter by eligibility" value={f.b} onChange={(e) => setF({ ...f, b: e.target.value })}>
-            <option value="">Any eligibility</option><option value="ready">Grant-ready only</option>{['PASS', 'HOLD', 'FAIL'].map((v) => <option key={v} value={v}>Eligibility {v}</option>)}
+            <option value="">Any eligibility</option>{['PASS', 'HOLD', 'FAIL'].map((v) => <option key={v} value={v}>Eligibility {v}</option>)}
           </select>
         </FilterBar>
         {rows.length === 0 ? <Empty /> : (
@@ -473,7 +471,6 @@ export function ScorecardPage({ onSelect }: { onSelect: (a: string) => void }) {
                         <td><ScoreBar score={r.score} compact />{r.rank != null && <span className="gr-sub">#{r.rank} among eligible</span>}</td>
                         <td>
                           <BandChip band={r.band} score={r.score} />
-                          {r.grant_ready && <span className="badge success" style={{ marginTop: 5 }}><Award size={10} />Grant-ready #{r.grant_ready_rank}</span>}
                         </td>
                         <td><RowActions r={r} onSelect={onSelect} /></td>
                       </tr>

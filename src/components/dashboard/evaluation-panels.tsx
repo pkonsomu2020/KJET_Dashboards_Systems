@@ -139,7 +139,7 @@ export function ScorePanel({ d }: { d: EvalDetail }) {
   );
 }
 
-/** Score, band, ranks and grant-ready status at a glance. */
+/** Score, band and ranks at a glance. */
 export function ScoreHero({ d }: { d: EvalDetail }) {
   const score = d.score != null ? Math.round(d.score * 10) / 10 : null;
   return (
@@ -151,7 +151,6 @@ export function ScoreHero({ d }: { d: EvalDetail }) {
       <div className="eval-facts">
         <div><strong>{d.rank != null ? `#${d.rank} of ${d.eligible_clusters}` : 'Not ranked'}</strong><span>Among eligible clusters</span></div>
         <div><strong>{d.county_rank != null ? `#${d.county_rank}` : 'Not ranked'}</strong><span>In {d.county}</span></div>
-        <div><strong>{d.grant_ready ? `#${d.grant_ready_rank}` : 'No'}</strong><span>Grant-ready</span></div>
       </div>
       <div className="eval-gates">
         <StatusChip value={d.eligibility} empty="Eligibility pending" />

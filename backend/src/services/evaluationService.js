@@ -32,7 +32,7 @@ const FROM = `
 
 const BASE = `
   ev.application_number, c.cluster_name, c.county, c.constituency, c.value_chain, c.legal_form,
-  ev.category, ev.eligibility, ev.total_score, ev.band, ev.rank, ev.county_rank, ev.shortlisted, ev.shortlist_rank,
+  ev.category, ev.eligibility, ev.total_score, ev.band, ev.rank, ev.county_rank,
   ev.c1_rating, ev.c1_score, ev.c2_rating, ev.c2_score, ev.c3_rating, ev.c3_score,
   ev.c4_rating, ev.c4_score, ev.c5_rating, ev.c5_score, ev.c6_rating, ev.c6_score,
   ev.fs_doc_check, ev.financial_screening AS workbook_financial_result,
@@ -55,7 +55,7 @@ function shapeRow(r, tests) {
     application_number: r.application_number, cluster_name: r.cluster_name, county: r.county, constituency: r.constituency,
     value_chain: r.value_chain, legal_form: r.legal_form,
     score: n(r.total_score), band: r.band, rank: r.rank, county_rank: r.county_rank,
-    eligibility: r.eligibility, grant_ready: !!r.shortlisted, grant_ready_rank: r.shortlist_rank,
+    eligibility: r.eligibility,
     criteria: CRITERIA.map((c, i) => ({ code: c.code, weight: c.weight, rating: n(r[`c${i + 1}_rating`]), score: n(r[`c${i + 1}_score`]) })),
     tests,
     financial: { result: fin.result, category: fin.category, issues: fin.issues, ...fin.checks, ...fin.figures },
@@ -100,7 +100,7 @@ export async function getEvaluationOverview() {
   const passFin = data.filter((d) => d.financial.result === 'PASS');
   const passElig = data.filter((d) => d.eligibility === 'PASS');
   const recommended = data.filter((d) => d.band === 'Recommended');
-  const ready = data.filter((d) => d.grant_ready);
+  const top = data.filter((d) => d.rank != null).sort((a, b) => a.rank - b.rank).slice(0, 10);
   const avg = (xs) => (xs.length ? Math.round((xs.reduce((s, v) => s + v, 0) / xs.length) * 10) / 10 : null);
 
   const testIds = Array.from({ length: 10 }, (_, i) => `E${i + 1}`);
@@ -117,7 +117,7 @@ export async function getEvaluationOverview() {
     const rows = data.filter((d) => (d[field] ?? 'Not stated') === name);
     return {
       name, count, average_score: avg(rows.map((d) => d.score).filter((v) => v != null)),
-      eligible: rows.filter((d) => d.eligibility === 'PASS').length, grant_ready: rows.filter((d) => d.grant_ready).length,
+      eligible: rows.filter((d) => d.eligibility === 'PASS').length,
     };
   }).sort((a, b) => b.count - a.count);
 
@@ -137,7 +137,6 @@ export async function getEvaluationOverview() {
       { stage: 'Financial screening: pass', count: passFin.length },
       { stage: 'Eligibility: pass', count: passElig.length },
       { stage: 'Score 70 or more', count: recommended.length },
-      { stage: 'Grant-ready', count: ready.length },
     ],
     bands: Object.entries(countBy(data, (d) => d.band ?? 'Not scored')).map(([band, count]) => ({ band, count })),
     eligibility: Object.entries(countBy(data, (d) => d.eligibility ?? 'Not assessed')).map(([status, count]) => ({ status, count })),
@@ -151,7 +150,7 @@ export async function getEvaluationOverview() {
     counties: group('county'),
     value_chains: group('value_chain'),
     top_issues: Object.entries(issueCounts).map(([issue, count]) => ({ issue, count })).sort((a, b) => b.count - a.count).slice(0, 8),
-    grant_ready: ready.map((d) => ({ application_number: d.application_number, cluster_name: d.cluster_name, county: d.county, score: d.score, rank: d.grant_ready_rank })),
+    top_eligible: top.map((d) => ({ application_number: d.application_number, cluster_name: d.cluster_name, county: d.county, score: d.score, rank: d.rank })),
     meta,
   };
   await cacheSet(key, result, TTL);

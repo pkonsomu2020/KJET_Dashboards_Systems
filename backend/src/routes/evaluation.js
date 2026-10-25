@@ -30,13 +30,13 @@ router.post('/refresh', async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/evaluation/reports.zip?scope=grant_ready|all  PDF reports in one zip
+// GET /api/evaluation/reports.zip  one PDF report per evaluated cluster, in one zip
 router.get('/reports.zip', async (req, res, next) => {
   try {
     const { data } = await getEvaluationList();
-    const rows = req.query.scope === 'all' ? data : data.filter((d) => d.grant_ready);
+    const rows = data;
     res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="KJET-evaluation-reports-${req.query.scope === 'all' ? 'all' : 'grant-ready'}.zip"`);
+    res.setHeader('Content-Disposition', `attachment; filename="KJET-evaluation-reports.zip"`);
     const zip = archiver('zip', { zlib: { level: 6 } });
     zip.on('error', next);
     zip.pipe(res);

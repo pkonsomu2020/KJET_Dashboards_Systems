@@ -133,13 +133,13 @@ export function readEvaluationBuffer(buffer, sourceFile) {
 }
 
 /**
- * Validates the workbook. Returns { rows, criteria, eligibility, shortlistedCount, sourceFile }.
+ * Validates the workbook. Returns { rows, criteria, eligibility, sourceFile }.
  *
  * Built on three tabs: SCORECARD (ratings, scores, band, justifications, expert remarks), Eligibility
  * (E1-E10 and the status) and Financial_Screening (the evaluator's findings). Nothing is taken from
- * Final_Decision: it only repeats these tabs and breaks when columns move. Ranks and the grant-ready
- * list are worked out here from the scores, with the workbook's own rule (eligibility PASS and a score
- * at or above the Recommended minimum in Parameters). Names of assessors and reviewers are not read.
+ * Final_Decision: it only repeats these tabs and breaks when columns move. Ranks among the
+ * eligible clusters are worked out here from the scores. Selecting clusters for funding is a decision
+ * for MSEA and is not made here. Names of assessors and reviewers are not read.
  */
 function parseEvaluationWorkbook(wb, sourceFile) {
   // ── SCORECARD (header on row 5) ──
@@ -239,17 +239,13 @@ function parseEvaluationWorkbook(wb, sourceFile) {
     seenInCounty.set(k, (seenInCounty.get(k) ?? 0) + 1);
     r.county_rank = seenInCounty.get(k);
   }
-  // Grant-ready: eligibility PASS and a score at or above the Recommended minimum
-  const ready = eligible.filter((r) => r.total_score >= minScore);
-  ready.forEach((r, i) => { r.shortlisted = true; r.shortlist_rank = i + 1; });
-  for (const r of rows) { r.shortlisted = r.shortlisted ?? false; }
-  return { rows, criteria, eligibility, shortlistedCount: ready.length, sourceFile, minScore };
+  return { rows, criteria, eligibility, sourceFile, minScore };
 }
 
 /** Replaces the stored evaluation with the workbook's. One transaction; all-or-nothing. */
 export async function importEvaluation(pool, source) {
   // source: a path to an .xlsx, or { buffer, name } for a workbook already in memory
-  const { rows, criteria, eligibility, shortlistedCount, sourceFile } =
+  const { rows, criteria, eligibility, sourceFile } =
     typeof source === 'string' ? readEvaluationWorkbook(source) : readEvaluationBuffer(source.buffer, source.name);
   const { rows: known } = await pool.query('SELECT application_number FROM clusters');
   const have = new Set(known.map((k) => k.application_number));
@@ -285,5 +281,5 @@ export async function importEvaluation(pool, source) {
   } finally {
     client.release();
   }
-  return { imported: rows.length, shortlisted: shortlistedCount, criteria: criteria.length, eligibility: eligibility.length, sourceFile };
+  return { imported: rows.length, criteria: criteria.length, eligibility: eligibility.length, sourceFile };
 }

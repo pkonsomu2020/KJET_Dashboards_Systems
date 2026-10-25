@@ -284,7 +284,7 @@ const EVAL_NOTE = 'Scores, ranks, bands, eligibility tests E1-E10 and justificat
 
 const slim = (d) => ({
   application_number: d.application_number, cluster_name: d.cluster_name, county: d.county, value_chain: d.value_chain,
-  score: d.score, band: d.band, rank_among_eligible: d.rank, eligibility: d.eligibility, grant_ready: d.grant_ready, grant_ready_rank: d.grant_ready_rank,
+  score: d.score, band: d.band, rank_among_eligible: d.rank, eligibility: d.eligibility,
   eligibility_tests: d.tests, financial_screening: d.financial.result, category: d.financial.category,
   grant_requested_drive: d.financial.grant, total_project_cost_drive: d.financial.total, cluster_contribution_drive: d.financial.contribution,
   meets_50_percent_cash: d.financial.meets_50_percent_cash, contribution_shortfall: d.financial.contribution_shortfall, financial_issues: d.financial.issues,
@@ -297,14 +297,14 @@ async function getEvaluation({ application_number }) {
   return { found: true, note: EVAL_NOTE, evaluation: rest };
 }
 
-async function listShortlist() {
+async function listEligible() {
   const { data } = await getEvaluationList();
-  const ready = data.filter((d) => d.grant_ready).sort((a, b) => a.grant_ready_rank - b.grant_ready_rank);
+  const rows = data.filter((d) => d.rank != null).sort((a, b) => a.rank - b.rank);
   return {
     note: EVAL_NOTE,
-    rule: 'The grant-ready list is the clusters whose eligibility check is PASS and whose score is 70 or more out of 100.',
-    total_grant_ready: ready.length,
-    clusters: ready.map(slim),
+    rule: 'Clusters whose eligibility check is PASS, ranked by score. This is a ranking, not a funding decision: selection is made by MSEA.',
+    total_eligible: rows.length,
+    clusters: rows.map(slim),
   };
 }
 
@@ -320,7 +320,7 @@ async function rankByScore(args) {
 
 export const toolImpl = {
   get_evaluation: getEvaluation,
-  list_shortlist: listShortlist,
+  list_eligible: listEligible,
   rank_by_score: rankByScore,
   list_documents: listDocuments,
   search_documents: searchDocuments,
@@ -336,8 +336,8 @@ export const toolDefinitions = [
   {
     type: 'function',
     function: {
-      name: 'list_shortlist',
-      description: 'The grant-ready list from the evaluation: clusters scoring 70+ with eligibility PASS, ranked, with gates and recommendations. Use for any question about which clusters are qualified, recommended or grant-ready.',
+      name: 'list_eligible',
+      description: 'The eligible clusters (eligibility PASS) ranked by evaluation score, with their band, eligibility tests and financial screening. Use for questions about which clusters are eligible or top scoring. It is a ranking, not a funding decision.',
       parameters: { type: 'object', properties: {} },
     },
   },
@@ -353,7 +353,7 @@ export const toolDefinitions = [
     type: 'function',
     function: {
       name: 'rank_by_score',
-      description: 'Rank clusters by evaluation score (all 85, not only the grant-ready list), optionally filtered by band, eligibility (PASS, HOLD, FAIL), county or value chain.',
+      description: 'Rank clusters by evaluation score (all 85), optionally filtered by band, eligibility (PASS, HOLD, FAIL), county or value chain.',
       parameters: {
         type: 'object',
         properties: {

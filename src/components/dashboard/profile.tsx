@@ -123,8 +123,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
         <span className={`badge ${status === 'Within limits' ? 'success' : 'warning'}`}>
           {status === 'Within limits' ? <ShieldCheck size={11} /> : <AlertTriangle size={11} />} {status}
         </span>
-        {ev?.grant_ready && <span className="badge success"><Award size={11} />Grant-ready #{ev.grant_ready_rank}</span>}
-        {ev && !ev.grant_ready && ev.score != null && <span className="badge">Evaluation score {Math.round(ev.score)}</span>}
+        {ev?.score != null && <span className="badge"><Award size={11} />Evaluation score {Math.round(ev.score)}</span>}
       </div>
 
       <Tabs defaultValue="overview">

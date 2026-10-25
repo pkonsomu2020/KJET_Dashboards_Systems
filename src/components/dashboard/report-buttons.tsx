@@ -24,14 +24,14 @@ export function ReportButton({ applicationNumber, clusterName, label, size = 'ic
   );
 }
 
-/** Downloads the reports of the grant-ready clusters (or all clusters) in one zip. */
-export function ReportsZipButton({ scope = 'grant_ready', label }: { scope?: 'grant_ready' | 'all'; label: string }) {
+/** Downloads the reports of all evaluated clusters in one zip. */
+export function ReportsZipButton({ label }: { label: string }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const run = async () => {
     setBusy(true);
     setFailed(false);
-    try { await downloadEvaluationReports(scope); } catch { setFailed(true); } finally { setBusy(false); }
+    try { await downloadEvaluationReports(); } catch { setFailed(true); } finally { setBusy(false); }
   };
   return (
     <Button type="button" variant="outline" size="sm" disabled={busy} onClick={run}

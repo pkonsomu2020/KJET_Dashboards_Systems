@@ -19,7 +19,6 @@ interface Props {
   county: string;   setCounty: (c: string) => void;
   chain: string;    setChain:  (c: string) => void;
   sort: string;     setSort:   (s: string) => void;
-  shortlist: boolean; setShortlist: (v: boolean) => void;
   page: number;     setPage:   (p: number) => void;
   review?: boolean;
 }
@@ -30,7 +29,6 @@ export function ClusterExplorer({
   county, setCounty,
   chain, setChain,
   sort, setSort,
-  shortlist, setShortlist,
   page, setPage,
   review = false,
 }: Props) {
@@ -41,7 +39,6 @@ export function ClusterExplorer({
     ...(county  ? { county: county  } : {}),
     ...(chain   ? { chain:  chain   } : {}),
     ...(review  ? { review: true    } : {}),
-    ...(shortlist ? { shortlist: true } : {}),
     sort,
     page,
     limit: PAGE_SIZE,
@@ -58,7 +55,7 @@ export function ClusterExplorer({
     onRowsChange?.(rows);
   }, [rows]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-  const clear = () => { setQuery(''); setCounty(''); setChain(''); setSort('name'); setShortlist(false); setPage(1); };
+  const clear = () => { setQuery(''); setCounty(''); setChain(''); setSort('name'); setPage(1); };
 
   return (
     <section className="explorer">
@@ -120,12 +117,7 @@ export function ClusterExplorer({
           <option value="members">Members: highest</option>
           <option value="score">Evaluation score: highest</option>
         </select>
-        <Button type="button" variant="outline" size="sm" aria-pressed={shortlist}
-          className={shortlist ? 'chip-on' : ''} title="Show only the clusters recommended for grant support"
-          onClick={() => { setShortlist(!shortlist); setPage(1); }}>
-          <Award />Grant-ready only
-        </Button>
-        {(query || county || chain || shortlist) && (
+        {(query || county || chain) && (
           <Button variant="ghost" size="icon" title="Clear filters" aria-label="Clear filters" onClick={clear}>
             <RotateCcw />
           </Button>
@@ -214,9 +206,7 @@ export function ClusterExplorer({
                       <>
                         <ScoreBar score={c.total_score} compact />
                         <span className="gr-sub">
-                          {c.shortlisted
-                            ? <span className="badge success"><Award size={10} />Grant-ready #{c.shortlist_rank}</span>
-                            : <BandChip band={c.eval_band} score={c.total_score} />}
+                          <BandChip band={c.eval_band} score={c.total_score} />
                         </span>
                       </>
                     ) : <span className="muted-small">Not scored</span>}
@@ -242,7 +232,6 @@ export function ClusterExplorer({
             <article className="cluster-card" key={c.application_number}>
               <h3>{c.cluster_name}</h3>
               <span className="cluster-id">{c.application_number}</span>
-              {c.shortlisted && <span className="badge success" style={{ width: 'fit-content', marginTop: 6 }}><Award size={10} />Grant-ready #{c.shortlist_rank}</span>}
               <div className="card-location"><MapPin size={12} />{c.county} · {c.ward}</div>
               <span className="badge" title={c.value_chain}>
                 {c.value_chain.length > 30 ? c.value_chain.slice(0, 28) + '…' : c.value_chain}

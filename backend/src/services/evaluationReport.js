@@ -111,9 +111,8 @@ export async function buildEvaluationReport(applicationNumber) {
   doc.y = by + 62;
   facts([
     ['Rank among eligible clusters', d.rank != null ? `${d.rank} of ${d.eligible_clusters}${d.county_rank ? ` (${d.county_rank} in ${d.county})` : ''}` : 'Not ranked (not eligible)'],
-    ['Grant-ready', d.grant_ready ? `Yes, number ${d.grant_ready_rank} on the list (eligible and scored 70 or more)` : 'No (a cluster is grant-ready when eligibility is PASS and the score is 70 or more)'],
   ]);
-  para('Recommended clusters remain subject to due diligence, environmental and social clearance, and World Bank no-objection.', { size: 8, color: COLORS.muted });
+  para('This report records the evaluation scores and findings. Selecting clusters for funding is a decision for MSEA.', { size: 8, color: COLORS.muted });
 
   // ── Application figures (Drive) ──
   const f = d.financial_detail;

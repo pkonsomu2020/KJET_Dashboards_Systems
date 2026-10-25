@@ -20,7 +20,7 @@ if (!path || !existsSync(path)) {
 try {
   const r = await importEvaluation(pool, path);
   await Promise.allSettled([cacheInvalidate('clusters:list:*'), cacheInvalidate('cluster:detail:*'), cacheInvalidate('evaluation:*')]);
-  console.log(`Imported ${r.imported} clusters (${r.shortlisted} on the grant-ready list) from ${r.sourceFile}`);
+  console.log(`Imported ${r.imported} clusters from ${r.sourceFile}`);
   await pool.end();
   process.exit(0);
 } catch (err) {

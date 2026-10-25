@@ -89,12 +89,12 @@ export async function getByCounty() {
 }
 
 // ── Cluster list (with filters) ───────────────────────────────
-export async function getClusters({ county, chain, sort, q, review, shortlist, page, limit }) {
+export async function getClusters({ county, chain, sort, q, review, page, limit }) {
   const pageNum  = Math.max(1, parseInt(page)  || 1);
   const pageSize = Math.min(100, parseInt(limit) || 20);
   const offset   = (pageNum - 1) * pageSize;
 
-  const cacheKey = `clusters:list:${county}:${chain}:${sort}:${q}:${review}:${shortlist}:${pageNum}:${pageSize}`;
+  const cacheKey = `clusters:list:${county}:${chain}:${sort}:${q}:${review}:${pageNum}:${pageSize}`;
   const cached   = await cacheGet(cacheKey);
   if (cached) return { ...cached, cached: true };
 
@@ -105,7 +105,6 @@ export async function getClusters({ county, chain, sort, q, review, shortlist, p
   if (county) { conditions.push(`c.county = $${idx++}`); params.push(county); }
   if (chain)  { conditions.push(`c.value_chain = $${idx++}`); params.push(chain); }
   if (review) { conditions.push(`f.compliance_status != 'Within limits'`); }
-  if (shortlist) { conditions.push('ev.shortlisted = TRUE'); }
   if (q) {
     conditions.push(`(
       c.cluster_name ILIKE $${idx} OR
@@ -136,7 +135,7 @@ export async function getClusters({ county, chain, sort, q, review, shortlist, p
       f.compliance_status,
       m.total_members, m.men, m.women, m.youth, m.pwd,
       e.jobs_today, e.jobs_year1, e.jobs_year3,
-      ev.total_score, ev.band AS eval_band, ev.rank AS eval_rank, ev.shortlisted, ev.shortlist_rank
+      ev.total_score, ev.band AS eval_band, ev.rank AS eval_rank
     FROM clusters c
     LEFT JOIN cluster_financials f  ON f.cluster_id = c.id
     LEFT JOIN cluster_membership m  ON m.cluster_id = c.id

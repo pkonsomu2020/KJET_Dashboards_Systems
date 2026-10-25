@@ -102,7 +102,6 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
   const [county, setCounty] = useState('');
   const [chain, setChain] = useState('');
   const [sort, setSort] = useState('name');
-  const [shortlist, setShortlist] = useState(false);
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [exportRows, setExportRows] = useState<ClusterRow[]>([]);
@@ -332,14 +331,14 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                 </Metric>
               </div>
 
-              {evaluation && evaluation.grant_ready.length > 0 && (
+              {evaluation && evaluation.top_eligible.length > 0 && (
                 <ChartPanel
-                  title="Grant-ready clusters"
-                  subtitle={`${evaluation.grant_ready.length} of ${evaluation.meta.evaluated} evaluated clusters are eligible and scored 70 or more, subject to due diligence and World Bank no-objection`}
+                  title="Highest-scoring eligible clusters"
+                  subtitle={`Eligible clusters ranked by evaluation score, out of ${evaluation.meta.evaluated} evaluated. A ranking only: selection for funding is decided by MSEA`}
                   legend={<Button asChild variant="outline" size="sm"><Link to="/evaluation">Open evaluation<ArrowUpRight /></Link></Button>}
                 >
                   <div className="top-list">
-                    {evaluation.grant_ready.slice(0, 5).map((r) => (
+                    {evaluation.top_eligible.slice(0, 5).map((r) => (
                       <div key={r.application_number} className="top-row ev-ready-row">
                         <button type="button" className="ev-ready-main" onClick={() => setSelectedId(r.application_number)}>
                           <span className={`gr-rank ${r.rank === 1 ? 'top' : ''}`}>{r.rank}</span>
@@ -542,7 +541,6 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
               county={county} setCounty={setCounty}
               chain={chain} setChain={setChain}
               sort={sort} setSort={setSort}
-              shortlist={shortlist} setShortlist={setShortlist}
               page={page} setPage={setPage}
               review={false}
             />
