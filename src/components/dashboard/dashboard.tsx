@@ -520,9 +520,6 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
             </>
           )}
 
-          <footer className="page-footer">
-            <span>Republic of Kenya · Micro and Small Enterprises Authority · KJET Component 2</span>
-          </footer>
         </main>
       </div>
 
