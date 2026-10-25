@@ -333,7 +333,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                   <span>Applicant-reported</span>
                   {Number(s?.jobs_excluded_count ?? 0) > 0 && (
                     <span className="metric-note" title={(s?.jobs_excluded ?? []).map(j => `${j.name} (${j.county}): ${number(Number(j.jobs_today ?? 0))} jobs today, ${number(Number(j.jobs_year3 ?? 0))} in year 3`).join('\n')}>
-                      Leaves out {s?.jobs_excluded_count} application{Number(s?.jobs_excluded_count) > 1 ? 's' : ''} with an implausible figure: {(s?.jobs_excluded ?? []).map(j => `${j.name}, ${j.county} (${number(Number(j.jobs_year3 ?? 0))})`).join('; ')}. To be confirmed at verification.
+                      Leaves out {s?.jobs_excluded_count} application{Number(s?.jobs_excluded_count) > 1 ? 's' : ''} with an implausible figure: {(s?.jobs_excluded ?? []).map(j => `${j.name}, ${j.county} (${number(Number(j.jobs_year3 ?? 0))})`).join('; ')}.
                     </span>
                   )}
                 </Metric>
