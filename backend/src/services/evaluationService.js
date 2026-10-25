@@ -27,9 +27,7 @@ const FROM = `
   JOIN clusters c ON c.application_number = ev.application_number
   LEFT JOIN cluster_financials f ON f.cluster_id = c.id
   LEFT JOIN cluster_membership m ON m.cluster_id = c.id
-  LEFT JOIN cluster_employment e ON e.cluster_id = c.id
-  LEFT JOIN (SELECT cluster_id, SUM(total_cost_kes) AS s FROM cluster_machinery GROUP BY cluster_id) mc ON mc.cluster_id = c.id
-  LEFT JOIN (SELECT cluster_id, SUM(total_cost_kes) AS s FROM cluster_services GROUP BY cluster_id) sv ON sv.cluster_id = c.id`;
+  LEFT JOIN cluster_employment e ON e.cluster_id = c.id`;
 
 const BASE = `
   ev.application_number, c.cluster_name, c.county, c.constituency, c.value_chain, c.legal_form,
@@ -38,7 +36,7 @@ const BASE = `
   ev.c4_rating, ev.c4_score, ev.c5_rating, ev.c5_score, ev.c6_rating, ev.c6_score,
   ev.fs_doc_check, ev.financial_screening AS workbook_financial_result,
   f.total_project_cost, f.grant_requested, f.cluster_contribution,
-  mc.s AS machinery_total, sv.s AS services_total,
+  f.machinery_subtotal AS machinery_total, f.services_subtotal AS services_total,
   m.total_members, m.women, m.youth, m.pwd, e.jobs_today, e.jobs_year3`;
 
 function screenRow(r) {
@@ -59,7 +57,7 @@ function shapeRow(r, tests) {
     eligibility: r.eligibility,
     criteria: CRITERIA.map((c, i) => ({ code: c.code, weight: c.weight, rating: n(r[`c${i + 1}_rating`]), score: n(r[`c${i + 1}_score`]) })),
     tests,
-    financial: { result: fin.result, category: fin.category, issues: fin.issues, ...fin.checks, ...fin.figures },
+    financial: { result: fin.result, category: fin.category, issues: fin.issues, sheet_result: r.workbook_financial_result ?? null, ...fin.checks, ...fin.figures },
     members: n(r.total_members), women: n(r.women), youth: n(r.youth), pwd: n(r.pwd), jobs_today: n(r.jobs_today), jobs_year3: n(r.jobs_year3),
   };
 }

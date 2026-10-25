@@ -297,6 +297,9 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
                         </td>
                         <td>
                           <StatusChip value={fin.result} />
+                          {fin.sheet_result && fin.sheet_result !== fin.result && (
+                            <span className="gr-sub ev-sheetdiff" title="The evaluation sheet screened this cluster on the figures it held at the time">Evaluation sheet: {fin.sheet_result}</span>
+                          )}
                           {fin.issues[0] && <span className="gr-sub">{fin.issues[0]}{fin.issues.length > 1 ? ` (+${fin.issues.length - 1} more)` : ''}</span>}
                         </td>
                         <td><RowActions r={r} onSelect={onSelect} /></td>

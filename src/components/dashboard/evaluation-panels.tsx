@@ -62,6 +62,9 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
         </div>
       </div>
       <div className="ev-result"><span>Screening result</span><StatusChip value={f.result} /></div>
+      {d.evaluator_finance.result && d.evaluator_finance.result !== f.result && (
+        <p className="ev-note"><strong>Evaluation sheet result: </strong>{d.evaluator_finance.result}. The sheet screened this cluster on the figures it held at the time; the result above uses the application figures on Drive today.</p>
+      )}
       {f.issues.length > 0 && (
         <div className="ev-issues">
           <h4>Issues identified</h4>

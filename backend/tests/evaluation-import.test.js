@@ -106,7 +106,7 @@ for (let r = 6; r <= 120; r++) {
 
 // ── Financial_Screening by cell address: B app; F machinery, G services, H total, I contribution, J grant; Z doc check; AE note; AF result; AG issues ──
 const { rows: drive } = await pool.query(`SELECT c.application_number, f.total_project_cost t, f.cluster_contribution cc, f.grant_requested g,
-  (SELECT SUM(total_cost_kes) FROM cluster_machinery m WHERE m.cluster_id = c.id) mach, (SELECT SUM(total_cost_kes) FROM cluster_services s WHERE s.cluster_id = c.id) serv
+  f.machinery_subtotal mach, f.services_subtotal serv
   FROM clusters c LEFT JOIN cluster_financials f ON f.cluster_id = c.id`);
 const driveBy = new Map(drive.map((x) => [x.application_number, x]));
 let compared = 0, differing = 0;

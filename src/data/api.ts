@@ -257,6 +257,7 @@ export async function askAssistant(question: string, history: AssistantMessage[]
 
 export interface EvalFinancial {
   result: string;
+  sheet_result: string | null;
   category: string;
   issues: string[];
   total: number | null;

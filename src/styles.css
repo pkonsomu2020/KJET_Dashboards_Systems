@@ -609,3 +609,5 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .fit-table td:last-child { overflow:hidden; }
 .ev-actions-cell .report-btn { width:100%;justify-content:center;padding-inline:8px; }
 .ev-actions-cell .profile-link { width:100%; }
+
+.ev-sheetdiff { color:var(--warning); }

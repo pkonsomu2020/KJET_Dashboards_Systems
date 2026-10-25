@@ -36,7 +36,7 @@ describe('evaluation status colours', () => {
 });
 
 const fin = (over: Partial<EvalRow['financial']> = {}) => ({
-  result: 'PASS', category: 'Category 2', issues: [], total: 1000, contribution: 500, grant: 500, machinery: 1000, services: 0,
+  result: 'PASS', sheet_result: 'PASS', category: 'Category 2', issues: [], total: 1000, contribution: 500, grant: 500, machinery: 1000, services: 0,
   contribution_plus_grant: 1000, total_minus_contribution_and_grant: 0, total_minus_machinery_and_services: 0, arithmetic_consistent: true,
   implausible_amounts: false, cluster_share: 0.5, kjet_share: 0.5, meets_50_percent_cash: true, max_eligible_grant: 500, grant_above_max: 0,
   min_cluster_cash: 500, contribution_shortfall: 0, document_check: 'Complete', ...over,
