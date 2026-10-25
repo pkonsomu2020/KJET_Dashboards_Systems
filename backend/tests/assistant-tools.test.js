@@ -18,13 +18,15 @@ const q = async (sql, p = []) => (await pool.query(sql, p)).rows;
   const t = (await toolImpl.portfolio_stats({})).totals;
   const [r] = await q(`SELECT COUNT(*)::int n, SUM(total_project_cost) cost, SUM(grant_requested) g FROM clusters c LEFT JOIN cluster_financials f ON f.cluster_id=c.id`);
   const [mm] = await q(`SELECT SUM(total_members)::int m, SUM(women)::int w FROM cluster_membership`);
-  const [jj] = await q(`SELECT SUM(jobs_year3)::int j FROM cluster_employment`);
+  // jobs totals leave out an application reporting more than 5,000 jobs (not plausible: one cluster reported 4,000,000)
+  const [jj] = await q(`SELECT SUM(jobs_year3) FILTER (WHERE GREATEST(jobs_today, jobs_year1, jobs_year3) <= 5000)::int j, COUNT(*) FILTER (WHERE GREATEST(jobs_today, jobs_year1, jobs_year3) > 5000)::int ex FROM cluster_employment`);
   check('cluster count', t.clusters === r.n, `${t.clusters} vs ${r.n}`);
   check('total project cost', Number(t.total_project_cost) === Number(r.cost));
   check('grant total', Number(t.grant_requested) === Number(r.g));
   check('members total', t.total_members === mm.m);
   check('women total', t.women === mm.w);
   check('jobs year 3 total', t.jobs_year3 === jj.j);
+  check('implausible jobs figures are counted, not summed', t.jobs_excluded_applications === jj.ex && jj.ex >= 1, `${t.jobs_excluded_applications} vs ${jj.ex}`);
 }
 // 2. Group by county sums to the whole
 {
