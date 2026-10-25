@@ -195,7 +195,8 @@ export async function getClusterByNumber(applicationNumber) {
   // Parallel fetch of all sub-tables
   const [contacts, business, products, buyers, machinery, services,
          quotations, pl, cashflow, balancesheet, impact,
-         risks, sustainability, documents, evaluation] = await Promise.all([
+         risks, sustainability, documents, evaluation, activities, vehicles] = await Promise.all([
+    // (activities and vehicles are the last two entries below)
     pool.query('SELECT * FROM cluster_contacts    WHERE cluster_id=$1 ORDER BY contact_type', [clusterId]),
     pool.query('SELECT * FROM cluster_business    WHERE cluster_id=$1 LIMIT 1',              [clusterId]),
     pool.query('SELECT * FROM cluster_products    WHERE cluster_id=$1 ORDER BY product_order',[clusterId]),
@@ -213,6 +214,8 @@ export async function getClusterByNumber(applicationNumber) {
     pool.query("SELECT to_jsonb(d) - 'content_text' AS doc FROM cluster_documents d WHERE d.cluster_id=$1 ORDER BY d.section, d.original_filename", [clusterId]),
     // Evaluation results come from /api/evaluation/clusters/:applicationNumber
     Promise.resolve({ rows: [] }),
+    pool.query('SELECT item_order, activity, months FROM cluster_activities WHERE cluster_id=$1 ORDER BY item_order', [clusterId]),
+    pool.query('SELECT item_order, details FROM cluster_vehicles WHERE cluster_id=$1 ORDER BY item_order', [clusterId]),
   ]);
 
   const data = {
@@ -232,6 +235,8 @@ export async function getClusterByNumber(applicationNumber) {
     sustainability: sustainability.rows[0] || null,
     documents:      documents.rows.map((r) => r.doc),
     evaluation:     evaluation.rows[0] || null,
+    activities:     activities.rows,
+    vehicles:       vehicles.rows,
   };
 
   await cacheSet(cacheKey, data, TTL.detail);

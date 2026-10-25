@@ -619,3 +619,15 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 
 .ev-signoff { display:flex;gap:28px;flex-wrap:wrap;padding:10px 14px;background:var(--background);border:1px solid var(--border);border-radius:7px;font-size:12px;font-weight:600; }
 .ev-signoff em { display:block;font-style:normal;font-size:9.5px;font-weight:650;letter-spacing:.05em;text-transform:uppercase;color:var(--muted-foreground);margin-bottom:2px; }
+
+.job-table-wrap { margin:4px 0 14px; }
+.job-table th, .job-table td { padding:7px 10px;font-size:12px; }
+
+/* ── Application tab ── */
+.app-para { margin-top:12px; }
+.app-para p { margin:3px 0 0;font-size:12px;line-height:1.75;color:var(--foreground);overflow-wrap:anywhere;white-space:pre-line; }
+.app-list { margin:4px 0 0;padding-left:18px;font-size:12px;line-height:1.75;color:var(--foreground); }
+.app-table-wrap { margin-top:6px;overflow-x:auto; }
+.app-table th, .app-table td { padding:7px 9px;font-size:11.5px;vertical-align:top;overflow-wrap:anywhere; }
+.app-month { text-align:center;padding:7px 3px !important;width:26px;text-transform:capitalize; }
+.app-dot { display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--primary); }

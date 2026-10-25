@@ -128,11 +128,11 @@ for (const [a, d] of drive) {
   str('bank: name', c.banking?.bank_name, T('Cluster bank name'));
   str('bank: account (leading zeros kept)', c.banking?.bank_account, T('Cluster bank account'));
   // row counts
-  const items = (label, keys) => { let n = 0; for (let i = 1; i <= 40; i++) if (keys.some((k) => { const v = f.get(`${label} ${i} ${k}`); return v !== undefined && v !== '' && !(k === 'total cost' && Number(v) === 0); })) n++; return n; };
+  const items = (label, keys) => { let n = 0; for (let i = 1; i <= 200; i++) if (keys.some((k) => { const v = f.get(`${label} ${i} ${k}`); return v !== undefined && v !== '' && !(k === 'total cost' && Number(v) === 0); })) n++; return n; };
   check('rows: machinery', (c.machinery ?? []).length === items('Machinery', ['desc', 'total cost']), `${a}: live=${(c.machinery ?? []).length} drive=${items('Machinery', ['desc', 'total cost'])}`);
   check('rows: services', (c.services ?? []).length === items('Service', ['desc', 'total cost']), `${a}: live=${(c.services ?? []).length} drive=${items('Service', ['desc', 'total cost'])}`);
-  check('rows: products', (c.products ?? []).length === [1, 2, 3, 4, 5, 6, 7, 8].filter((i) => f.get(`Product ${i} name`)).length, `${a}: products`);
-  check('rows: buyers', (c.buyers ?? []).length === [1, 2, 3, 4, 5, 6, 7, 8].filter((i) => f.get(`Buyer ${i} name`)).length, `${a}: buyers`);
+  check('rows: products', (c.products ?? []).length === Array.from({ length: 60 }, (_, i) => i + 1).filter((i) => f.get(`Product ${i} name`)).length, `${a}: products`);
+  check('rows: buyers', (c.buyers ?? []).length === Array.from({ length: 60 }, (_, i) => i + 1).filter((i) => f.get(`Buyer ${i} name`)).length, `${a}: buyers`);
   // a P&L row exists for every year in which Drive has ANY P&L value (not only years with revenue)
   const plYears = [1, 2, 3].filter((y) => [...f.keys()].some((k) => new RegExp('^Pl .* y' + y + ' (with|without)$').test(k) && f.get(k) !== '')).length;
   check('rows: profit and loss years', (c.pl ?? []).length === plYears, `${a}: live=${(c.pl ?? []).length} drive=${plYears}`);

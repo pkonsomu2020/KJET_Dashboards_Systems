@@ -34,6 +34,32 @@ async function ensureSyncSchema(client) {
   await client.query('CREATE INDEX IF NOT EXISTS idx_drive_sync_log_cluster ON drive_sync_log(cluster_id, synced_at DESC)');
   await client.query('ALTER TABLE cluster_buyers ADD COLUMN IF NOT EXISTS unit_price NUMERIC');
 
+  // Parts of the application that were not kept before: the declaration, the commitments, the activity plan and the vehicle justifications
+  await client.query(`
+    ALTER TABLE clusters
+      ADD COLUMN IF NOT EXISTS organization_name        TEXT,
+      ADD COLUMN IF NOT EXISTS declaration_name         TEXT,
+      ADD COLUMN IF NOT EXISTS declaration_position     TEXT,
+      ADD COLUMN IF NOT EXISTS declaration_date         DATE,
+      ADD COLUMN IF NOT EXISTS declaration_acknowledged BOOLEAN,
+      ADD COLUMN IF NOT EXISTS commitments_ticked       INTEGER,
+      ADD COLUMN IF NOT EXISTS commitments_total        INTEGER`);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS cluster_activities (
+      id         SERIAL PRIMARY KEY,
+      cluster_id INTEGER REFERENCES clusters(id) ON DELETE CASCADE,
+      item_order SMALLINT,
+      activity   TEXT,
+      months     TEXT
+    )`);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS cluster_vehicles (
+      id         SERIAL PRIMARY KEY,
+      cluster_id INTEGER REFERENCES clusters(id) ON DELETE CASCADE,
+      item_order SMALLINT,
+      details    TEXT
+    )`);
+
   // Every file in every section folder, with its extracted text
   await client.query(`
     ALTER TABLE cluster_documents
@@ -113,6 +139,16 @@ export async function applyApplicationCsv(client, cluster, f) {
   const cid = cluster.id;
   const n = (l) => num(f, l);
   const t = (l) => text(f, l);
+  // Numbered lists ("Machinery 41 desc", "Buyer 6 name") can run to any length: read up to the highest number present, never a fixed cap
+  const maxIndex = (label) => {
+    let max = 0;
+    for (const k of f.keys()) {
+      if (!k.startsWith(`${label} `)) continue;
+      const first = k.slice(label.length + 1).split(' ')[0];
+      if (/^\d+$/.test(first)) max = Math.max(max, Number(first));
+    }
+    return max;
+  };
 
   if (t('Application No.') !== cluster.application_number) {
     throw new Error(`CSV is for ${t('Application No.')}, not ${cluster.application_number}`);
@@ -143,6 +179,11 @@ export async function applyApplicationCsv(client, cluster, f) {
     vision: t('Cluster vision'),
     mission: t('Cluster mission'),
     goal_1: t('Goal 1'), goal_2: t('Goal 2'), goal_3: t('Goal 3'), goal_4: t('Goal 4'), goal_5: t('Goal 5'),
+    organization_name: t('Organization Name'),
+    declaration_name: t('Authorized declaration name'), declaration_position: t('Authorized declaration position'),
+    declaration_date: t('Authorized declaration date'), declaration_acknowledged: /^(on|yes|true)$/i.test(t('Declaration acknowledged') ?? '') ? true : (t('Declaration acknowledged') ? false : null),
+    commitments_ticked: [...f.keys()].filter((k) => /^Commitment \d+$/.test(k) && /^(on|yes|true)$/i.test(t(k) ?? '')).length,
+    commitments_total: [...f.keys()].filter((k) => /^Commitment \d+$/.test(k)).length,
   };
   // NOT NULL columns must never be blanked
   for (const k of ['cluster_name', 'county', 'value_chain']) if (cl[k] == null) delete cl[k];
@@ -235,7 +276,7 @@ export async function applyApplicationCsv(client, cluster, f) {
 
   // 9. list tables
   const products = [];
-  for (let i = 1; i <= 8; i++) {
+  for (let i = 1; i <= Math.max(8, maxIndex('Product')); i++) {
     const name = t(`Product ${i} name`);
     if (!name) continue;
     products.push({ product_order: i, product_name: name, unit: trunc(t(`Product ${i} unit`), 50), price_kes: n(`Product ${i} price`), active_months: t(`Product ${i} months`) });
@@ -243,7 +284,7 @@ export async function applyApplicationCsv(client, cluster, f) {
   await replaceRows(client, 'cluster_products', cid, products);
 
   const buyers = [];
-  for (let i = 1; i <= 8; i++) {
+  for (let i = 1; i <= Math.max(8, maxIndex('Buyer')); i++) {
     const name = t(`Buyer ${i} name`);
     if (!name) continue;
     buyers.push({
@@ -255,7 +296,7 @@ export async function applyApplicationCsv(client, cluster, f) {
 
   const lines = (_kind, label) => {
     const out = [];
-    for (let i = 1; i <= 40; i++) {
+    for (let i = 1; i <= Math.max(40, maxIndex(label)); i++) {
       const desc = t(`${label} ${i} desc`);
       const total = n(`${label} ${i} total cost`);
       if (!desc && !total) continue;
@@ -266,8 +307,24 @@ export async function applyApplicationCsv(client, cluster, f) {
   await replaceRows(client, 'cluster_machinery', cid, lines('machinery', 'Machinery'));
   await replaceRows(client, 'cluster_services', cid, lines('services', 'Service'));
 
+  // implementation activities (with the months each runs) and the vehicle justifications
+  const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const activities = [];
+  for (let i = 1; i <= Math.max(12, maxIndex('Activity')); i++) {
+    const name = t(`Activity ${i}`);
+    if (!name) continue;
+    activities.push({ item_order: i, activity: name, months: MONTHS.filter((m) => t(`Activity ${i} ${m}`)).join(',') });
+  }
+  await replaceRows(client, 'cluster_activities', cid, activities);
+  const vehicles = [];
+  for (let i = 1; i <= Math.max(5, maxIndex('Vehicle')); i++) {
+    const details = t(`Vehicle ${i} details`);
+    if (details) vehicles.push({ item_order: i, details });
+  }
+  await replaceRows(client, 'cluster_vehicles', cid, vehicles);
+
   const quotes = [];
-  for (let i = 1; i <= 30; i++) {
+  for (let i = 1; i <= Math.max(30, maxIndex('Item')); i++) {
     const name = t(`Item ${i} name`);
     if (!name) continue;
     quotes.push({

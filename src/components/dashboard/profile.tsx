@@ -3,13 +3,14 @@ import { ExternalLink, MapPin, ShieldCheck, AlertTriangle, Building2, Users, Bri
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, CartesianGrid, Legend, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { money, number, percent } from '@/data/portfolio';
 import { useClusterDetail, useEvaluationList } from '@/hooks/usePortfolio';
 import { useDriveFolder, useDriveFileContent } from '@/hooks/useDrive';
 import type { ClusterRow } from '@/data/api';
 import type { DriveFile } from '@/hooks/useDrive';
 import { EvaluationTab } from './evaluation-tab';
+import { ApplicationTab } from './application-tab';
 
 const palette = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)'];
 
@@ -94,11 +95,14 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
   const authorizedRep = c.contacts?.find(x => x.contact_type === 'authorized');
   const manager       = c.contacts?.find(x => x.contact_type === 'manager');
 
+  // every employment figure the application gives: all jobs, women, youth and people with disability
+  const jobNum = (v: string | number | null | undefined) => (v == null || v === '' ? 0 : Number(v));
   const employment = [
-    { name: 'Baseline', jobs: Number(c.jobs_today) },
-    { name: 'Year 1',   jobs: Number(c.jobs_year1) },
-    { name: 'Year 3',   jobs: Number(c.jobs_year3) },
+    { name: 'Baseline', Total: jobNum(c.jobs_today), Women: jobNum(c.jobs_women_today), Youth: jobNum(c.jobs_youth_today), 'People with disability': jobNum(c.jobs_pwd_today) },
+    { name: 'Year 1',   Total: jobNum(c.jobs_year1), Women: jobNum(c.jobs_women_year1), Youth: jobNum(c.jobs_youth_year1), 'People with disability': jobNum(c.jobs_pwd_year1) },
+    { name: 'Year 3',   Total: jobNum(c.jobs_year3), Women: jobNum(c.jobs_women_year3), Youth: jobNum(c.jobs_youth_year3), 'People with disability': jobNum(c.jobs_pwd_year3) },
   ];
+  const jobSeries = [['Total', 'var(--chart-1)'], ['Women', 'var(--chart-2)'], ['Youth', 'var(--chart-3)'], ['People with disability', 'var(--chart-4)']] as const;
 
   const costBreakdown = [
     { name: 'Machinery',         value: c.machinery?.reduce((s, m) => s + Number(m.total_cost_kes ?? 0), 0) ?? 0 },
@@ -130,6 +134,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
         <TabsList className="profile-tabs">
           <TabsTrigger value="overview"><Building2 size={13} className="mr-1.5" />Overview</TabsTrigger>
           <TabsTrigger value="evaluation"><Award size={13} className="mr-1.5" />Evaluation</TabsTrigger>
+          <TabsTrigger value="application"><FileText size={13} className="mr-1.5" />Application</TabsTrigger>
           <TabsTrigger value="financials"><Wallet size={13} className="mr-1.5" />Financials</TabsTrigger>
           <TabsTrigger value="machinery"><Factory size={13} className="mr-1.5" />Machinery</TabsTrigger>
           <TabsTrigger value="inclusion"><Users size={13} className="mr-1.5" />Inclusion</TabsTrigger>
@@ -168,27 +173,37 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
 
           <section className="profile-section">
             <h3>Employment outlook</h3>
-            <div className="profile-job-grid">
-              {employment.map(v => (
-                <div key={v.name}><strong>{number(v.jobs)}</strong><span>{v.name} jobs</span></div>
-              ))}
+            <div className="job-table-wrap">
+              <table className="portfolio-table job-table">
+                <thead><tr><th>Jobs</th>{employment.map(v => <th key={v.name} className="gr-num">{v.name}</th>)}</tr></thead>
+                <tbody>
+                  {jobSeries.map(([k]) => (
+                    <tr key={k}><td>{k}</td>{employment.map(v => <td key={v.name} className="gr-num"><strong>{number(v[k])}</strong></td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
             <div className="chart-box">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={employment}>
+                <BarChart data={employment} barCategoryGap="22%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={v => number(v)} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={v => number(Number(v))} contentStyle={tooltipStyle} />
-                  <Bar dataKey="jobs" fill="var(--primary)" radius={[4, 4, 0, 0]} barSize={55} />
+                  <YAxis tickFormatter={v => number(v)} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip formatter={(v, name) => [`${number(Number(v))} jobs`, name]} contentStyle={tooltipStyle} cursor={{ fill: 'var(--muted)' }} />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                  {jobSeries.map(([k, color]) => <Bar key={k} dataKey={k} fill={color} radius={[3, 3, 0, 0]} />)}
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            {c.income_assumptions && <p className="text-xs leading-relaxed text-muted-foreground"><strong>Income assumptions: </strong>{c.income_assumptions}</p>}
             <p>Employment figures are applicant-reported projections, not verified jobs created.</p>
           </section>
         </TabsContent>
-
         {/* Evaluation (scores and decisions from the evaluation workbook) */}
         <TabsContent value="evaluation"><EvaluationTab applicationNumber={c.application_number} /></TabsContent>
+
+        {/* Everything else the applicant submitted */}
+        <TabsContent value="application"><ApplicationTab cluster={c} /></TabsContent>
 
         {/* Financials */}
         <TabsContent value="financials">
@@ -347,17 +362,15 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
               <span><i className="legend-dot secondary" />Men</span>
             </div>
 
-            {c.impact && (
-              <>
-                <h3 className="mt-5">Employment by gender &amp; age (projections)</h3>
-                <div className="detail-grid mt-3">
-                  <Detail label="Women jobs today / Y1 / Y3" value={`${c.impact.jobs_women_today} / ${c.impact.jobs_women_year1} / ${c.impact.jobs_women_year3}`} />
-                  <Detail label="Youth jobs today / Y1 / Y3" value={`${c.impact.jobs_youth_today} / ${c.impact.jobs_youth_year1} / ${c.impact.jobs_youth_year3}`} />
-                  <Detail label="PWD jobs today / Y1 / Y3"   value={`${c.impact.jobs_pwd_today} / ${c.impact.jobs_pwd_year1} / ${c.impact.jobs_pwd_year3}`} />
-                  <Detail label="Avg income today / Y1 / Y3 (KES)" value={`${money(Number(c.impact.income_today), false)} / ${money(Number(c.impact.income_year1), false)} / ${money(Number(c.impact.income_year3), false)}`} />
-                </div>
-              </>
-            )}
+            <>
+              <h3 className="mt-5">Employment by gender &amp; age (projections)</h3>
+              <div className="detail-grid mt-3">
+                <Detail label="Women jobs today / Y1 / Y3" value={`${number(jobNum(c.jobs_women_today))} / ${number(jobNum(c.jobs_women_year1))} / ${number(jobNum(c.jobs_women_year3))}`} />
+                <Detail label="Youth jobs today / Y1 / Y3" value={`${number(jobNum(c.jobs_youth_today))} / ${number(jobNum(c.jobs_youth_year1))} / ${number(jobNum(c.jobs_youth_year3))}`} />
+                <Detail label="PWD jobs today / Y1 / Y3"   value={`${number(jobNum(c.jobs_pwd_today))} / ${number(jobNum(c.jobs_pwd_year1))} / ${number(jobNum(c.jobs_pwd_year3))}`} />
+                <Detail label="Avg income today / Y1 / Y3 (KES)" value={`${money(jobNum(c.income_today), false)} / ${money(jobNum(c.income_year1), false)} / ${money(jobNum(c.income_year3), false)}`} />
+              </div>
+            </>
 
             <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
               Youth and PWD membership overlaps with gender categories and is not added to the gender total. No inclusion target was supplied, so inclusion compliance is not assessed.

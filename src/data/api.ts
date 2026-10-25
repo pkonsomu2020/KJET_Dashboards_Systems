@@ -100,6 +100,11 @@ export interface ClusterListResponse {
 
 export interface ClusterDetail extends ClusterRow {
   status: string;
+  // employment: total, women, youth and people with disability, today / year 1 / year 3
+  jobs_women_today: string | null; jobs_women_year1: string | null; jobs_women_year3: string | null;
+  jobs_youth_today: string | null; jobs_youth_year1: string | null; jobs_youth_year3: string | null;
+  jobs_pwd_today: string | null; jobs_pwd_year1: string | null; jobs_pwd_year3: string | null;
+  income_today: string | null; income_year1: string | null; income_year3: string | null; income_assumptions: string | null;
   physical_address: string;
   phone: string;
   email: string;
