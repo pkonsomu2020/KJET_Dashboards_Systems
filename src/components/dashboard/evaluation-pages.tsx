@@ -275,7 +275,7 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
         {rows.length === 0 ? <Empty /> : (
           <div className="fit-wrap">
             <table className="portfolio-table fit-table">
-              <colgroup><col style={{ width: '27%' }} /><col style={{ width: '12%' }} /><col style={{ width: '22%' }} /><col style={{ width: '15%' }} /><col /><col style={{ width: 158 }} /></colgroup>
+              <colgroup><col style={{ width: '22%' }} /><col style={{ width: '9%' }} /><col style={{ width: '18%' }} /><col style={{ width: '12%' }} /><col /><col style={{ width: 176 }} /></colgroup>
               <thead><tr><th>Cluster</th><th>Category</th><th className="gr-num">Drive figures</th><th>Cash share</th><th>Result</th><th aria-label="Actions" /></tr></thead>
               <tbody>
                 {rows.map((r) => {
@@ -347,7 +347,7 @@ export function EligibilityPage({ onSelect }: { onSelect: (a: string) => void })
         {rows.length === 0 ? <Empty /> : (
           <div className="fit-wrap">
             <table className="portfolio-table fit-table">
-              <colgroup><col style={{ width: '30%' }} /><col style={{ width: '18%' }} /><col /><col style={{ width: '13%' }} /><col style={{ width: 158 }} /></colgroup>
+              <colgroup><col style={{ width: '26%' }} /><col style={{ width: '16%' }} /><col /><col style={{ width: '12%' }} /><col style={{ width: 176 }} /></colgroup>
               <thead><tr><th>Cluster</th><th>Eligibility</th><th>Tests E1 to E10</th><th>Score</th><th aria-label="Actions" /></tr></thead>
               <tbody>
                 {rows.map((r) => {
@@ -403,7 +403,7 @@ export function ScorecardPage({ onSelect }: { onSelect: (a: string) => void }) {
         {rows.length === 0 ? <Empty /> : (
           <div className="fit-wrap">
             <table className="portfolio-table fit-table">
-              <colgroup><col style={{ width: '27%' }} /><col /><col style={{ width: '14%' }} /><col style={{ width: '14%' }} /><col style={{ width: 158 }} /></colgroup>
+              <colgroup><col style={{ width: '24%' }} /><col /><col style={{ width: '13%' }} /><col style={{ width: '13%' }} /><col style={{ width: 176 }} /></colgroup>
               <thead><tr><th>Cluster</th><th>Criteria (points earned / weight)</th><th>Total score</th><th>Band</th><th aria-label="Actions" /></tr></thead>
               <tbody>
                 {rows.map((r) => {
