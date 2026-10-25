@@ -129,12 +129,10 @@ export function ScorePanel({ d }: { d: EvalDetail }) {
           </details>
         ))}
       </div>
-      {d.expert_remarks && (
-        <div className="ev-issues">
-          <h4>Expert review</h4>
-          {d.expert_remarks && <p>{d.expert_remarks}</p>}
-        </div>
-      )}
+      <div className="ev-issues">
+        <h4>Expert review</h4>
+        {d.expert_remarks ? <p>{d.expert_remarks}</p> : null}
+      </div>
     </div>
   );
 }

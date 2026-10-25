@@ -197,10 +197,9 @@ export async function buildEvaluationReport(applicationNumber) {
     if (!noted && k.justification) card('Justification', '', COLORS.muted, [[null, k.justification]]);
   }
 
-  if (d.expert_remarks) {
-    h2('5. Expert review');
-    if (d.expert_remarks) para(d.expert_remarks);
-  }
+  h2('5. Expert review');
+  if (d.expert_remarks) para(d.expert_remarks);   // left empty until the sheet has remarks for this cluster
+  else doc.moveDown(2);
 
   // ── Footer on every page ──
   const stamp = `Generated ${new Date().toISOString().slice(0, 10)}  |  Scores and findings: ${clean(d.source.file ?? 'evaluation sheet')}  |  Amounts: application data on Drive`;
