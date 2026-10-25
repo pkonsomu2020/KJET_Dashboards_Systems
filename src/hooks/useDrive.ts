@@ -135,6 +135,12 @@ export function useDriveEvents() {
           applicationNumbers?: string[];
         };
 
+        if (msg.type === 'evaluation:change') {
+          // the online evaluation sheet was updated: reload every evaluation screen and the cluster list
+          queryClient.invalidateQueries({ queryKey: ['evaluation'] });
+          queryClient.invalidateQueries({ queryKey: ['clusters'] });
+          return;
+        }
         if (msg.type !== 'drive:change') return;
 
         console.log('[Drive SSE] Change detected:', msg);

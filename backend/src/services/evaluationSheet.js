@@ -2,7 +2,7 @@
  * evaluationSheet.js
  *
  * Keeps the evaluation results in step with the online Google Sheet (the Co-Investment Evaluation
- * Tool). The sheet's modified time is checked every EVALUATION_POLL_SECONDS (default 30). A change is
+ * Tool). The sheet's modified time is checked every EVALUATION_POLL_SECONDS (default 15). A change is
  * imported once it has stayed the same for a further poll, so a half-finished edit is not imported.
  * The import is one transaction: if the sheet is mid-edit or its layout is broken, the previous
  * evaluation stays in place and the problem is logged.
@@ -15,6 +15,10 @@ import { getDriveClient } from './driveService.js';
 import { importEvaluation, ensureEvaluationSchema } from './evaluationImport.js';
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+let notifier = null;
+/** Called after each successful import so open dashboards can refresh at once. */
+export const setEvaluationNotifier = (fn) => { notifier = fn; };
 
 const status = {
   enabled: false, sheet_name: null, sheet_modified: null, last_checked: null,
@@ -48,6 +52,7 @@ export async function syncEvaluationSheet({ force = false } = {}) {
     status.last_imported = new Date().toISOString();
     status.last_error = null;
     status.imported_clusters = r.imported;
+    try { notifier?.(); } catch { /* nobody listening */ }
     console.log(`[Evaluation] Imported ${r.imported} clusters from the online sheet, modified ${meta.modifiedTime}`);
     return r;
   } catch (err) {
@@ -67,7 +72,7 @@ export async function startEvaluationSheetSync() {
   status.enabled = true;
   await ensureEvaluationSchema(pool);
   await syncEvaluationSheet({ force: true });
-  const every = Math.max(10, Number(process.env.EVALUATION_POLL_SECONDS) || 30) * 1000;
+  const every = Math.max(10, Number(process.env.EVALUATION_POLL_SECONDS) || 15) * 1000;
   setInterval(() => { syncEvaluationSheet(); }, every).unref?.();
   console.log(`[Evaluation] Watching the online sheet every ${every / 1000}s`);
 }

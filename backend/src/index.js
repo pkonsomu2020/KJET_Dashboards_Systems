@@ -28,7 +28,7 @@ import driveRouter     from './routes/drive.js';
 import assistantRouter from './routes/assistant.js';
 import evaluationRouter from './routes/evaluation.js';
 import { ensureEvaluationSchema } from './services/evaluationImport.js';
-import { startEvaluationSheetSync } from './services/evaluationSheet.js';
+import { startEvaluationSheetSync, setEvaluationNotifier } from './services/evaluationSheet.js';
 import pool from './db/pool.js';
 
 const app  = express();
@@ -57,6 +57,17 @@ export function broadcastDriveChange(folderIds, applicationNumbers = []) {
   console.log(`[SSE] Broadcast drive:change to ${sseClients.size} clients`);
 }
 setBroadcaster(broadcastDriveChange);
+
+// When the online evaluation sheet changes and is imported, tell every open dashboard to reload the evaluation
+setEvaluationNotifier(() => {
+  const payload = JSON.stringify({ type: 'evaluation:change', ts: Date.now() });
+  for (const res of sseClients) {
+    try { res.write(`data: ${payload}
+
+`); } catch { sseClients.delete(res); }
+  }
+  console.log(`[SSE] Broadcast evaluation:change to ${sseClients.size} clients`);
+});
 
 // ── Global middleware ─────────────────────────────────────────
 app.use(helmetMiddleware);
