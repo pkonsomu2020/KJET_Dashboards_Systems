@@ -611,3 +611,8 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .ev-actions-cell .profile-link { width:100%; }
 
 .ev-sheetdiff { color:var(--warning); }
+
+/* chips and score bars wrap inside table cells instead of running into the next column */
+.fit-table .band-chip, .fit-table .gate-chip { white-space:normal;text-align:left;max-width:100%; }
+.fit-table .score-bar { flex-wrap:wrap;gap:4px 8px; }
+.fit-table .score-bar .score-track { flex:1 1 56px;min-width:56px; }

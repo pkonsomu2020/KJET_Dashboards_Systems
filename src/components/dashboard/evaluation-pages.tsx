@@ -406,7 +406,7 @@ export function ScorecardPage({ onSelect }: { onSelect: (a: string) => void }) {
         {rows.length === 0 ? <Empty /> : (
           <div className="fit-wrap">
             <table className="portfolio-table fit-table">
-              <colgroup><col style={{ width: '24%' }} /><col /><col style={{ width: '13%' }} /><col style={{ width: '13%' }} /><col style={{ width: 176 }} /></colgroup>
+              <colgroup><col style={{ width: '21%' }} /><col /><col style={{ width: '11%' }} /><col style={{ width: '15%' }} /><col style={{ width: 176 }} /></colgroup>
               <thead><tr><th>Cluster</th><th>Criteria (points earned / weight)</th><th>Total score</th><th>Band</th><th aria-label="Actions" /></tr></thead>
               <tbody>
                 {rows.map((r) => {
