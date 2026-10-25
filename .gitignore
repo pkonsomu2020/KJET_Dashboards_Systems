@@ -67,3 +67,4 @@ deploy
 # Confidential evaluation workbooks (scores and funding decisions): never commit
 KJET_CoInvestment_Evaluation_Tool*.xlsx
 *.xlsx
+KJET C1 Co-investment Selection Report.docx
