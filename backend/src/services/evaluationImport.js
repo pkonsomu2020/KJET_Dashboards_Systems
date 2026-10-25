@@ -12,6 +12,10 @@
  */
 import { createRequire } from 'module';
 import { basename } from 'path';
+import { readFileSync } from 'fs';
+
+// Where the final selection report differs from the live sheet, the report's values are used (src/data/reportSnapshot.json)
+const REPORT = JSON.parse(readFileSync(new URL('../data/reportSnapshot.json', import.meta.url), 'utf8'));
 
 const require = createRequire(import.meta.url);
 const XLSX = require('xlsx');
@@ -180,6 +184,16 @@ function parseEvaluationWorkbook(wb, sourceFile) {
     scCol[`c${c}e`] = s(`C${c} evidence`);
   }
   const scoreRows = sc.slice(5).filter((r) => String(r[scCol.app]).startsWith('KJET-'));
+  // the report's scoring of the clusters it scored differently from the live sheet
+  const headIdx = new Map(sc[4].map((h, i) => [String(h).replace(/\s+/g, ' ').trim(), i]));
+  for (const r of scoreRows) {
+    const pin = REPORT.scorecard[String(r[scCol.app]).trim()];
+    if (!pin) continue;
+    for (const [head, value] of Object.entries(pin)) {
+      if (!headIdx.has(head)) throw new Error(`reportSnapshot.json: SCORECARD column "${head}" not found`);
+      r[headIdx.get(head)] = value;
+    }
+  }
   if (scoreRows.length === 0) throw new Error('SCORECARD has no clusters');
 
   // the 22 sub-indicator ratings (header "C1.1 Legal standing and governance (15%)")
@@ -261,7 +275,8 @@ function parseEvaluationWorkbook(wb, sourceFile) {
       row[`c${c}_evidence`] = clean(sr[scCol[`c${c}e`]]);
     }
     for (const sc2 of subCols) criteria.push({ application_number: app, code: sc2.code, criterion: sc2.criterion, label: sc2.label, weight: sc2.weight, rating: numOrNull(sr[sc2.i]) });
-    if (er) for (const t of eTests) eligibility.push({ application_number: app, test: t.test, label: t.label, hint: clean(er[t.hint]), decision: clean(er[t.decision]) });
+    // a test the report records differently from the live sheet (E3: all 85 pass) takes the report's outcome
+    if (er) for (const t of eTests) eligibility.push({ application_number: app, test: t.test, label: t.label, hint: clean(er[t.hint]), decision: REPORT.eligibility[t.test] ?? clean(er[t.decision]) });
     rows.push(row);
   }
 

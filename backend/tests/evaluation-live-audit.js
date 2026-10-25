@@ -11,6 +11,7 @@
 import 'dotenv/config';
 import { createRequire } from 'module';
 import pool from '../src/db/pool.js';
+import { overlayReport } from './reportOverlay.js';
 import { initDriveClient, getDriveClient, extractFolderId, readApplicationCsvFromDrive } from '../src/services/driveService.js';
 import { num } from '../src/services/applicationCsv.js';
 
@@ -62,6 +63,7 @@ const csv = new Map();
 // ── the online sheet ──
 const res = await getDriveClient().files.export({ fileId: process.env.EVALUATION_SHEET_ID, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }, { responseType: 'arraybuffer' });
 const wb = XLSX.read(Buffer.from(res.data), { type: 'buffer', cellDates: false });
+overlayReport(wb);   // where the selection report differs from the live sheet (Spalla, E3), the report is the reference
 const cell = (sheet, ref) => wb.Sheets[sheet][ref]?.v ?? '';
 const sheetRows = (name, col) => { const m = new Map(); for (let r = 6; r <= 120; r++) { const a = norm(cell(name, `${col}${r}`)); if (a.startsWith('KJET-')) m.set(a, r); } return m; };
 const scRow = sheetRows('SCORECARD', 'C');

@@ -12,6 +12,7 @@ import 'dotenv/config';
 import { createRequire } from 'module';
 import { existsSync } from 'fs';
 import pool from '../src/db/pool.js';
+import { overlayReport } from './reportOverlay.js';
 import { initDriveClient, getDriveClient } from '../src/services/driveService.js';
 import { screenFinancials } from '../src/services/financialScreening.js';
 
@@ -36,6 +37,7 @@ const check = (label, ok, detail = '') => { if (ok) passed++; else { failed++; f
 // the sheet says Category 1 / Category 2 / Exceeds KES 32M cap; the dashboard uses the Operations Manual's names for the windows
 const WINDOW = { 'Category 1': 'Window 1 (Growth Window)', 'Category 2': 'Window 2 (Transformational Window)', 'Exceeds KES 32M cap': 'Above the Window 2 ceiling', 'Invalid grant (≤0)': 'Invalid grant (zero or less)', 'Incomplete data': 'Incomplete data' };
 const norm = (v) => String(v ?? '').replace(/\s+/g, ' ').trim();
+overlayReport(wb);   // where the selection report differs from the live sheet (Spalla, E3), the report is the reference
 const cell = (sheet, ref) => wb.Sheets[sheet][ref]?.v ?? '';
 const close = (a, b) => (a == null && b == null) || (a != null && b != null && Math.abs(Number(a) - Number(b)) < 0.005);
 

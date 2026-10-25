@@ -163,7 +163,8 @@ const lfKey = { 'Cooperative society': 'cooperative', 'Limited company': 'compan
 for (const r of rows('Table 21')) {
   const g = D.filter((d) => d.legal_form === lfKey[r[0]]);
   cmp('Table 21', `${r[0]}: apps`, n(r[1]), g.length);
-  cmp('Table 21', `${r[0]}: mean score`, n(r[2]), Math.round(mean(g.map((d) => d.score)) * 10) / 10, 0.06);
+  // the report rounds an exact .x5 mean half to even (40.25 is printed as 40.2); compare against the unrounded mean
+  cmp('Table 21', `${r[0]}: mean score`, n(r[2]), mean(g.map((d) => d.score)), 0.0501);
   cmp('Table 21', `${r[0]}: rec/ref/rej`, `${r[3]}/${r[4]}/${r[5]}`, `${g.filter((d) => d.band === 'Recommended').length}/${g.filter((d) => d.band === 'Referred with Comments').length}/${g.filter((d) => d.band === 'Rejected').length}`);
 }
 
