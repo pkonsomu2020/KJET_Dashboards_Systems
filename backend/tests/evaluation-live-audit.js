@@ -75,7 +75,7 @@ check('sheet rules read (5M, 32M, 50%)', P.cat1 === 5e6 && P.cat2 === 32e6 && P.
 
 function expectedResult(total, cash, grant, mach, serv, docCheck) {
   const cat = grant <= 0 ? 'Invalid grant' : grant <= P.cat1 ? 'Category 1' : grant <= P.cat2 ? 'Category 2' : 'cap';
-  const arith = Math.abs(total - (cash + grant)) <= P.tol && Math.abs(total - (mach + serv)) <= P.tol;
+  const arith = Math.abs(total - (cash + grant)) <= P.tol && (mach == null && serv == null || Math.abs(total - ((mach ?? 0) + (serv ?? 0))) <= P.tol);
   const implausible = total < P.minTotal || cash < P.minCash || grant < 0;
   const meets = total > 0 && cash / total >= P.share - 0.001;
   if (cat === 'Invalid grant' || implausible || !arith) return 'FOLLOW-UP: data error';
@@ -91,32 +91,30 @@ const critCols = { C1: 'P', C2: 'Y', C3: 'AE', C4: 'AJ', C5: 'AO', C6: 'AU' };
 for (const [a, r] of live) {
   const f = csv.get(a);
   if (!f) { check('Drive CSV readable', false, a); continue; }
-  // the screening runs on the figures the evaluation was made on: they must equal the online sheet
-  const fr = fsRow.get(a);
-  const nz = (ref) => { const v = cell('Financial_Screening', ref); return v === '' ? null : Number(v); };
-  const total = nz(`H${fr}`), cash = nz(`I${fr}`), grant = nz(`J${fr}`), mach = nz(`F${fr}`), serv = nz(`G${fr}`);
+  // one set of amounts per cluster: the cluster's application_details.csv on Drive
   const fin = r.financial;
-  check('amounts: total = the evaluation sheet', close(fin.total, total), `${a}: ${fin.total} vs ${total}`);
-  check('amounts: cluster contribution = the evaluation sheet', close(fin.contribution, cash), `${a}: ${fin.contribution} vs ${cash}`);
-  check('amounts: grant requested = the evaluation sheet', close(fin.grant, grant), `${a}: ${fin.grant} vs ${grant}`);
-  check('amounts: machinery subtotal = the evaluation sheet', close(fin.machinery, mach), `${a}: ${fin.machinery} vs ${mach}`);
-  check('amounts: services subtotal = the evaluation sheet', close(fin.services, serv), `${a}: ${fin.services} vs ${serv}`);
+  const total = num(f, 'Total project cost'), cash = num(f, 'Cluster contribution'), grant = num(f, 'Grant requested');
+  const mach = num(f, 'Machinery subtotal'), serv = num(f, 'Services subtotal');
+  check('amounts: total project cost = application', close(fin.total, total), `${a}: ${fin.total} vs ${total}`);
+  check('amounts: cluster cash contribution = application', close(fin.contribution, cash), `${a}: ${fin.contribution} vs ${cash}`);
+  check('amounts: matching grant requested = application', close(fin.grant, grant), `${a}: ${fin.grant} vs ${grant}`);
+  check('amounts: machinery subtotal = application', close(fin.machinery, mach), `${a}: ${fin.machinery} vs ${mach}`);
+  check('amounts: services subtotal = application', close(fin.services, serv), `${a}: ${fin.services} vs ${serv}`);
+  check('members: women = application (blank counts as 0)', close(r.women ?? 0, num(f, 'Total members women') ?? 0), `${a}: ${r.women} vs ${num(f, 'Total members women')}`);
+  check('members: youth = application (blank counts as 0)', close(r.youth ?? 0, num(f, 'Total members youth') ?? 0), `${a}: ${r.youth} vs ${num(f, 'Total members youth')}`);
+  check('jobs: year 3 = application', close(r.jobs_year3, num(f, 'Jobs year3')), `${a}: ${r.jobs_year3} vs ${num(f, 'Jobs year3')}`);
 
-  // Drive today is kept beside them and must equal the application on Drive
-  check('drive today: total = Drive', close(fin.drive.total, num(f, 'Total project cost')), `${a}: ${fin.drive.total} vs ${num(f, 'Total project cost')}`);
-  check('drive today: contribution = Drive', close(fin.drive.contribution, num(f, 'Cluster contribution')), `${a}`);
-  check('drive today: grant = Drive', close(fin.drive.grant, num(f, 'Grant requested')), `${a}: ${fin.drive.grant} vs ${num(f, 'Grant requested')}`);
-  const differs = !(close(total, num(f, 'Total project cost'), 1) && close(cash, num(f, 'Cluster contribution'), 1) && close(grant, num(f, 'Grant requested'), 1));
-  check('drive today: flagged exactly when Drive differs from the evaluation', fin.drive.differs === differs, `${a}: flag ${fin.drive.differs} vs ${differs}`);
-  check('members: women = Drive (blank counts as 0)', close(r.women ?? 0, num(f, 'Total members women') ?? 0), `${a}: ${r.women} vs ${num(f, 'Total members women')}`);
-  check('members: youth = Drive (blank counts as 0)', close(r.youth ?? 0, num(f, 'Total members youth') ?? 0), `${a}: ${r.youth} vs ${num(f, 'Total members youth')}`);
-  check('jobs: year 3 = Drive', close(r.jobs_year3, num(f, 'Jobs year3')), `${a}: ${r.jobs_year3} vs ${num(f, 'Jobs year3')}`);
-
-  // screening result = the sheet's own result, on the same figures
-  check('screening result = the sheet', norm(fin.result) === norm(cell('Financial_Screening', `AF${fr}`)), `${a}: ${fin.result} vs ${cell('Financial_Screening', `AF${fr}`)}`);
-  check('screening window = the sheet', norm(fin.category) === WINDOW[norm(cell('Financial_Screening', `U${fr}`))], `${a}`);
-  check('screening: maximum eligible grant = the sheet', close(fin.max_eligible_grant, nz(`V${fr}`)), `${a}`);
-  check('screening: contribution shortfall = the sheet', close(fin.contribution_shortfall, nz(`Y${fr}`)), `${a}`);
+  // screening: the sheet's rules (Parameters sheet) applied to those amounts, worked out here independently
+  if (total != null && cash != null && grant != null) {
+    const exp = expectedResult(total, cash, grant, mach, serv, fin.document_check);
+    check('screening result = the sheet rules on the application amounts', fin.result === exp, `${a}: ${fin.result} vs ${exp}`);
+    const win = grant <= 0 ? 'Invalid grant (zero or less)' : grant <= P.cat1 ? 'Window 1 (Growth Window)' : grant <= P.cat2 ? 'Window 2 (Transformational Window)' : 'Above the Window 2 ceiling';
+    check('screening window by matching grant requested', fin.category === win, `${a}: ${fin.category} vs ${win}`);
+    check('screening: cluster cash share = cash / total', total > 0 ? close(fin.cluster_share, cash / total, 0.0001) : true, `${a}`);
+    check('screening: maximum matching grant', total > 0 ? close(fin.max_eligible_grant, Math.min(total * P.kjet, P.cat2)) : true, `${a}: ${fin.max_eligible_grant}`);
+    const shortfall = total > 0 ? Math.max(0, (total - Math.min(total * P.kjet, P.cat2)) - cash) : null;
+    check('screening: cluster cash contribution shortfall', total > 0 ? close(fin.contribution_shortfall, shortfall) : true, `${a}: ${fin.contribution_shortfall} vs ${shortfall}`);
+  }
 
   // scores and tests = the online sheet
   const sr = scRow.get(a), er = elRow.get(a);

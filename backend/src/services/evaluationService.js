@@ -36,30 +36,18 @@ const BASE = `
   ev.c4_rating, ev.c4_score, ev.c5_rating, ev.c5_score, ev.c6_rating, ev.c6_score,
   ev.fs_doc_check, ev.financial_screening AS workbook_financial_result,
   COALESCE(ev.eval_value_chain, c.value_chain) AS value_chain,
-  ev.eval_total_cost, ev.eval_grant_requested, ev.eval_contribution, ev.eval_machinery, ev.eval_services, ev.eval_s5_budget,
-  f.total_project_cost, f.grant_requested, f.cluster_contribution,
+  f.total_project_cost, f.grant_requested, f.cluster_contribution, f.section5_budget_total,
   f.machinery_subtotal AS machinery_total, f.services_subtotal AS services_total,
   m.total_members, m.women, m.youth, m.pwd, e.jobs_today, e.jobs_year3`;
 
 const n = (v) => (v == null ? null : Number(v));
 
-/** The screening runs on the figures the evaluation was made on (the sheet); Drive today is kept beside them. */
+/** The screening runs on the amounts in the cluster's application (application_details.csv): one set per cluster. */
 function screenRow(r) {
-  const hasSheet = r.eval_total_cost != null || r.eval_grant_requested != null;
-  return screenFinancials(hasSheet ? {
-    total: r.eval_total_cost, contribution: r.eval_contribution, grant: r.eval_grant_requested,
-    machinery: r.eval_machinery, services: r.eval_services, s5: r.eval_s5_budget,
-  } : {
+  return screenFinancials({
     total: r.total_project_cost, contribution: r.cluster_contribution, grant: r.grant_requested,
-    machinery: r.machinery_total, services: r.services_total,
+    machinery: r.machinery_total, services: r.services_total, s5: r.section5_budget_total,
   }, { docCheck: r.fs_doc_check });
-}
-
-const near = (a, b) => (a == null && b == null) || (a != null && b != null && Math.abs(Number(a) - Number(b)) <= 1);
-function driveToday(r) {
-  const drive = { total: n(r.total_project_cost), contribution: n(r.cluster_contribution), grant: n(r.grant_requested) };
-  const differs = r.eval_total_cost != null && !(near(drive.total, r.eval_total_cost) && near(drive.contribution, r.eval_contribution) && near(drive.grant, r.eval_grant_requested));
-  return { ...drive, differs };
 }
 
 function shapeRow(r, tests) {
@@ -71,7 +59,7 @@ function shapeRow(r, tests) {
     eligibility: r.eligibility,
     criteria: CRITERIA.map((c, i) => ({ code: c.code, weight: c.weight, rating: n(r[`c${i + 1}_rating`]), score: n(r[`c${i + 1}_score`]) })),
     tests,
-    financial: { result: fin.result, category: fin.category, issues: fin.issues, sheet_result: r.workbook_financial_result ?? null, drive: driveToday(r), ...fin.checks, ...fin.figures },
+    financial: { result: fin.result, category: fin.category, issues: fin.issues, ...fin.checks, ...fin.figures },
     members: n(r.total_members), women: n(r.women), youth: n(r.youth), pwd: n(r.pwd), jobs_today: n(r.jobs_today), jobs_year3: n(r.jobs_year3),
   };
 }

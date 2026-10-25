@@ -158,7 +158,7 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
       </div>
 
       <div className="analytics-grid" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
-        <Panel title="Financial screening results" subtitle="Worked out from the figures the evaluation was made on">
+        <Panel title="Financial screening results" subtitle="Worked out from the amounts in each cluster's application">
           <ResultsDonut
             items={o.financial_results.map((r) => ({ name: r.result, value: r.count }))}
             total={o.meta.evaluated} centreLabel="clusters screened" />
@@ -244,7 +244,7 @@ function Empty() {
   return <div className="empty-state"><SearchX size={28} /><p>No clusters match these filters.</p></div>;
 }
 
-/** The three amounts of an application in one labelled list. `compare` marks the amounts that differ from the evaluation figures. */
+/** The three amounts of an application in one labelled list. */
 function FigureList({ title, grant, total, cash, compare }: {
   title: string; grant: number | null; total: number | null; cash: number | null;
   compare?: { grant: number | null; total: number | null; cash: number | null };
@@ -285,7 +285,7 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
       <CountyFilter shown={rows.length} />
       <div className="chart-panel">
         <div className="panel-header">
-          <div><h2>Financial screening</h2><p>The 50/50 matching rule and Window 1 and Window 2 limits, worked out from the figures the evaluation was made on. Largest cash shortfall first.</p></div>
+          <div><h2>Financial screening</h2><p>The 50/50 matching rule and Window 1 and Window 2 limits, worked out from the amounts in each cluster's application. Largest cash shortfall first.</p></div>
         </div>
         <FilterBar f={f} setF={setF} count={rows.length} total={data.data.length}>
           <select className="filter-select" aria-label="Filter by result" value={f.a} onChange={(e) => setF({ ...f, a: e.target.value })}>
@@ -311,11 +311,7 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
                         <td><ClusterCell r={r} open={isOpen} toggle={() => setOpen(isOpen ? null : r.application_number)} label="Show the checks" /></td>
                         <td className="win-cell">{fin.category.split(' (')[0]}{fin.category.includes(' (') && <small>{fin.category.split(' (')[1]?.replace(')', '')}</small>}</td>
                         <td>
-                          <FigureList title="Evaluation figures" grant={fin.grant} total={fin.total} cash={fin.contribution} />
-                          {fin.drive.differs && (
-                            <FigureList title="Current application" grant={fin.drive.grant} total={fin.drive.total} cash={fin.drive.contribution}
-                              compare={{ grant: fin.grant, total: fin.total, cash: fin.contribution }} />
-                          )}
+                          <FigureList title="Application figures" grant={fin.grant} total={fin.total} cash={fin.contribution} />
                         </td>
                         <td>
                           <strong className={fin.meets_50_percent_cash === false ? 'ev-bad' : undefined}>{pct(fin.cluster_share)}</strong>
@@ -323,9 +319,6 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
                         </td>
                         <td>
                           <StatusChip value={fin.result} />
-                          {fin.sheet_result && fin.sheet_result !== fin.result && (
-                            <span className="gr-sub ev-sheetdiff" title="The evaluation sheet screened this cluster on the figures it held at the time">Evaluation sheet: {fin.sheet_result}</span>
-                          )}
                           {fin.issues[0] && <span className="gr-sub">{fin.issues[0]}{fin.issues.length > 1 ? ` (+${fin.issues.length - 1} more)` : ''}</span>}
                         </td>
                         <td><RowActions r={r} onSelect={onSelect} /></td>

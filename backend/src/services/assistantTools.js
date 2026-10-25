@@ -279,16 +279,15 @@ async function getDocument({ document_id, offset, length }) {
   };
 }
 
-// ── Evaluation tools (scores and findings from the online evaluation sheet; amounts and the 50-50 checks from Drive) ──
+// ── Evaluation tools (scores and findings from the online evaluation sheet; amounts and the 50/50 checks from the cluster's application) ──
 
-const EVAL_NOTE = 'Scores, ranks, bands, eligibility tests E1-E10 and justifications come from the evaluation sheet. Amounts and the financial screening (50-50 rule, category, shortfall) use the figures the evaluation was made on; current_application shows the current Drive figures. Recommended clusters remain subject to due diligence, environmental and social clearance and World Bank no-objection: never say a cluster is approved or funded.';
+const EVAL_NOTE = 'Scores, ranks, bands, eligibility tests E1-E10 and justifications come from the evaluation sheet. Amounts and the financial screening (50/50 matching rule, window, cluster cash contribution shortfall) are worked out from the amounts in each cluster application (application_details.csv). Recommended clusters are provisionally recommended: approval for financing rests with the MSEA Director General/CEO after the IETP and onsite verification, so never say a cluster is approved or funded.';
 
 const slim = (d) => ({
   application_number: d.application_number, cluster_name: d.cluster_name, county: d.county, value_chain: d.value_chain,
   score: d.score, band: d.band, rank_among_eligible: d.rank, eligibility: d.eligibility,
   eligibility_tests: d.tests, financial_screening: d.financial.result, category: d.financial.category,
-  grant_requested_evaluation: d.financial.grant, total_project_cost_evaluation: d.financial.total, cluster_contribution_evaluation: d.financial.contribution,
-  current_application: d.financial.drive,
+  matching_grant_requested: d.financial.grant, total_project_cost: d.financial.total, cluster_cash_contribution: d.financial.contribution,
   meets_50_percent_cash: d.financial.meets_50_percent_cash, contribution_shortfall: d.financial.contribution_shortfall, financial_issues: d.financial.issues,
 });
 

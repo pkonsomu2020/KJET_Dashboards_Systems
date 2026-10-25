@@ -25,7 +25,7 @@ export function WithDetail({ applicationNumber, children }: { applicationNumber:
   return <>{children(data)}</>;
 }
 
-/** Financial screening: the 50-50 checks, worked out from the figures the evaluation was made on. */
+/** Financial screening: the 50-50 checks, worked out from the amounts in the cluster's application. */
 export function FinancialPanel({ d }: { d: EvalDetail }) {
   const f = d.financial_detail;
   const c = f.checks;
@@ -33,20 +33,12 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
     <div className="ev-panel">
       <div className="ev-cols">
         <div>
-          <h4>Figures used by the evaluation</h4>
+          <h4>Application figures</h4>
           <Row label="Total project cost" value={kes(f.figures.total)} />
           <Row label="Matching grant requested" value={kes(f.figures.grant)} />
           <Row label="Cluster cash contribution" value={kes(f.figures.contribution)} />
           <Row label="Machinery subtotal" value={kes(f.figures.machinery)} />
           <Row label="Services subtotal" value={kes(f.figures.services)} />
-          {d.financial.drive.differs && (
-            <>
-              <h4 style={{ marginTop: 12 }}>Current application</h4>
-              <Row label="Total project cost" value={kes(d.financial.drive.total)} tone="warn" />
-              <Row label="Matching grant requested" value={kes(d.financial.drive.grant)} tone="warn" />
-              <Row label="Cluster cash contribution" value={kes(d.financial.drive.contribution)} tone="warn" />
-            </>
-          )}
         </div>
         <div>
           <h4>50-50 rule and category</h4>
@@ -70,9 +62,6 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
         </div>
       </div>
       <div className="ev-result"><span>Screening result</span><StatusChip value={f.result} /></div>
-      {d.evaluator_finance.result && d.evaluator_finance.result !== f.result && (
-        <p className="ev-note"><strong>Evaluation sheet result: </strong>{d.evaluator_finance.result}. The sheet screened this cluster on the figures it held at the time; the result above uses the figures in the current application.</p>
-      )}
       {f.issues.length > 0 && (
         <div className="ev-issues">
           <h4>Issues identified</h4>

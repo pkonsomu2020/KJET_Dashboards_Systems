@@ -26,7 +26,7 @@ const { rows: fin } = await pool.query(`SELECT c.application_number a, c.legal_f
 const F = new Map(fin.map((r) => [r.a, r]));
 const sum = (arr, fn) => arr.reduce((s, x) => s + (fn(x) ?? 0), 0);
 const M = 1e6;
-// amounts are the figures the evaluation was made on (as in the report); members come from the applications on Drive
+// amounts and members come from each cluster application (application_details.csv)
 const D = data.map((d) => ({ ...d, f: { ...F.get(d.application_number), t: d.financial.total, cc: d.financial.contribution, g: d.financial.grant } }));
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const winOf = (d) => ({ 'Window 1 (Growth Window)': '1', 'Window 2 (Transformational Window)': '2', 'Above the Window 2 ceiling': 'C', 'Invalid grant (zero or less)': 'X' }[d.financial.category] ?? '?');
