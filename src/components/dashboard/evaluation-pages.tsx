@@ -11,6 +11,7 @@ import type { EvalRow } from '@/data/api';
 import { BandChip, ScoreBar, StatusChip, TestChips, gateTone } from './evaluation-ui';
 import { EligibilityPanel, FinancialPanel, ScorePanel, WithDetail } from './evaluation-panels';
 import { ReportButton, ReportsZipButton } from './report-buttons';
+import { GroupScoreChart, RankedBars, ResultsDonut, TestsChart } from './evaluation-charts';
 
 const tooltipStyle = { background: 'var(--card)', borderColor: 'var(--border)', borderRadius: 6, fontSize: 11, color: 'var(--foreground)' };
 const kes = (v: number | null | undefined) => (v == null ? 'n/a' : money(v, false));
@@ -127,24 +128,8 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
       </div>
 
       <div className="analytics-grid">
-        <Panel title="Eligibility tests E1 to E10" subtitle="Where clusters pass, are put on hold or fail">
-          <div className="test-bars">
-            {o.tests.map((t) => {
-              const total = t.pass + t.hold + t.fail || 1;
-              return (
-                <div key={t.test} className="test-bar-row">
-                  <span className="test-bar-label"><strong>{t.test}</strong> {t.label}</span>
-                  <span className="stack" title={`${t.pass} pass, ${t.hold} hold, ${t.fail} fail`}>
-                    <i className="tone-good" style={{ width: `${(t.pass / total) * 100}%` }} />
-                    <i className="tone-warn" style={{ width: `${(t.hold / total) * 100}%` }} />
-                    <i className="tone-bad" style={{ width: `${(t.fail / total) * 100}%` }} />
-                  </span>
-                  <span className="test-bar-n">{t.pass}/{t.hold}/{t.fail}</span>
-                </div>
-              );
-            })}
-          </div>
-          <p className="ev-legend"><i className="tone-good" /> Pass <i className="tone-warn" /> Hold <i className="tone-bad" /> Fail</p>
+        <Panel title="Eligibility tests E1 to E10" subtitle="Share of clusters that pass, are put on hold or fail each test">
+          <TestsChart tests={o.tests} />
         </Panel>
 
         <Panel title="Average score by criterion" subtitle="Weighted points earned, out of the criterion's weight">
@@ -162,15 +147,11 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
 
       <div className="analytics-grid">
         <Panel title="Financial screening results" subtitle="Worked out from the application figures on Drive">
-          <ul className="ev-list">
-            {o.financial_results.map((r) => (
-              <li key={r.result}><StatusChip value={r.result} /><strong>{r.count}</strong></li>
-            ))}
-          </ul>
+          <ResultsDonut
+            items={o.financial_results.map((r) => ({ name: r.result, value: r.count }))}
+            total={o.meta.evaluated} centreLabel="clusters screened" />
           <h4 className="ev-sub">Most common issues</h4>
-          <ul className="ev-list">
-            {o.top_issues.map((i) => <li key={i.issue}><span>{i.issue}</span><strong>{i.count}</strong></li>)}
-          </ul>
+          <RankedBars items={o.top_issues.map((i) => ({ name: i.issue, value: i.count }))} color="var(--chart-2)" labelWidth={230} />
         </Panel>
 
         <Panel title="Highest-scoring eligible clusters" subtitle="A ranking by evaluation score. Selection for funding is decided by MSEA"
@@ -196,32 +177,14 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
       </div>
 
       <div className="analytics-grid">
-        <Panel title="By county" subtitle="Average score and clusters through each gate">
-          <GroupTable rows={o.counties} first="County" />
+        <Panel title="Average score by county" subtitle="Counties with the most clusters; select to show all">
+          <GroupScoreChart rows={o.counties} noun="county" />
         </Panel>
-        <Panel title="By value chain" subtitle="Average score and clusters through each gate">
-          <GroupTable rows={o.value_chains} first="Value chain" format={chain} />
+        <Panel title="Average score by value chain" subtitle="Dashed lines mark the 50 and 70 score thresholds">
+          <GroupScoreChart rows={o.value_chains} format={chain} noun="value chain" />
         </Panel>
       </div>
     </>
-  );
-}
-
-function GroupTable({ rows, first, format = (s: string) => s }: { rows: Array<{ name: string; count: number; average_score: number | null; eligible: number }>; first: string; format?: (s: string) => string }) {
-  return (
-    <div className="ev-group-wrap">
-      <table className="portfolio-table ev-group">
-        <thead><tr><th>{first}</th><th className="gr-num">Clusters</th><th className="gr-num">Avg score</th><th className="gr-num">Eligible</th></tr></thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.name}>
-              <td>{format(r.name)}</td><td className="gr-num">{r.count}</td><td className="gr-num">{r.average_score ?? '-'}</td>
-              <td className="gr-num">{r.eligible}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 
