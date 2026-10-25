@@ -141,10 +141,10 @@ export async function getEvaluationOverview(countyFilter = '') {
     label, count: data.filter((d) => d.score != null && Math.min(9, Math.floor(d.score / 10)) === i).length,
   }));
 
-  const issueLabel = (t) => (/cash share/.test(t) ? 'Cluster cash below the 50% minimum'
-    : /above the maximum eligible/.test(t) ? 'Grant above the maximum eligible grant'
+  const issueLabel = (t) => (/cash contribution is/.test(t) ? 'Cluster cash contribution below the 50% minimum'
+    : /above the maximum matching grant/.test(t) ? 'Matching grant above the maximum (50% of the project cost)'
       : /machinery plus services/.test(t) ? 'Total differs from machinery plus services'
-        : /contribution plus grant/.test(t) ? 'Total differs from contribution plus grant' : t);
+        : /contribution plus matching grant/.test(t) ? 'Total differs from cluster cash contribution plus matching grant' : t);
   const issueCounts = countBy(data.flatMap((d) => d.financial.issues.map(issueLabel)), (t) => t);
 
   const result = {

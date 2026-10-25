@@ -135,15 +135,15 @@ export async function buildEvaluationReport(applicationNumber) {
   facts([
     ['Rank among eligible clusters', d.rank != null ? `${d.rank} of ${d.eligible_clusters}${d.county_rank ? ` (${d.county_rank} in ${d.county})` : ''}` : 'Not ranked (not eligible)'],
   ]);
-  para('This report records the evaluation scores and findings. Selecting clusters for funding is a decision for MSEA.', { size: 8, color: COLORS.muted });
+  para('This report records the evaluation scores and findings. Approval for financing rests with the Director General/CEO of MSEA, after review by the Independent Evaluation Technical Panel (IETP) and onsite verification.', { size: 8, color: COLORS.muted });
 
   // ── Figures the evaluation was made on, with Drive today beside them ──
   const f = d.financial_detail;
   h2('1. Application figures (as evaluated)');
   facts([
     ['Total project cost', kes(f.figures.total)],
-    ['KJET grant requested', kes(f.figures.grant)],
-    ['Cluster contribution', kes(f.figures.contribution)],
+    ['Matching grant requested', kes(f.figures.grant)],
+    ['Cluster cash contribution', kes(f.figures.contribution)],
     ['Machinery subtotal', kes(f.figures.machinery)],
     ['Services subtotal', kes(f.figures.services)],
     ...(d.financial.drive.differs ? [['Application on Drive today', `cost ${kes(d.financial.drive.total)}, grant ${kes(d.financial.drive.grant)}, cash ${kes(d.financial.drive.contribution)}`, COLORS.hold]] : []),
@@ -152,20 +152,20 @@ export async function buildEvaluationReport(applicationNumber) {
   ]);
 
   // ── Financial screening ──
-  h2('2. Financial screening (50-50 rule and category limits)');
+  h2('2. Financial screening (50-50 rule and Window 1 and Window 2 limits)');
   const c = f.checks;
   const yn = (v) => (v == null ? 'n/a' : v ? 'Yes' : 'No');
   table([{ title: 'Check', width: 3 }, { title: 'Result', width: 2 }, { title: 'Detail', width: 3 }], [
-    ['Category (by KJET request)', { text: f.category, bold: true }, 'Category 1 up to KES 5M, Category 2 up to KES 32M'],
-    ['Contribution plus grant', kes(c.contribution_plus_grant), `Difference from total: ${kes(c.total_minus_contribution_and_grant)}`],
+    ['Window (by matching grant requested)', { text: f.category, bold: true }, 'Window 1 (Growth Window) up to KES 5M, Window 2 (Transformational Window) up to KES 32M'],
+    ['Cluster cash contribution plus matching grant', kes(c.contribution_plus_grant), `Difference from total: ${kes(c.total_minus_contribution_and_grant)}`],
     ['Total against machinery plus services', kes(c.total_minus_machinery_and_services), 'Difference should be within KES 100'],
     ['Arithmetic consistent', { text: yn(c.arithmetic_consistent), color: c.arithmetic_consistent ? COLORS.pass : COLORS.fail }, ''],
-    ['Cluster share of total', pct(c.cluster_share), 'Minimum 50%'],
-    ['KJET share of total', pct(c.kjet_share), 'Maximum 50%'],
-    ['Meets 50% cash contribution', { text: yn(c.meets_50_percent_cash), color: c.meets_50_percent_cash ? COLORS.pass : COLORS.fail }, c.contribution_shortfall ? `Shortfall ${kes(c.contribution_shortfall)}` : ''],
-    ['Maximum eligible grant', kes(c.max_eligible_grant), 'Lower of 50% of cost and KES 32M'],
-    ['Grant above eligible maximum', kes(c.grant_above_max), ''],
-    ['Category document check', c.document_check ?? 'n/a', 'Evaluator finding'],
+    ['Cluster cash share of total', pct(c.cluster_share), 'Minimum 50%'],
+    ['Matching grant share of total', pct(c.kjet_share), 'Maximum 50%'],
+    ['Meets the 50% cluster cash contribution', { text: yn(c.meets_50_percent_cash), color: c.meets_50_percent_cash ? COLORS.pass : COLORS.fail }, c.contribution_shortfall ? `Shortfall ${kes(c.contribution_shortfall)}` : ''],
+    ['Maximum matching grant', kes(c.max_eligible_grant), 'Lower of 50% of cost and KES 32M'],
+    ['Matching grant above the maximum', kes(c.grant_above_max), ''],
+    ['Document check', c.document_check ?? 'n/a', 'Evaluator finding'],
   ]);
   facts([['Screening result', f.result, statusTone(f.result)]]);
   if (f.issues.length) {
@@ -186,7 +186,7 @@ export async function buildEvaluationReport(applicationNumber) {
   if (d.assessment.eligibility_assessor) facts([['Assessed by', `${d.assessment.eligibility_assessor}${d.assessment.eligibility_assessed_on ? `, ${d.assessment.eligibility_assessed_on}` : ''}`]]);
 
   // ── Scorecard ──
-  h2('4. Scorecard (weighted assessment)');
+  h2('4. Scoring (evaluation criteria)');
   facts([
     ['Primary assessor', `${d.assessment.assessor ?? 'Not recorded'}${d.assessment.assessed_on ? `, ${d.assessment.assessed_on}` : ''}`],
     ['Expert reviewer', `${d.assessment.reviewer ?? 'Not yet reviewed'}${d.assessment.reviewed_on ? `, ${d.assessment.reviewed_on}` : ''}`],

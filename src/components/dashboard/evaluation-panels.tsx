@@ -35,38 +35,38 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
         <div>
           <h4>Figures used by the evaluation</h4>
           <Row label="Total project cost" value={kes(f.figures.total)} />
-          <Row label="KJET grant requested" value={kes(f.figures.grant)} />
-          <Row label="Cluster contribution" value={kes(f.figures.contribution)} />
+          <Row label="Matching grant requested" value={kes(f.figures.grant)} />
+          <Row label="Cluster cash contribution" value={kes(f.figures.contribution)} />
           <Row label="Machinery subtotal" value={kes(f.figures.machinery)} />
           <Row label="Services subtotal" value={kes(f.figures.services)} />
           {d.financial.drive.differs && (
             <>
               <h4 style={{ marginTop: 12 }}>Application on Drive today</h4>
               <Row label="Total project cost" value={kes(d.financial.drive.total)} tone="warn" />
-              <Row label="KJET grant requested" value={kes(d.financial.drive.grant)} tone="warn" />
-              <Row label="Cluster contribution" value={kes(d.financial.drive.contribution)} tone="warn" />
+              <Row label="Matching grant requested" value={kes(d.financial.drive.grant)} tone="warn" />
+              <Row label="Cluster cash contribution" value={kes(d.financial.drive.contribution)} tone="warn" />
             </>
           )}
         </div>
         <div>
           <h4>50-50 rule and category</h4>
-          <Row label="Category (by grant requested)" value={f.category} />
-          <Row label="Cluster share of total" value={pct(c.cluster_share)} tone={c.meets_50_percent_cash === false ? 'bad' : undefined} />
-          <Row label="KJET share of total" value={pct(c.kjet_share)} />
-          <Row label="Meets 50% cash contribution" value={yn(c.meets_50_percent_cash)} tone={c.meets_50_percent_cash === false ? 'bad' : c.meets_50_percent_cash ? 'good' : undefined} />
-          <Row label="Maximum eligible grant" value={kes(c.max_eligible_grant)} />
-          <Row label="Grant above eligible maximum" value={kes(c.grant_above_max)} tone={c.grant_above_max && c.grant_above_max > 100 ? 'warn' : undefined} />
-          <Row label="Minimum cluster cash" value={kes(c.min_cluster_cash)} />
-          <Row label="Contribution shortfall" value={kes(c.contribution_shortfall)} tone={c.contribution_shortfall ? 'bad' : undefined} />
+          <Row label="Window (by matching grant requested)" value={f.category} />
+          <Row label="Cluster cash share of total" value={pct(c.cluster_share)} tone={c.meets_50_percent_cash === false ? 'bad' : undefined} />
+          <Row label="Matching grant share of total" value={pct(c.kjet_share)} />
+          <Row label="Meets the 50% cluster cash contribution" value={yn(c.meets_50_percent_cash)} tone={c.meets_50_percent_cash === false ? 'bad' : c.meets_50_percent_cash ? 'good' : undefined} />
+          <Row label="Maximum matching grant" value={kes(c.max_eligible_grant)} />
+          <Row label="Matching grant above the maximum" value={kes(c.grant_above_max)} tone={c.grant_above_max && c.grant_above_max > 100 ? 'warn' : undefined} />
+          <Row label="Minimum cluster cash contribution" value={kes(c.min_cluster_cash)} />
+          <Row label="Cluster cash contribution shortfall" value={kes(c.contribution_shortfall)} tone={c.contribution_shortfall ? 'bad' : undefined} />
         </div>
         <div>
           <h4>Arithmetic and documents</h4>
-          <Row label="Contribution plus grant" value={kes(c.contribution_plus_grant)} />
-          <Row label="Total minus (contribution plus grant)" value={kes(c.total_minus_contribution_and_grant)} />
+          <Row label="Cluster cash contribution plus matching grant" value={kes(c.contribution_plus_grant)} />
+          <Row label="Total minus (cluster cash contribution plus matching grant)" value={kes(c.total_minus_contribution_and_grant)} />
           <Row label="Total minus (machinery plus services)" value={kes(c.total_minus_machinery_and_services)} />
           <Row label="Arithmetic consistent" value={yn(c.arithmetic_consistent)} tone={c.arithmetic_consistent === false ? 'bad' : undefined} />
           <Row label="Placeholder amounts" value={yn(c.implausible_amounts)} />
-          <Row label="Category document check" value={c.document_check ?? 'Not stated'} tone={c.document_check?.startsWith('Missing') ? 'warn' : undefined} />
+          <Row label="Document check" value={c.document_check ?? 'Not stated'} tone={c.document_check?.startsWith('Missing') ? 'warn' : undefined} />
         </div>
       </div>
       <div className="ev-result"><span>Screening result</span><StatusChip value={f.result} /></div>

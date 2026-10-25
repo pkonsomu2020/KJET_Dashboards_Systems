@@ -3,9 +3,9 @@ import { Dashboard } from '@/components/dashboard/dashboard';
 
 export const Route = createFileRoute('/evaluation/scorecard')({
   head: () => ({ meta: [
-    { title: 'KJET | Scorecard' },
-    { name: 'description', content: 'Weighted assessment of every cluster across the six criteria, with every rating and justification.' },
-    { property: 'og:title', content: 'KJET | Scorecard' },
+    { title: 'KJET | Scoring' },
+    { name: 'description', content: 'Scores of every cluster against the six evaluation criteria, with every rating and justification.' },
+    { property: 'og:title', content: 'KJET | Scoring' },
     { property: 'og:type', content: 'website' },
     { name: 'twitter:card', content: 'summary_large_image' },
   ] }),

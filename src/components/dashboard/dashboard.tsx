@@ -34,16 +34,16 @@ const evaluationNav = [
   { to: '/evaluation',             label: 'Evaluation overview',  icon: ClipboardCheck,   view: 'evaluation' },
   { to: '/evaluation/financial',   label: 'Financial screening',  icon: CircleDollarSign, view: 'financial' },
   { to: '/evaluation/eligibility', label: 'Eligibility',          icon: ListChecks,       view: 'eligibility' },
-  { to: '/evaluation/scorecard',   label: 'Scorecard',            icon: Scale,            view: 'scorecard' },
+  { to: '/evaluation/scorecard',   label: 'Scoring',            icon: Scale,            view: 'scorecard' },
 ] as const;
 
 const titles: Record<DashboardView, [string, string]> = {
   overview: ['Portfolio overview', 'Cohort 1 co-investment matching grants & business development services'],
   clusters: ['Cluster profile',   '85 beneficiary clusters — search, filter and inspect every application'],
   evaluation:  ['Evaluation overview', 'Screening, eligibility and scoring of every cluster, read live from the evaluation sheet'],
-  financial:   ['Financial screening', 'The 50-50 co-investment rule and category limits, checked against each application on Drive'],
+  financial:   ['Financial screening', 'The 50-50 co-investment rule and Window 1 and Window 2 limits, checked against each application on Drive'],
   eligibility: ['Eligibility', 'The ten eligibility tests (E1 to E10) for every cluster, with the reasons'],
-  scorecard:   ['Scorecard', 'Weighted assessment of every cluster across the six criteria'],
+  scorecard:   ['Scoring', 'Scores of every cluster against the six evaluation criteria'],
 };
 
 const CHART_COLORS = [
@@ -159,9 +159,9 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
 
   const countyGroups = countyData ?? [];
   const employment = [
-    { name: 'Baseline', jobs: allToday },
-    { name: 'Year 1',   jobs: allYear1 },
-    { name: 'Year 3',   jobs: allYear3 },
+    { name: 'Today (baseline)', jobs: allToday },
+    { name: 'After investment (Year 1)',   jobs: allYear1 },
+    { name: 'After investment (Year 3)',   jobs: allYear3 },
   ];
 
   useEffect(() => {
@@ -315,20 +315,20 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                 <Metric label="Total project cost" value={m(s?.cost)} icon={CircleDollarSign} loading={summaryLoading}>
                   <span title="The total project cost each of the 85 applications states in its Section 3 (machinery plus bundled services), added together. Not an evaluated or approved amount.">Sum of the costs stated in the {allCount || 85} applications</span>
                 </Metric>
-                <Metric label="KJET grant requested" value={m(s?.grant)} icon={Wallet} loading={summaryLoading}>
+                <Metric label="Matching grant requested" value={m(s?.grant)} icon={Wallet} loading={summaryLoading}>
                   <span className="badge">{percent(allGrant, allCost).toFixed(1)}% of cost</span>
                   <span>Requested, not disbursed</span>
                 </Metric>
-                <Metric label="Cluster contribution" value={m(s?.contribution)} icon={Handshake} loading={summaryLoading}>
+                <Metric label="Cluster cash contribution" value={m(s?.contribution)} icon={Handshake} loading={summaryLoading}>
                   <span className="badge success">{percent(allContrib, allCost).toFixed(1)}% of cost</span>
-                  <span>The cluster's cash match</span>
+                  <span>At least 50% of the project cost, in cash</span>
                 </Metric>
                 <Metric label="Total members represented" value={n(s?.members)} icon={Users} loading={summaryLoading}>
                   <span className="badge">{n(s?.women)} women ({percent(allWomen, allMembers).toFixed(1)}%)</span>
                   <span className="badge">{n(s?.men)} men ({percent(allMen, allMembers).toFixed(1)}%)</span>
                   <span className="badge success">{n(s?.youth)} youth ({percent(allYouth, allMembers).toFixed(1)}%)</span>
                 </Metric>
-                <Metric label="Projected jobs · Year 3" value={n(s?.jobs_year3)} icon={BriefcaseBusiness} loading={summaryLoading}>
+                <Metric label="Total jobs after investment (Year 3)" value={n(s?.jobs_year3)} icon={BriefcaseBusiness} loading={summaryLoading}>
                   <span className="badge success"><TrendingUp size={10} />Year 3 outlook</span>
                   <span>Applicant-reported</span>
                   {Number(s?.jobs_excluded_count ?? 0) > 0 && (
@@ -357,7 +357,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                         <ChartPanel
                           title="Investment by value chain"
                           subtitle="Top 5 sectors by project cost · KES millions"
-                          legend={<div className="chart-legend"><span><i className="legend-dot" />KJET matching grant</span><span><i className="legend-dot secondary" />Cluster contribution</span></div>}
+                          legend={<div className="chart-legend"><span><i className="legend-dot" />Matching grant</span><span><i className="legend-dot secondary" />Cluster cash contribution</span></div>}
                           footer={<><span>Total project cost</span><strong className="text-foreground">{money(allCost)}</strong></>}
                         >
                           <div className="chart-box">
@@ -366,7 +366,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                                 <CartesianGrid vertical={false} strokeDasharray="3 4" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} dy={7} />
                                 <YAxis axisLine={false} tickLine={false} tickFormatter={v => `${v}M`} />
-                                <Tooltip formatter={(v, name) => [money(Number(v) * 1e6), name === 'grant' ? 'KJET matching grant' : 'Cluster contribution']} contentStyle={tooltipStyle} cursor={{ fill: 'var(--muted)' }} />
+                                <Tooltip formatter={(v, name) => [money(Number(v) * 1e6), name === 'grant' ? 'Matching grant' : 'Cluster cash contribution']} contentStyle={tooltipStyle} cursor={{ fill: 'var(--muted)' }} />
                                 <Bar dataKey="grant" fill="var(--chart-1)" radius={[3, 3, 0, 0]} maxBarSize={25} />
                                 <Bar dataKey="cash"  fill="var(--chart-2)" radius={[3, 3, 0, 0]} maxBarSize={25} />
                               </BarChart>
@@ -403,7 +403,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                       <div className="analytics-grid">
                         <ChartPanel title="Full operational budget" subtitle="Section 5 budget versus the Section 3 project cost">
                           <div className="profile-metrics" style={{ marginBottom: 0 }}>
-                            <div><div className="metric-label">Section 5 total</div><div className="metric-value">{money(allBudget)}</div></div>
+                            <div><div className="metric-label">Section 5 budget</div><div className="metric-value">{money(allBudget)}</div></div>
                             <div><div className="metric-label">Project cost (Section 3)</div><div className="metric-value">{money(allCost)}</div></div>
                           </div>
                           <p className="text-xs leading-7 text-muted-foreground mt-4">The operational budget can include working capital, buildings and pre-operating expenses outside eligible machinery costs.</p>
@@ -440,7 +440,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                           <div><div className="detail-label">Youth</div><div className="metric-value">{number(allYouth)}</div></div>
                           <div><div className="detail-label">Persons with disabilities</div><div className="metric-value">{number(allPwd)}</div></div>
                         </div>
-                        <p className="text-xs leading-7 text-muted-foreground mt-4">Youth and PWD are overlapping groups and should not be added to the gender total.</p>
+                        <p className="text-xs leading-7 text-muted-foreground mt-4">Youth and persons with disabilities are overlapping groups and should not be added to the gender total.</p>
                       </ChartPanel>
                     </div>
                   )}

@@ -85,6 +85,7 @@ function expectedResult(total, cash, grant, mach, serv, docCheck) {
   return 'PASS';
 }
 
+const WINDOW = { 'Category 1': 'Window 1 (Growth Window)', 'Category 2': 'Window 2 (Transformational Window)', 'Exceeds KES 32M cap': 'Above the Window 2 ceiling', 'Invalid grant (≤0)': 'Invalid grant (zero or less)', 'Incomplete data': 'Incomplete data' };
 const decCols = ['I', 'K', 'M', 'O', 'Q', 'S', 'U', 'W', 'Y', 'AA'];
 const critCols = { C1: 'P', C2: 'Y', C3: 'AE', C4: 'AJ', C5: 'AO', C6: 'AU' };
 for (const [a, r] of live) {
@@ -113,7 +114,7 @@ for (const [a, r] of live) {
 
   // screening result = the sheet's own result, on the same figures
   check('screening result = the sheet', norm(fin.result) === norm(cell('Financial_Screening', `AF${fr}`)), `${a}: ${fin.result} vs ${cell('Financial_Screening', `AF${fr}`)}`);
-  check('screening category = the sheet', norm(fin.category) === norm(cell('Financial_Screening', `U${fr}`)), `${a}`);
+  check('screening window = the sheet', norm(fin.category) === WINDOW[norm(cell('Financial_Screening', `U${fr}`))], `${a}`);
   check('screening: maximum eligible grant = the sheet', close(fin.max_eligible_grant, nz(`V${fr}`)), `${a}`);
   check('screening: contribution shortfall = the sheet', close(fin.contribution_shortfall, nz(`Y${fr}`)), `${a}`);
 

@@ -34,7 +34,7 @@ describe('Application tab', () => {
   it('leaves out sections the applicant did not fill', () => {
     render(<ApplicationTab cluster={{ organization_name: 'X' } as unknown as ClusterDetail} />);
     expect(screen.queryByText('Supplier quotations')).toBeNull();
-    expect(screen.queryByText('Risks and how they are managed')).toBeNull();
-    expect(screen.getByText('Organisation and declaration')).toBeTruthy();
+    expect(screen.queryByText('Risks and mitigation')).toBeNull();
+    expect(screen.getByText('Compliance, commitments and declaration by the Authorized Representative')).toBeTruthy();
   });
 });

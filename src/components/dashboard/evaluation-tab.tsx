@@ -37,11 +37,11 @@ export function EvaluationTab({ applicationNumber }: { applicationNumber: string
       </section>
 
       <section className="profile-section">
-        <h3>Scorecard</h3>
+        <h3>Scoring (evaluation criteria)</h3>
         <ScorePanel d={d} />
       </section>
 
-      <p className="gr-foot">Scores and findings come from the evaluation sheet; amounts and the 50-50 checks are worked out from the application on Drive. Recommended clusters remain subject to due diligence, environmental and social clearance, and World Bank no-objection.</p>
+      <p className="gr-foot">Scores and findings come from the evaluation sheet; amounts and the 50-50 checks are worked out from the application on Drive. Recommended clusters are provisionally recommended: they remain subject to review by the Independent Evaluation Technical Panel (IETP), onsite verification and approval for financing by the MSEA Director General/CEO.</p>
     </>
   );
 }

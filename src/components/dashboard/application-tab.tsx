@@ -74,16 +74,16 @@ export function ApplicationTab({ cluster }: { cluster: ClusterDetail }) {
 
   return (
     <>
-      <Section title="The business case" show={[a.problem_addressed, a.without_grant_alternative, a.why_now, a.implementation_timeline, a.capacity_ability_explanation].some(has) || assumptions.length > 0}>
-        <Para label="Problem the investment addresses" value={a.problem_addressed} />
-        <Para label="What happens without the grant" value={a.without_grant_alternative} />
+      <Section title="Why this investment (counterfactual)" show={[a.problem_addressed, a.without_grant_alternative, a.why_now, a.implementation_timeline, a.capacity_ability_explanation].some(has) || assumptions.length > 0}>
+        <Para label="What problem or opportunity the investment addresses" value={a.problem_addressed} />
+        <Para label="What the cluster would do without the matching grant" value={a.without_grant_alternative} />
         <Para label="Why now" value={a.why_now} />
         <Para label="Implementation timeline" value={a.implementation_timeline} />
         <Para label="Ability to use the extra capacity" value={a.capacity_ability_explanation} />
         {assumptions.length > 0 && <div className="app-para"><div className="detail-label">Key assumptions</div><ol className="app-list">{assumptions.map((t, i) => <li key={i}>{String(t)}</li>)}</ol></div>}
       </Section>
 
-      <Section title="Implementation plan" show={(a.activities ?? []).length > 0 || (a.vehicles ?? []).length > 0}>
+      <Section title="Implementation schedule" show={(a.activities ?? []).length > 0 || (a.vehicles ?? []).length > 0}>
         {(a.activities ?? []).length > 0 && (
           <div className="app-table-wrap">
             <table className="portfolio-table app-table">
@@ -100,7 +100,7 @@ export function ApplicationTab({ cluster }: { cluster: ClusterDetail }) {
         {(a.vehicles ?? []).map((v) => <Para key={String(v['item_order'])} label={`Vehicle ${v['item_order']}: why it is needed`} value={v['details']} />)}
       </Section>
 
-      <Section title="Market and operations" show={Object.values(b).some(has)}>
+      <Section title="Business and market" show={Object.values(b).some(has)}>
         <div className="detail-grid">
           <KV label="Market geography" value={b['market_geography']} />
           <KV label="Market size" value={b['market_size']} />
@@ -117,12 +117,12 @@ export function ApplicationTab({ cluster }: { cluster: ClusterDetail }) {
         )}
       </Section>
 
-      <Section title="Products" show={(a.products ?? []).length > 0}>
+      <Section title="Products and services currently sold" show={(a.products ?? []).length > 0}>
         <Table head={['Product', 'Unit', 'Price (KES)', 'Active months']} numeric={[2]}
           rows={(a.products ?? []).map((p) => [txt(p['product_name']), txt(p['unit']), kes(p['price_kes']), txt(p['active_months'])])} />
       </Section>
 
-      <Section title="Buyers" show={(a.buyers ?? []).length > 0}>
+      <Section title="Customers and market: main current buyers" show={(a.buyers ?? []).length > 0}>
         <Table head={['Buyer', 'Type', 'Annual volume', 'Unit price (KES)', 'Contract years']} numeric={[2, 3, 4]}
           rows={(a.buyers ?? []).map((r) => [txt(r['buyer_name']), txt(r['buyer_type']), num(r['annual_volume']), kes(r['unit_price']), txt(r['contract_years'])])} />
       </Section>
@@ -132,12 +132,12 @@ export function ApplicationTab({ cluster }: { cluster: ClusterDetail }) {
           rows={(a.quotations ?? []).map((q) => [txt(q['item_name']), kes(q['quote_1']), kes(q['quote_2']), kes(q['quote_3']), kes(q['selected_price']), txt(q['supplier']), txt(q['selection_reason'])])} />
       </Section>
 
-      <Section title="Budget allocation (Section 5)" show={budget.length > 0}>
+      <Section title="Budget by category" show={budget.length > 0}>
         <Table head={['Category', 'Amount (KES)', 'Share']} numeric={[1, 2]}
           rows={budget.map((x) => [x.label, kes(x.amount), has(x.pct) ? `${Number(x.pct).toFixed(1)}%` : '-'])} />
       </Section>
 
-      <Section title="Financial projections" show={pl.length > 0 || bs.length > 0}>
+      <Section title="Cluster-level profit and loss and balance sheet projection" show={pl.length > 0 || bs.length > 0}>
         {pl.length > 0 && (
           <>
             <div className="detail-label">Profit and loss, without and with the investment (KES)</div>
@@ -154,12 +154,12 @@ export function ApplicationTab({ cluster }: { cluster: ClusterDetail }) {
         )}
       </Section>
 
-      <Section title="Cash flow (KES)" show={cf.length > 0}>
+      <Section title="Cash flow projection (KES)" show={cf.length > 0}>
         <Table head={['Month', 'Opening cash', 'Sales inflows', 'Equipment payments', 'Closing cash']} numeric={[1, 2, 3, 4]}
           rows={cf.map((r) => [`Year ${r['year']}, month ${r['month']}`, kes(r['opening_cash_balance']), kes(r['sales_inflows']), kes(r['equipment_payments']), kes(r['closing_cash_balance'])])} />
       </Section>
 
-      <Section title="Returns" show={[a.payback_period_years, a.irr_pct, a.npv_kes].some(has)}>
+      <Section title="Investment metrics (machinery only)" show={[a.payback_period_years, a.irr_pct, a.npv_kes].some(has)}>
         <div className="detail-grid">
           <KV label="Payback period (years)" value={a.payback_period_years} />
           <KV label="Internal rate of return" value={has(a.irr_pct) ? `${a.irr_pct}%` : null} />
@@ -170,7 +170,7 @@ export function ApplicationTab({ cluster }: { cluster: ClusterDetail }) {
         <Para label="NPV notes" value={a.npv_notes} />
       </Section>
 
-      <Section title="Expected operational impact" show={ops.length > 0 || uplift.length > 0}>
+      <Section title="Productivity uplift and sales uplift" show={ops.length > 0 || uplift.length > 0}>
         {ops.length > 0 && <Table head={['Measure', 'Today', 'After the investment']} rows={ops} />}
         {uplift.length > 0 && (
           <>
@@ -186,26 +186,26 @@ export function ApplicationTab({ cluster }: { cluster: ClusterDetail }) {
         <Para label="Other" value={im['impact_other']} />
       </Section>
 
-      <Section title="Risks and how they are managed" show={(a.risks ?? []).length > 0}>
+      <Section title="Risks and mitigation" show={(a.risks ?? []).length > 0}>
         <Table head={['Risk', 'Likelihood', 'Impact', 'Phase', 'Mitigation']}
           rows={(a.risks ?? []).map((r) => [txt(r['risk_category']), txt(r['likelihood']), txt(r['impact']), txt(r['phase']), txt(r['mitigation'])])} />
       </Section>
 
-      <Section title="Sustainability" show={has(a.sustainability?.['sustainability_plan'])}>
+      <Section title="Sustainability and continuation" show={has(a.sustainability?.['sustainability_plan'])}>
         <p>{String(a.sustainability?.['sustainability_plan'])}</p>
       </Section>
 
-      <Section title="Organisation and declaration" show>
+      <Section title="Compliance, commitments and declaration by the Authorized Representative" show>
         <div className="detail-grid">
-          <KV label="Applicant organisation" value={a.organization_name} />
+          <KV label="Applicant organization" value={a.organization_name} />
           <KV label="Submitted" value={has(a.submitted_at) ? String(a.submitted_at).slice(0, 10) : null} />
-          <KV label="Insurance" value={a.insurance} />
-          <KV label="Declared by" value={has(a.declaration_name) ? `${a.declaration_name}${has(a.declaration_position) ? `, ${a.declaration_position}` : ''}` : null} />
+          <KV label="Insurance held" value={a.insurance} />
+          <KV label="Declaration by the Authorized Representative" value={has(a.declaration_name) ? `${a.declaration_name}${has(a.declaration_position) ? `, ${a.declaration_position}` : ''}` : null} />
           <KV label="Declaration date" value={has(a.declaration_date) ? String(a.declaration_date).slice(0, 10) : null} />
           <KV label="Declaration acknowledged" value={a.declaration_acknowledged == null ? null : a.declaration_acknowledged ? 'Yes' : 'No'} />
-          <KV label="Commitments ticked" value={has(a.commitments_total) && Number(a.commitments_total) > 0 ? `${a.commitments_ticked} of ${a.commitments_total}` : null} />
+          <KV label="Commitments ticked (Section 8)" value={has(a.commitments_total) && Number(a.commitments_total) > 0 ? `${a.commitments_ticked} of ${a.commitments_total}` : null} />
         </div>
-        <Para label="Signatories" value={a.signatories} />
+        <Para label="Account signatories" value={a.signatories} />
         <Para label="Executives' ownership" value={a.executives_ownership} />
         <Para label="Prior funding" value={a.prior_funding} />
         <Para label="Other applications" value={has(a.current_applications) ? `${a.current_applications === true || a.current_applications === 'true' ? 'Yes' : 'No'}${has(a.current_applications_detail) ? `: ${a.current_applications_detail}` : ''}` : null} />

@@ -21,8 +21,8 @@ export function exportCSV(rows: ClusterRow[]) {
   const fields = [
     'Application number', 'Cluster name', 'County', 'Constituency', 'Ward',
     'Value chain', 'Total project cost (KES)', 'Section 5 budget (KES)',
-    'Grant requested (KES)', 'Cluster contribution (KES)',
-    'Members', 'Women', 'Youth', 'PWD',
+    'Matching grant requested (KES)', 'Cluster cash contribution (KES)',
+    'Members', 'Women', 'Youth', 'Persons with disabilities',
     'Jobs today', 'Jobs year 1', 'Jobs year 3', 'Financial review',
   ];
   const csv = [

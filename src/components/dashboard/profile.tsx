@@ -98,11 +98,11 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
   // every employment figure the application gives: all jobs, women, youth and people with disability
   const jobNum = (v: string | number | null | undefined) => (v == null || v === '' ? 0 : Number(v));
   const employment = [
-    { name: 'Baseline', Total: jobNum(c.jobs_today), Women: jobNum(c.jobs_women_today), Youth: jobNum(c.jobs_youth_today), 'People with disability': jobNum(c.jobs_pwd_today) },
-    { name: 'Year 1',   Total: jobNum(c.jobs_year1), Women: jobNum(c.jobs_women_year1), Youth: jobNum(c.jobs_youth_year1), 'People with disability': jobNum(c.jobs_pwd_year1) },
-    { name: 'Year 3',   Total: jobNum(c.jobs_year3), Women: jobNum(c.jobs_women_year3), Youth: jobNum(c.jobs_youth_year3), 'People with disability': jobNum(c.jobs_pwd_year3) },
+    { name: 'Today (baseline)', Total: jobNum(c.jobs_today), Women: jobNum(c.jobs_women_today), Youth: jobNum(c.jobs_youth_today), 'Persons with disabilities': jobNum(c.jobs_pwd_today) },
+    { name: 'After investment (Year 1)',   Total: jobNum(c.jobs_year1), Women: jobNum(c.jobs_women_year1), Youth: jobNum(c.jobs_youth_year1), 'Persons with disabilities': jobNum(c.jobs_pwd_year1) },
+    { name: 'After investment (Year 3)',   Total: jobNum(c.jobs_year3), Women: jobNum(c.jobs_women_year3), Youth: jobNum(c.jobs_youth_year3), 'Persons with disabilities': jobNum(c.jobs_pwd_year3) },
   ];
-  const jobSeries = [['Total', 'var(--chart-1)'], ['Women', 'var(--chart-2)'], ['Youth', 'var(--chart-3)'], ['People with disability', 'var(--chart-4)']] as const;
+  const jobSeries = [['Total', 'var(--chart-1)'], ['Women', 'var(--chart-2)'], ['Youth', 'var(--chart-3)'], ['Persons with disabilities', 'var(--chart-4)']] as const;
 
   const costBreakdown = [
     { name: 'Machinery',         value: c.machinery?.reduce((s, m) => s + Number(m.total_cost_kes ?? 0), 0) ?? 0 },
@@ -135,17 +135,17 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
           <TabsTrigger value="overview"><Building2 size={13} className="mr-1.5" />Overview</TabsTrigger>
           <TabsTrigger value="evaluation"><Award size={13} className="mr-1.5" />Evaluation</TabsTrigger>
           <TabsTrigger value="application"><FileText size={13} className="mr-1.5" />Application</TabsTrigger>
-          <TabsTrigger value="financials"><Wallet size={13} className="mr-1.5" />Financials</TabsTrigger>
-          <TabsTrigger value="machinery"><Factory size={13} className="mr-1.5" />Machinery</TabsTrigger>
-          <TabsTrigger value="inclusion"><Users size={13} className="mr-1.5" />Inclusion</TabsTrigger>
+          <TabsTrigger value="financials"><Wallet size={13} className="mr-1.5" />Financial plan</TabsTrigger>
+          <TabsTrigger value="machinery"><Factory size={13} className="mr-1.5" />Machinery and equipment</TabsTrigger>
+          <TabsTrigger value="inclusion"><Users size={13} className="mr-1.5" />Membership and jobs</TabsTrigger>
           <TabsTrigger value="governance"><ShieldCheck size={13} className="mr-1.5" />Governance</TabsTrigger>
-          <TabsTrigger value="documents"><FolderOpen size={13} className="mr-1.5" />Documents</TabsTrigger>
+          <TabsTrigger value="documents"><FolderOpen size={13} className="mr-1.5" />Appendices</TabsTrigger>
         </TabsList>
 
         {/* Overview */}
         <TabsContent value="overview">
           <section className="profile-section">
-            <h3>Enterprise identity</h3>
+            <h3>Registration and contact</h3>
             <div className="detail-grid">
               <Detail label="Legal form"          value={c.legal_form} />
               <Detail label="Registration date"   value={c.registration_date} />
@@ -160,19 +160,19 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
 
           {(c.vision || c.mission) && (
             <section className="profile-section">
-              <h3>Vision &amp; mission</h3>
+              <h3>Vision and mission</h3>
               {c.vision  && <><div className="detail-label">Vision</div><p>{c.vision}</p></>}
               {c.mission && <><div className="detail-label mt-3">Mission</div><p>{c.mission}</p></>}
             </section>
           )}
 
           <section className="profile-section">
-            <h3>Business model &amp; operations</h3>
+            <h3>Business and market</h3>
             <p>{c.business?.business_description ?? c.business_description ?? 'Not supplied'}</p>
           </section>
 
           <section className="profile-section">
-            <h3>Employment outlook</h3>
+            <h3>Jobs and income</h3>
             <div className="job-table-wrap">
               <table className="portfolio-table job-table">
                 <thead><tr><th>Jobs</th>{employment.map(v => <th key={v.name} className="gr-num">{v.name}</th>)}</tr></thead>
@@ -208,14 +208,14 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
         {/* Financials */}
         <TabsContent value="financials">
           <div className="profile-metrics">
-            <ProfileMetric label="Eligible project cost"   value={projectCost} />
-            <ProfileMetric label="Section 5 total budget"  value={section5} />
-            <ProfileMetric label="KJET grant requested"    value={grantReq} />
+            <ProfileMetric label="Total project cost"   value={projectCost} />
+            <ProfileMetric label="Section 5 budget"  value={section5} />
+            <ProfileMetric label="Matching grant requested"    value={grantReq} />
             <ProfileMetric label="Cluster cash contribution" value={clusterCon} />
           </div>
 
           <section className="profile-section">
-            <h3>Co-investment matching structure</h3>
+            <h3>Sources of funds</h3>
             <SplitBar cluster={c} large />
             <div className="flex justify-between text-xs">
               <span className="text-primary">Grant: {grantPct.toFixed(1)}%</span>
@@ -231,14 +231,14 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
             {Math.abs(grantReq + clusterCon - projectCost) > 0.01 && (
               <div className="notice">
                 <AlertTriangle size={16} />
-                <span>Grant plus cluster contribution differs from eligible project cost by {money(grantReq + clusterCon - projectCost, false)}. Source values retained as submitted.</span>
+                <span>Grant plus cluster contribution differs from total project cost by {money(grantReq + clusterCon - projectCost, false)}. Source values retained as submitted.</span>
               </div>
             )}
           </section>
 
           {c.pl && c.pl.length > 0 && (
             <section className="profile-section">
-              <h3>Revenue projections (with grant)</h3>
+              <h3>Revenue projection (With-Grant)</h3>
               <div className="detail-grid">
                 {c.pl.map(row => (
                   <div key={row.year}>
@@ -252,7 +252,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
 
           {(c.impact?.sales_uplift_y1_revenue) && (
             <section className="profile-section">
-              <h3>Sales uplift &amp; viability</h3>
+              <h3>Sales uplift and investment metrics</h3>
               <div className="detail-grid">
                 <Detail label="NPV"            value={money(Number(c.npv_kes ?? 0))} />
                 <Detail label="IRR"            value={c.irr_pct ? `${c.irr_pct}%` : null} />
@@ -262,7 +262,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
           )}
 
           <section className="profile-section">
-            <h3>Budget composition</h3>
+            <h3>Budget by category</h3>
             <div className="chart-box">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={costBreakdown} layout="vertical" margin={{ left: 25, right: 30 }}>
@@ -281,7 +281,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
         {/* Machinery */}
         <TabsContent value="machinery">
           <section className="profile-section">
-            <h3>Proposed machinery &amp; equipment</h3>
+            <h3>Machinery and equipment</h3>
             {c.machinery && c.machinery.length > 0 ? (
               <ul className="equipment-list">
                 {c.machinery.map((item, i) => (
@@ -302,7 +302,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
 
           {c.services && c.services.length > 0 && c.services[0]?.description && (
             <section className="profile-section">
-              <h3>Bundled technical services</h3>
+              <h3>Bundled services</h3>
               <ul className="equipment-list">
                 {c.services.filter(s => s.description).map((s, i) => <li key={i}>{s.description}</li>)}
               </ul>
@@ -315,13 +315,13 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
           </section>
 
           <section className="profile-section">
-            <h3>Delivery &amp; commissioning timeline</h3>
+            <h3>Implementation schedule</h3>
             <p>{c.lead_time ?? 'Not supplied'}</p>
           </section>
 
           {c.impact && (
             <section className="profile-section">
-              <h3>Expected operational impact</h3>
+              <h3>Productivity uplift</h3>
               <div className="detail-grid">
                 <Detail label="Daily output today"  value={c.impact.daily_output_today ? `${number(Number(c.impact.daily_output_today))} units` : null} />
                 <Detail label="Daily output after"  value={c.impact.daily_output_after ? `${number(Number(c.impact.daily_output_after))} units (+${Number(c.impact.daily_output_pct).toFixed(1)}%)` : null} />
@@ -335,9 +335,9 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
         {/* Inclusion */}
         <TabsContent value="inclusion">
           <section className="profile-section">
-            <h3>Membership &amp; representation</h3>
+            <h3>Membership</h3>
             <div className="detail-grid">
-              <Detail label="Total registered members" value={number(Number(c.total_members))} />
+              <Detail label="Total members" value={number(Number(c.total_members))} />
               <Detail label="Men"    value={`${number(Number(c.men))} (${percent(Number(c.men), Number(c.total_members)).toFixed(1)}%)`} />
               <Detail label="Women"  value={`${number(Number(c.women))} (${percent(Number(c.women), Number(c.total_members)).toFixed(1)}%)`} />
               <Detail label="Youth"  value={`${number(Number(c.youth))} (${percent(Number(c.youth), Number(c.total_members)).toFixed(1)}%)`} />
@@ -363,17 +363,17 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
             </div>
 
             <>
-              <h3 className="mt-5">Employment by gender &amp; age (projections)</h3>
+              <h3 className="mt-5">Jobs and income: of which women, youth and persons with disabilities</h3>
               <div className="detail-grid mt-3">
-                <Detail label="Women jobs today / Y1 / Y3" value={`${number(jobNum(c.jobs_women_today))} / ${number(jobNum(c.jobs_women_year1))} / ${number(jobNum(c.jobs_women_year3))}`} />
-                <Detail label="Youth jobs today / Y1 / Y3" value={`${number(jobNum(c.jobs_youth_today))} / ${number(jobNum(c.jobs_youth_year1))} / ${number(jobNum(c.jobs_youth_year3))}`} />
-                <Detail label="PWD jobs today / Y1 / Y3"   value={`${number(jobNum(c.jobs_pwd_today))} / ${number(jobNum(c.jobs_pwd_year1))} / ${number(jobNum(c.jobs_pwd_year3))}`} />
-                <Detail label="Avg income today / Y1 / Y3 (KES)" value={`${money(jobNum(c.income_today), false)} / ${money(jobNum(c.income_year1), false)} / ${money(jobNum(c.income_year3), false)}`} />
+                <Detail label="Jobs of which women: today / Year 1 / Year 3" value={`${number(jobNum(c.jobs_women_today))} / ${number(jobNum(c.jobs_women_year1))} / ${number(jobNum(c.jobs_women_year3))}`} />
+                <Detail label="Jobs of which youth under 35: today / Year 1 / Year 3" value={`${number(jobNum(c.jobs_youth_today))} / ${number(jobNum(c.jobs_youth_year1))} / ${number(jobNum(c.jobs_youth_year3))}`} />
+                <Detail label="Jobs of which persons with disabilities: today / Year 1 / Year 3"   value={`${number(jobNum(c.jobs_pwd_today))} / ${number(jobNum(c.jobs_pwd_year1))} / ${number(jobNum(c.jobs_pwd_year3))}`} />
+                <Detail label="Average monthly income per cluster member (KES): today / Year 1 / Year 3" value={`${money(jobNum(c.income_today), false)} / ${money(jobNum(c.income_year1), false)} / ${money(jobNum(c.income_year3), false)}`} />
               </div>
             </>
 
             <p className="mt-5 text-xs leading-relaxed text-muted-foreground">
-              Youth and PWD membership overlaps with gender categories and is not added to the gender total. No inclusion target was supplied, so inclusion compliance is not assessed.
+              Youth and persons with disabilities membership overlaps with gender categories and is not added to the gender total. No inclusion target was supplied, so inclusion compliance is not assessed.
             </p>
           </section>
         </TabsContent>
@@ -384,7 +384,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
             <h3>Authorized representative</h3>
             <div className="detail-grid">
               <Detail label="Full name"         value={authorizedRep?.full_name ?? c.governance_rep_name} />
-              <Detail label="Official position" value={authorizedRep?.position ?? c.governance_rep_position} />
+              <Detail label="Position" value={authorizedRep?.position ?? c.governance_rep_position} />
               <div>
                 <div className="detail-label">Phone</div>
                 <a className="detail-value text-primary" href={`tel:${authorizedRep?.phone}`}>
@@ -419,7 +419,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
           )}
 
           <section className="profile-section">
-            <h3>Project banking details</h3>
+            <h3>Bank name and branch</h3>
             <div className="detail-grid">
               <Detail label="Bank / branch"  value={c.banking?.bank_name} />
               <Detail label="Account number" value={c.banking?.bank_account} />
@@ -428,13 +428,13 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
 
           {c.prior_funding && (
             <section className="profile-section">
-              <h3>Prior funding disclosure</h3>
+              <h3>Affiliations and prior funding</h3>
               <p>{c.prior_funding}</p>
             </section>
           )}
 
           <section className="profile-section">
-            <h3>Application attachment bundle</h3>
+            <h3>Appendices (mandatory attachments)</h3>
             <p className="mb-4">
               Source-linked application documents, certificates, quotations, technical specifications and declarations.
               Document availability and verification are not independently confirmed.

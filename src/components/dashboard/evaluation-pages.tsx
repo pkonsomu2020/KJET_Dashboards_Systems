@@ -104,9 +104,9 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
       <div className="metrics-grid">
         <Tile label="Clusters evaluated" value={String(o.meta.evaluated)} icon={ClipboardCheck}><span>average score {o.average_score ?? 'n/a'} of 100</span></Tile>
         <Tile label="Eligible" value={String(eligible)} icon={ListChecks}><span>passed all ten tests</span></Tile>
-        <Tile label="Recommended band" value={String(recommended)} icon={Scale}><span>scored 70 or more</span></Tile>
+        <Tile label="Recommended (70 or more)" value={String(recommended)} icon={Scale}><span>scored 70 or more</span></Tile>
         <Tile label="Financial screening pass" value={String(o.funnel[1]?.count ?? 0)} icon={CircleDollarSign}><span>of {o.meta.evaluated} clusters</span></Tile>
-        <Tile label="Below 50% cash" value={String(o.cash_shortfall_clusters)} icon={TriangleAlert}><span>cluster cash share under half</span></Tile>
+        <Tile label="Below 50% cluster cash" value={String(o.cash_shortfall_clusters)} icon={TriangleAlert}><span>cluster cash contribution under half</span></Tile>
       </div>
 
       <div className="analytics-grid">
@@ -261,22 +261,22 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
       <CountyFilter shown={rows.length} />
       <div className="chart-panel">
         <div className="panel-header">
-          <div><h2>Financial screening</h2><p>The 50-50 rule and category limits, worked out from the figures the evaluation was made on. Largest cash shortfall first.</p></div>
+          <div><h2>Financial screening</h2><p>The 50/50 matching rule and Window 1 and Window 2 limits, worked out from the figures the evaluation was made on. Largest cash shortfall first.</p></div>
         </div>
         <FilterBar f={f} setF={setF} count={rows.length} total={data.data.length}>
           <select className="filter-select" aria-label="Filter by result" value={f.a} onChange={(e) => setF({ ...f, a: e.target.value })}>
             <option value="">All results</option>{FIN_RESULTS.map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
           <select className="filter-select" aria-label="Filter by category" value={f.b} onChange={(e) => setF({ ...f, b: e.target.value })}>
-            <option value="">All categories</option>
-            {['Category 1', 'Category 2', 'Exceeds KES 32M cap', 'Invalid grant (≤0)'].map((v) => <option key={v} value={v}>{v}</option>)}
+            <option value="">All windows</option>
+            {['Window 1 (Growth Window)', 'Window 2 (Transformational Window)', 'Above the Window 2 ceiling', 'Invalid grant (zero or less)'].map((v) => <option key={v} value={v}>{v}</option>)}
           </select>
         </FilterBar>
         {rows.length === 0 ? <Empty /> : (
           <div className="fit-wrap">
             <table className="portfolio-table fit-table">
               <colgroup><col style={{ width: '22%' }} /><col style={{ width: '9%' }} /><col style={{ width: '18%' }} /><col style={{ width: '12%' }} /><col /><col style={{ width: 176 }} /></colgroup>
-              <thead><tr><th>Cluster</th><th>Category</th><th className="gr-num">Evaluation figures</th><th>Cash share</th><th>Result</th><th aria-label="Actions" /></tr></thead>
+              <thead><tr><th>Cluster</th><th>Window</th><th className="gr-num">Evaluation figures</th><th>Cluster cash share</th><th>Result</th><th aria-label="Actions" /></tr></thead>
               <tbody>
                 {rows.map((r) => {
                   const isOpen = open === r.application_number;
@@ -394,7 +394,7 @@ export function ScorecardPage({ onSelect }: { onSelect: (a: string) => void }) {
       <CountyFilter shown={rows.length} />
       <div className="chart-panel">
         <div className="panel-header">
-          <div><h2>Scorecard</h2><p>Six weighted criteria add up to 100 points. 70 or more is Recommended, 50 to 69 Referred with comments, below 50 Rejected. Highest score first.</p></div>
+          <div><h2>Scoring</h2><p>Six weighted criteria add up to 100 points. 70 or more is Recommended, 50 to 69 Referred with comments, below 50 Rejected. Highest score first.</p></div>
         </div>
         <FilterBar f={f} setF={setF} count={rows.length} total={data.data.length}>
           <select className="filter-select" aria-label="Filter by band" value={f.a} onChange={(e) => setF({ ...f, a: e.target.value })}>

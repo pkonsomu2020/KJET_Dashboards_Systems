@@ -130,7 +130,7 @@ export function GroupScoreChart({ rows, format = (s: string) => s, initial = 10,
       </p>
       {scored.length > initial && (
         <Button type="button" variant="ghost" size="sm" onClick={() => setAll(!all)}>
-          {all ? `Show the ${initial} with most clusters` : `Show all ${scored.length} ${noun}s`}
+          {all ? `Show the ${initial} with most clusters` : `Show all ${scored.length} ${noun === 'county' ? 'counties' : `${noun}s`}`}
         </Button>
       )}
     </div>

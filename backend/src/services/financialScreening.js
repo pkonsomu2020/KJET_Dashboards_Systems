@@ -8,8 +8,8 @@
  */
 
 export const RULES = {
-  category1Max: 5_000_000,        // Category 1: KJET contribution up to this
-  category2Max: 32_000_000,       // Category 2: up to this; above it exceeds the cap
+  category1Max: 5_000_000,        // Window 1 (Growth Window): matching grant up to this (US$40,000)
+  category2Max: 32_000_000,       // Window 2 (Transformational Window): up to this (US$250,000); above it is over the ceiling
   minClusterShare: 0.5,           // cluster cash must be at least this share of the total
   maxKjetShare: 0.5,              // KJET share of eligible cost
   shareTolerance: 0.001,
@@ -37,9 +37,9 @@ export function screenFinancials(f, evaluator = {}) {
   const complete = total != null && grant != null && contribution != null;
 
   const category = !complete ? 'Incomplete data'
-    : grant <= 0 ? 'Invalid grant (≤0)'
-      : grant <= RULES.category1Max ? 'Category 1'
-        : grant <= RULES.category2Max ? 'Category 2' : 'Exceeds KES 32M cap';
+    : grant <= 0 ? 'Invalid grant (zero or less)'
+      : grant <= RULES.category1Max ? 'Window 1 (Growth Window)'
+        : grant <= RULES.category2Max ? 'Window 2 (Transformational Window)' : 'Above the Window 2 ceiling';
 
   const sumDiff = complete ? total - (contribution + grant) : null;          // total minus contribution plus grant
   const partsDiff = total != null && hasParts ? total - (machinery + services) : null;   // total minus machinery plus services
@@ -64,19 +64,19 @@ export function screenFinancials(f, evaluator = {}) {
 
   const issues = [];
   if (category === 'Incomplete data') issues.push('Missing total or grant figures');
-  if (category === 'Invalid grant (≤0)') issues.push('KJET grant requested is zero or negative');
+  if (category === 'Invalid grant (zero or less)') issues.push('Matching grant requested is zero or negative');
   if (implausible) issues.push('Implausible or placeholder amounts: check units');
-  if (sumDiff != null && Math.abs(sumDiff) > RULES.arithmeticTolerance) issues.push(`Total differs from contribution plus grant by KES ${fmt(Math.abs(sumDiff))}`);
+  if (sumDiff != null && Math.abs(sumDiff) > RULES.arithmeticTolerance) issues.push(`Total differs from cluster cash contribution plus matching grant by KES ${fmt(Math.abs(sumDiff))}`);
   if (partsDiff != null && Math.abs(partsDiff) > RULES.arithmeticTolerance) issues.push(`Total differs from machinery plus services by KES ${fmt(Math.abs(partsDiff))}`);
   if (s5Differs) issues.push(`Section 5 budget (KES ${fmt(s5)}) differs from the project cost`);
-  if (meets50 === false) issues.push(`Cluster cash share is ${(clusterShare * 100).toFixed(1)}%, below the 50% minimum`);
-  if (category === 'Exceeds KES 32M cap') issues.push('KJET grant is above the KES 32M maximum');
-  if (grantAboveMax > RULES.arithmeticTolerance && category !== 'Exceeds KES 32M cap') issues.push(`Grant requested is KES ${fmt(grantAboveMax)} above the maximum eligible grant`);
+  if (meets50 === false) issues.push(`Cluster cash contribution is ${(clusterShare * 100).toFixed(1)}% of the project cost, below the 50% minimum`);
+  if (category === 'Above the Window 2 ceiling') issues.push('Matching grant is above the Window 2 ceiling (KES 32M)');
+  if (grantAboveMax > RULES.arithmeticTolerance && category !== 'Above the Window 2 ceiling') issues.push(`Matching grant requested is KES ${fmt(grantAboveMax)} above the maximum matching grant (50% of the project cost)`);
   if (docsMissing) issues.push(docs.replace(/;\s*$/, ''));
 
   let result = 'PASS';
-  if (category === 'Incomplete data' || category === 'Invalid grant (≤0)' || implausible || !arithmeticOk) result = 'FOLLOW-UP: data error';
-  else if (category === 'Exceeds KES 32M cap') result = 'FOLLOW-UP: exceeds cap';
+  if (category === 'Incomplete data' || category === 'Invalid grant (zero or less)' || implausible || !arithmeticOk) result = 'FOLLOW-UP: data error';
+  else if (category === 'Above the Window 2 ceiling') result = 'FOLLOW-UP: exceeds cap';
   else if (meets50 === false) result = 'NON-COMPLIANT: <50% cash';
   else if (docsMissing) result = 'FOLLOW-UP: documents';
 

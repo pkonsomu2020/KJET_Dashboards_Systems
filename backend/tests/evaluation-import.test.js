@@ -33,6 +33,8 @@ if (process.argv[2]) {
 let passed = 0, failed = 0;
 const failures = [];
 const check = (label, ok, detail = '') => { if (ok) passed++; else { failed++; failures.push(`${label} | ${detail}`); console.error(`  FAIL  ${label} | ${detail}`); } };
+// the sheet says Category 1 / Category 2 / Exceeds KES 32M cap; the dashboard uses the Operations Manual's names for the windows
+const WINDOW = { 'Category 1': 'Window 1 (Growth Window)', 'Category 2': 'Window 2 (Transformational Window)', 'Exceeds KES 32M cap': 'Above the Window 2 ceiling', 'Invalid grant (≤0)': 'Invalid grant (zero or less)', 'Incomplete data': 'Incomplete data' };
 const norm = (v) => String(v ?? '').replace(/\s+/g, ' ').trim();
 const cell = (sheet, ref) => wb.Sheets[sheet][ref]?.v ?? '';
 const close = (a, b) => (a == null && b == null) || (a != null && b != null && Math.abs(Number(a) - Number(b)) < 0.005);
@@ -125,7 +127,7 @@ for (let r = 6; r <= 120; r++) {
   const s = screenFinancials({ total: d.eval_total_cost, contribution: d.eval_contribution, grant: d.eval_grant_requested, machinery: d.eval_machinery, services: d.eval_services, s5: d.eval_s5_budget }, { docCheck: norm(cell('Financial_Screening', `Z${r}`)) || null });
   compared++;
   check(`${app} screening result`, s.result === norm(cell('Financial_Screening', `AF${r}`)), `${s.result} vs ${cell('Financial_Screening', `AF${r}`)}`);
-  check(`${app} category`, s.category === norm(cell('Financial_Screening', `U${r}`)), `${s.category} vs ${cell('Financial_Screening', `U${r}`)}`);
+  check(`${app} window`, s.category === WINDOW[norm(cell('Financial_Screening', `U${r}`))], `${s.category} vs ${cell('Financial_Screening', `U${r}`)}`);
   check(`${app} max eligible grant`, close(s.checks.max_eligible_grant, nz(`V${r}`)));
   check(`${app} cash shortfall`, close(s.checks.contribution_shortfall, nz(`Y${r}`)));
 }

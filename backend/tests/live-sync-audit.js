@@ -153,7 +153,8 @@ for (const [a, d] of drive) {
 
   sum.cost += N('Total project cost') ?? 0; sum.grant += N('Grant requested') ?? 0; sum.contribution += N('Cluster contribution') ?? 0;
   sum.budget += N('Budget total') ?? 0; sum.members += (N('Total members men') ?? 0) + (N('Total members women') ?? 0);
-  sum.women += N('Total members women') ?? 0; sum.y3 += Math.round(N('Jobs year3') ?? 0);
+  sum.women += N('Total members women') ?? 0; // an application reporting more than 5,000 jobs is left out of the jobs totals (not plausible), as the dashboard does
+  if (Math.max(N('Jobs today') ?? 0, N('Jobs year1') ?? 0, N('Jobs year3') ?? 0) <= 5000) sum.y3 += Math.round(N('Jobs year3') ?? 0);
 }
 
 // ── portfolio totals shown on the dashboard vs totals computed from Drive ──

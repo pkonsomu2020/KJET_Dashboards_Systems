@@ -112,7 +112,7 @@ export function ClusterExplorer({
           onChange={e => { setSort(e.target.value); setPage(1); }}>
           <option value="name">Name: A to Z</option>
           <option value="cost">Project cost: highest</option>
-          <option value="grant">Grant: highest</option>
+          <option value="grant">Matching grant: highest</option>
           <option value="members">Members: highest</option>
         </select>
         {(query || county || chain) && (
@@ -153,7 +153,7 @@ export function ClusterExplorer({
                 <th>Cluster / application ID</th>
                 <th>County &amp; value chain</th>
                 <th>Project cost</th>
-                <th>Grant / cash split</th>
+                <th>Matching grant / cluster cash</th>
                 <th>Membership</th>
                 <th aria-label="Profile" />
               </tr>
