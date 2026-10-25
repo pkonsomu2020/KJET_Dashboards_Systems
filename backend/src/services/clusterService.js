@@ -26,10 +26,11 @@ export async function getPortfolioSummary() {
       COUNT(c.id)                            AS count,
       COUNT(DISTINCT c.county)               AS counties,
       COUNT(DISTINCT c.value_chain)          AS value_chains,
-      COALESCE(SUM(f.total_project_cost),0)  AS cost,
-      COALESCE(SUM(f.grant_requested),0)     AS grant,
-      COALESCE(SUM(f.cluster_contribution),0) AS contribution,
-      COALESCE(SUM(f.section5_budget_total),0) AS budget,
+      -- amounts are the evaluation sheet's figures (the ones the selection report totals); the application's where the sheet has none
+      COALESCE(SUM(COALESCE(ev.eval_total_cost, f.total_project_cost)),0)  AS cost,
+      COALESCE(SUM(COALESCE(ev.eval_grant_requested, f.grant_requested)),0)     AS grant,
+      COALESCE(SUM(COALESCE(ev.eval_contribution, f.cluster_contribution)),0) AS contribution,
+      COALESCE(SUM(COALESCE(ev.eval_s5_budget, f.section5_budget_total)),0) AS budget,
       -- membership totals are the portal register's figures (the sheet's Register tab), as the selection report totals them
       COALESCE(SUM(COALESCE(ev.portal_men + ev.portal_women, m.total_members)),0) AS members,
       COALESCE(SUM(COALESCE(ev.portal_women, m.women)),0)               AS women,
@@ -63,26 +64,31 @@ export async function getByValueChain() {
   const cached = await cacheGet(cacheKey);
   if (cached) return { data: cached, cached: true };
 
+  // The sheet's final value chain (what the selection report groups by): the four priority chains, everything else as Other
+  const CHAIN = `CASE WHEN LOWER(COALESCE(ev.eval_value_chain, c.value_chain)) LIKE 'dairy%' THEN 'Dairy'
+                       WHEN LOWER(COALESCE(ev.eval_value_chain, c.value_chain)) LIKE 'construction%' THEN 'Construction Materials'
+                       WHEN LOWER(REPLACE(COALESCE(ev.eval_value_chain, c.value_chain), '_', ' ')) LIKE 'edible oil%' THEN 'Edible Oils'
+                       WHEN LOWER(COALESCE(ev.eval_value_chain, c.value_chain)) LIKE 'textile%' THEN 'Textiles'
+                       ELSE 'Other' END`;
   const { rows } = await pool.query(`
-    SELECT
-      c.value_chain                          AS name,
+    SELECT ${CHAIN} AS name,
       COUNT(c.id)                            AS count,
-      COALESCE(SUM(f.total_project_cost),0)  AS cost,
-      COALESCE(SUM(f.grant_requested),0)     AS grant,
-      COALESCE(SUM(f.cluster_contribution),0) AS contribution
+      COALESCE(SUM(COALESCE(ev.eval_total_cost, f.total_project_cost)),0)  AS cost,
+      COALESCE(SUM(COALESCE(ev.eval_grant_requested, f.grant_requested)),0)     AS grant,
+      COALESCE(SUM(COALESCE(ev.eval_contribution, f.cluster_contribution)),0) AS contribution
     FROM clusters c
     LEFT JOIN cluster_financials f ON f.cluster_id = c.id
-    GROUP BY c.value_chain
+    LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
+    GROUP BY 1
     ORDER BY cost DESC
   `);
 
-  // "Other" is a catch-all in the application form; the evaluation sheet names the actual sector of each such cluster
+  // the sectors behind "Other", as named in the sheet
   const { rows: detail } = await pool.query(`
-    SELECT c.value_chain AS name, ev.eval_value_chain AS sector, COUNT(*)::int AS count
-      FROM clusters c JOIN cluster_evaluation ev ON ev.application_number = c.application_number
-     WHERE ev.eval_value_chain IS NOT NULL AND LOWER(c.value_chain) = 'other'
-     GROUP BY 1, 2 ORDER BY 3 DESC, 2`).catch(() => ({ rows: [] }));
-  for (const r of rows) r.breakdown = detail.filter((d) => d.name === r.name).map((d) => ({ sector: d.sector, count: d.count }));
+    SELECT COALESCE(ev.eval_value_chain, c.value_chain) AS sector, COUNT(*)::int AS count
+      FROM clusters c LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
+     WHERE ${CHAIN} = 'Other' GROUP BY 1 ORDER BY 2 DESC, 1`);
+  for (const r of rows) r.breakdown = r.name === 'Other' ? detail.map((d) => ({ sector: d.sector, count: d.count })) : [];
 
   await cacheSet(cacheKey, rows, TTL.summary);
   return { data: rows, cached: false };
@@ -98,10 +104,11 @@ export async function getByCounty() {
     SELECT
       c.county                               AS name,
       COUNT(c.id)                            AS count,
-      COALESCE(SUM(f.total_project_cost),0)  AS cost,
-      COALESCE(SUM(f.grant_requested),0)     AS grant
+      COALESCE(SUM(COALESCE(ev.eval_total_cost, f.total_project_cost)),0)  AS cost,
+      COALESCE(SUM(COALESCE(ev.eval_grant_requested, f.grant_requested)),0)     AS grant
     FROM clusters c
     LEFT JOIN cluster_financials f ON f.cluster_id = c.id
+    LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
     GROUP BY c.county
     ORDER BY cost DESC
   `);

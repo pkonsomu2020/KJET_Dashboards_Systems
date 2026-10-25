@@ -56,7 +56,7 @@ const live = new Map();
 }
 check('live API returns every cluster', list.total === 85 && live.size === 85, `total=${list.total}, detail pages=${live.size}`);
 
-const portal = new Map((await pool.query('SELECT application_number a, portal_men, portal_women FROM cluster_evaluation')).rows.map((r) => [r.a, r]));
+const portal = new Map((await pool.query('SELECT application_number a, portal_men, portal_women, eval_total_cost, eval_grant_requested, eval_contribution, eval_s5_budget FROM cluster_evaluation')).rows.map((r) => [r.a, r]));
 
 // ── read Drive ───────────────────────────────────────────────
 await initDriveClient();
@@ -153,8 +153,12 @@ for (const [a, d] of drive) {
   }
   for (const id of dbDocs.keys()) check('files: nothing extra that Drive no longer has', d.files.some((f) => f.id === id), `${a}: ${dbDocs.get(id).original_filename}`);
 
-  sum.cost += N('Total project cost') ?? 0; sum.grant += N('Grant requested') ?? 0; sum.contribution += N('Cluster contribution') ?? 0;
-  sum.budget += N('Budget total') ?? 0;
+  // portfolio amounts are the evaluation sheet's figures (as in the selection report) where it has them, else the application's
+  const ev = portal.get(a);
+  sum.cost += ev?.eval_total_cost != null ? Number(ev.eval_total_cost) : (N('Total project cost') ?? 0);
+  sum.grant += ev?.eval_grant_requested != null ? Number(ev.eval_grant_requested) : (N('Grant requested') ?? 0);
+  sum.contribution += ev?.eval_contribution != null ? Number(ev.eval_contribution) : (N('Cluster contribution') ?? 0);
+  sum.budget += ev?.eval_s5_budget != null ? Number(ev.eval_s5_budget) : (N('Budget total') ?? 0);
   // membership totals are the portal register's figures (the sheet's Register tab) where it has them, as the selection report totals them; otherwise the application's
   const pr = portal.get(a);
   const men = pr?.portal_men ?? N('Total members men') ?? 0, women = pr?.portal_women ?? N('Total members women') ?? 0;

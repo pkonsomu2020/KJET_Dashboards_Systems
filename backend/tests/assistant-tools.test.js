@@ -16,7 +16,7 @@ const q = async (sql, p = []) => (await pool.query(sql, p)).rows;
 // 1. Whole-portfolio totals
 {
   const t = (await toolImpl.portfolio_stats({})).totals;
-  const [r] = await q(`SELECT COUNT(*)::int n, SUM(total_project_cost) cost, SUM(grant_requested) g FROM clusters c LEFT JOIN cluster_financials f ON f.cluster_id=c.id`);
+  const [r] = await q(`SELECT COUNT(*)::int n, SUM(COALESCE(ev.eval_total_cost, f.total_project_cost)) cost, SUM(COALESCE(ev.eval_grant_requested, f.grant_requested)) g FROM clusters c LEFT JOIN cluster_financials f ON f.cluster_id=c.id LEFT JOIN cluster_evaluation ev ON ev.application_number=c.application_number`);
   // membership totals are the portal register's figures where the sheet has them (as the selection report totals them), otherwise the application's
   const [mm] = await q(`SELECT SUM(COALESCE(ev.portal_men + ev.portal_women, m.total_members))::int m, SUM(COALESCE(ev.portal_women, m.women))::int w FROM cluster_membership m JOIN clusters c ON c.id = m.cluster_id LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number`);
   // jobs totals leave out an application reporting more than 5,000 jobs (not plausible: one cluster reported 4,000,000)
