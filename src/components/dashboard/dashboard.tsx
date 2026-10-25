@@ -139,17 +139,22 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
 
   // Chart data
   const sectors = chainData ?? [];
-  const top5 = sectors.slice(0, 5).map(v => ({
-    name: v.name.length > 20 ? v.name.slice(0, 18) + '…' : v.name,
+  const pretty = (v: string) => v.replace(/_/g, ' ').replace(/^./, ch => ch.toUpperCase());
+  const list = (xs: Array<{ name: string; count: number }>) => xs.map(x => `${x.name}${x.count > 1 ? ` ${x.count}` : ''}`).join(', ');
+  const top5: Array<{ name: string; value: number; detail?: string }> = sectors.slice(0, 5).map(v => ({
+    name: pretty(v.name.length > 20 ? v.name.slice(0, 18) + '…' : v.name),
     value: Number(v.count),
+    // "Other" is a catch-all in the application form: the evaluation sheet says which sectors are behind it
+    ...(v.breakdown?.length ? { detail: list(v.breakdown.map(b => ({ name: b.sector.replace(/^Other\s*[–-]\s*/i, ''), count: b.count }))) } : {}),
   }));
-  const others = sectors.slice(5).reduce((s, v) => s + Number(v.count), 0);
-  if (others) top5.push({ name: 'Other sectors', value: others });
+  const rest = sectors.slice(5);
+  const others = rest.reduce((s, v) => s + Number(v.count), 0);
+  if (others) top5.push({ name: 'Other sectors', value: others, detail: list(rest.map(v => ({ name: pretty(v.name), count: Number(v.count) }))) });
 
   const chartSectors = sectors.slice(0, 5).map(v => ({
-    name: v.name.length > 14 ? v.name.slice(0, 12) + '…' : v.name,
+    name: pretty(v.name.length > 14 ? v.name.slice(0, 12) + '…' : v.name),
     grant: Number(v.grant) / 1e6,
-    cash:  (Number(v.cost) - Number(v.grant)) / 1e6,
+    cash:  Number(v.contribution) / 1e6,
   }));
 
   const countyGroups = countyData ?? [];
@@ -307,24 +312,30 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                   <span className="badge success"><Globe2 size={10} />{allCounties} counties</span>
                   <span>National coverage</span>
                 </Metric>
-                <Metric label="Total eligible project cost" value={m(s?.cost)} icon={CircleDollarSign} loading={summaryLoading}>
-                  <span>Machinery &amp; bundled services</span>
+                <Metric label="Total project cost" value={m(s?.cost)} icon={CircleDollarSign} loading={summaryLoading}>
+                  <span title="The total project cost each of the 85 applications states in its Section 3 (machinery plus bundled services), added together. Not an evaluated or approved amount.">Sum of the costs stated in the {allCount || 85} applications</span>
                 </Metric>
                 <Metric label="KJET grant requested" value={m(s?.grant)} icon={Wallet} loading={summaryLoading}>
                   <span className="badge">{percent(allGrant, allCost).toFixed(1)}% of cost</span>
                   <span>Requested, not disbursed</span>
                 </Metric>
-                <Metric label="Cluster cash co-investment" value={m(s?.contribution)} icon={Handshake} loading={summaryLoading}>
+                <Metric label="Cluster contribution" value={m(s?.contribution)} icon={Handshake} loading={summaryLoading}>
                   <span className="badge success">{percent(allContrib, allCost).toFixed(1)}% of cost</span>
-                  <span>Applicant commitments</span>
+                  <span>The cluster's cash match</span>
                 </Metric>
                 <Metric label="Total members represented" value={n(s?.members)} icon={Users} loading={summaryLoading}>
-                  <span className="badge">{percent(allWomen, allMembers).toFixed(1)}% women</span>
-                  <span className="badge success">{percent(allYouth, allMembers).toFixed(1)}% youth</span>
+                  <span className="badge">{n(s?.women)} women ({percent(allWomen, allMembers).toFixed(1)}%)</span>
+                  <span className="badge">{n(s?.men)} men ({percent(allMen, allMembers).toFixed(1)}%)</span>
+                  <span className="badge success">{n(s?.youth)} youth ({percent(allYouth, allMembers).toFixed(1)}%)</span>
                 </Metric>
                 <Metric label="Projected jobs · Year 3" value={n(s?.jobs_year3)} icon={BriefcaseBusiness} loading={summaryLoading}>
                   <span className="badge success"><TrendingUp size={10} />Year 3 outlook</span>
                   <span>Applicant-reported</span>
+                  {Number(s?.jobs_excluded_count ?? 0) > 0 && (
+                    <span className="metric-note" title={(s?.jobs_excluded ?? []).map(j => `${j.name} (${j.county}): ${number(Number(j.jobs_today ?? 0))} jobs today, ${number(Number(j.jobs_year3 ?? 0))} in year 3`).join('\n')}>
+                      Leaves out {s?.jobs_excluded_count} application{Number(s?.jobs_excluded_count) > 1 ? 's' : ''} with an implausible figure: {(s?.jobs_excluded ?? []).map(j => `${j.name}, ${j.county} (${number(Number(j.jobs_year3 ?? 0))})`).join('; ')}. To be confirmed at verification.
+                    </span>
+                  )}
                 </Metric>
               </div>
 
@@ -345,9 +356,9 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                       <div className="analytics-grid">
                         <ChartPanel
                           title="Investment by value chain"
-                          subtitle="Top 5 sectors by eligible project cost · KES millions"
-                          legend={<div className="chart-legend"><span><i className="legend-dot" />Grant</span><span><i className="legend-dot secondary" />Cost remainder</span></div>}
-                          footer={<><span>Eligible portfolio value</span><strong className="text-foreground">{money(allCost)}</strong></>}
+                          subtitle="Top 5 sectors by project cost · KES millions"
+                          legend={<div className="chart-legend"><span><i className="legend-dot" />KJET matching grant</span><span><i className="legend-dot secondary" />Cluster contribution</span></div>}
+                          footer={<><span>Total project cost</span><strong className="text-foreground">{money(allCost)}</strong></>}
                         >
                           <div className="chart-box">
                             <ResponsiveContainer width="100%" height="100%">
@@ -355,7 +366,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                                 <CartesianGrid vertical={false} strokeDasharray="3 4" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} dy={7} />
                                 <YAxis axisLine={false} tickLine={false} tickFormatter={v => `${v}M`} />
-                                <Tooltip formatter={(v, name) => [money(Number(v) * 1e6), name === 'grant' ? 'Grant requested' : 'Eligible cost remainder']} contentStyle={tooltipStyle} cursor={{ fill: 'var(--muted)' }} />
+                                <Tooltip formatter={(v, name) => [money(Number(v) * 1e6), name === 'grant' ? 'KJET matching grant' : 'Cluster contribution']} contentStyle={tooltipStyle} cursor={{ fill: 'var(--muted)' }} />
                                 <Bar dataKey="grant" fill="var(--chart-1)" radius={[3, 3, 0, 0]} maxBarSize={25} />
                                 <Bar dataKey="cash"  fill="var(--chart-2)" radius={[3, 3, 0, 0]} maxBarSize={25} />
                               </BarChart>
@@ -381,7 +392,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                               {top5.map((v, i) => (
                                 <div className="sector-row" key={v.name}>
                                   <i className={`sector-swatch sector-${i + 1}`} />
-                                  <span>{v.name}</span><strong>{v.value}</strong>
+                                  <span title={v.detail}>{v.name}{v.detail && <small className="sector-detail"> ({v.detail})</small>}</span><strong>{v.value}</strong>
                                 </div>
                               ))}
                             </div>
@@ -390,10 +401,10 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                       </div>
 
                       <div className="analytics-grid">
-                        <ChartPanel title="Full operational budget" subtitle="Section 5 versus eligible Section 3 costs">
+                        <ChartPanel title="Full operational budget" subtitle="Section 5 budget versus the Section 3 project cost">
                           <div className="profile-metrics" style={{ marginBottom: 0 }}>
                             <div><div className="metric-label">Section 5 total</div><div className="metric-value">{money(allBudget)}</div></div>
-                            <div><div className="metric-label">Eligible cost</div><div className="metric-value">{money(allCost)}</div></div>
+                            <div><div className="metric-label">Project cost (Section 3)</div><div className="metric-value">{money(allCost)}</div></div>
                           </div>
                           <p className="text-xs leading-7 text-muted-foreground mt-4">The operational budget can include working capital, buildings and pre-operating expenses outside eligible machinery costs.</p>
                         </ChartPanel>
@@ -441,7 +452,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                     <div className="analytics-grid"><LoadingPanel /><LoadingPanel /></div>
                   ) : (
                     <div className="analytics-grid">
-                      <ChartPanel title="Leading counties by investment" subtitle="Top 10 by total eligible project cost · KES millions">
+                      <ChartPanel title="Leading counties by investment" subtitle="Top 10 by total project cost · KES millions">
                         <div className="h-[360px]">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={countyGroups.slice(0, 10).map(v => ({ ...v, cost: Number(v.cost) / 1e6 }))} layout="vertical" margin={{ left: 15, right: 20 }}>
@@ -478,7 +489,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                   <div className="notice mb-6">
                     <AlertTriangle size={18} />
                     <span>
-                      <strong>{allReviews} applications require matching-rule review; {allMissing} have missing eligible project costs.</strong><br />
+                      <strong>{allReviews} applications require matching-rule review; {allMissing} have missing project costs.</strong><br />
                       Grant must be at most 50% and KES 32M; cluster cash at least 50%.
                     </span>
                   </div>

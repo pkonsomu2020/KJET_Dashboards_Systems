@@ -33,6 +33,8 @@ export interface PortfolioSummary {
   jobs_today: string;
   jobs_year1: string;
   jobs_year3: string;
+  jobs_excluded_count: string;
+  jobs_excluded: Array<{ application_number: string; name: string; county: string; jobs_today: number | null; jobs_year1: number | null; jobs_year3: number | null }>;
   within_limits: string;
   reviews: string;
   missing: string;
@@ -44,6 +46,9 @@ export interface ChainGroup {
   count: string;
   cost: string;
   grant: string;
+  contribution: string;
+  /** the sectors behind a catch-all such as "Other", from the evaluation sheet */
+  breakdown: Array<{ sector: string; count: number }>;
 }
 
 export interface CountyGroup {

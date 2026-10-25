@@ -650,3 +650,7 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
   .nav-item, .gr-toggle, .profile-link, .report-btn { min-height:40px; }
   .profile-tabs button, .overview-tablist button { min-height:40px; }
 }
+
+.metric-note { flex-basis:100%;font-size:9.5px;line-height:1.5;color:var(--warning);cursor:help; }
+.sector-detail { display:block;font-size:10px;line-height:1.4;color:var(--muted-foreground);font-weight:400; }
+.sector-row { align-items:flex-start; }

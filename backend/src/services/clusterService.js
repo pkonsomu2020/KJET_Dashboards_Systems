@@ -8,6 +8,14 @@ const TTL = {
 };
 
 // ── Portfolio summary (KPI cards) ────────────────────────────
+/**
+ * A job figure above this per application is not plausible (the evaluation sheet's own rule: "Maximum plausible
+ * jobs figure (per application)"). Such an application is left out of the jobs totals and listed beside them,
+ * so one mistyped figure cannot swamp the portfolio (one cluster reported 4,000,000 jobs in year 3).
+ */
+export const MAX_PLAUSIBLE_JOBS = 5000;
+const JOBS_OK = `COALESCE(GREATEST(e.jobs_today, e.jobs_year1, e.jobs_year3), 0) <= ${MAX_PLAUSIBLE_JOBS}`;
+
 export async function getPortfolioSummary() {
   const cacheKey = 'portfolio:summary';
   const cached = await cacheGet(cacheKey);
@@ -27,9 +35,12 @@ export async function getPortfolioSummary() {
       COALESCE(SUM(m.men),0)                 AS men,
       COALESCE(SUM(m.youth),0)               AS youth,
       COALESCE(SUM(m.pwd),0)                 AS pwd,
-      COALESCE(SUM(e.jobs_today),0)          AS jobs_today,
-      COALESCE(SUM(e.jobs_year1),0)          AS jobs_year1,
-      COALESCE(SUM(e.jobs_year3),0)          AS jobs_year3,
+      COALESCE(SUM(e.jobs_today) FILTER (WHERE ${JOBS_OK}),0)  AS jobs_today,
+      COALESCE(SUM(e.jobs_year1) FILTER (WHERE ${JOBS_OK}),0)  AS jobs_year1,
+      COALESCE(SUM(e.jobs_year3) FILTER (WHERE ${JOBS_OK}),0)  AS jobs_year3,
+      COUNT(*) FILTER (WHERE NOT (${JOBS_OK}))                 AS jobs_excluded_count,
+      COALESCE(json_agg(json_build_object('application_number', c.application_number, 'name', c.cluster_name, 'county', c.county,
+        'jobs_today', e.jobs_today, 'jobs_year1', e.jobs_year1, 'jobs_year3', e.jobs_year3) ORDER BY c.cluster_name) FILTER (WHERE NOT (${JOBS_OK})), '[]'::json) AS jobs_excluded,
       COUNT(CASE WHEN f.compliance_status='Within limits'      THEN 1 END) AS within_limits,
       COUNT(CASE WHEN f.compliance_status='Review required'    THEN 1 END) AS reviews,
       COUNT(CASE WHEN f.compliance_status='Missing financials' THEN 1 END) AS missing
@@ -55,12 +66,21 @@ export async function getByValueChain() {
       c.value_chain                          AS name,
       COUNT(c.id)                            AS count,
       COALESCE(SUM(f.total_project_cost),0)  AS cost,
-      COALESCE(SUM(f.grant_requested),0)     AS grant
+      COALESCE(SUM(f.grant_requested),0)     AS grant,
+      COALESCE(SUM(f.cluster_contribution),0) AS contribution
     FROM clusters c
     LEFT JOIN cluster_financials f ON f.cluster_id = c.id
     GROUP BY c.value_chain
     ORDER BY cost DESC
   `);
+
+  // "Other" is a catch-all in the application form; the evaluation sheet names the actual sector of each such cluster
+  const { rows: detail } = await pool.query(`
+    SELECT c.value_chain AS name, ev.eval_value_chain AS sector, COUNT(*)::int AS count
+      FROM clusters c JOIN cluster_evaluation ev ON ev.application_number = c.application_number
+     WHERE ev.eval_value_chain IS NOT NULL AND LOWER(c.value_chain) = 'other'
+     GROUP BY 1, 2 ORDER BY 3 DESC, 2`).catch(() => ({ rows: [] }));
+  for (const r of rows) r.breakdown = detail.filter((d) => d.name === r.name).map((d) => ({ sector: d.sector, count: d.count }));
 
   await cacheSet(cacheKey, rows, TTL.summary);
   return { data: rows, cached: false };

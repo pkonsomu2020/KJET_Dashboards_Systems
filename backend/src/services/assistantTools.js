@@ -136,9 +136,10 @@ async function portfolioStats(args) {
     COALESCE(SUM(m.women),0)::int AS women,
     COALESCE(SUM(m.youth),0)::int AS youth,
     COALESCE(SUM(m.pwd),0)::int AS pwd,
-    COALESCE(SUM(e.jobs_today),0)::int AS jobs_today,
-    COALESCE(SUM(e.jobs_year1),0)::int AS jobs_year1,
-    COALESCE(SUM(e.jobs_year3),0)::int AS jobs_year3`;
+    COALESCE(SUM(e.jobs_today) FILTER (WHERE COALESCE(GREATEST(e.jobs_today, e.jobs_year1, e.jobs_year3), 0) <= 5000),0)::int AS jobs_today,
+    COALESCE(SUM(e.jobs_year1) FILTER (WHERE COALESCE(GREATEST(e.jobs_today, e.jobs_year1, e.jobs_year3), 0) <= 5000),0)::int AS jobs_year1,
+    COALESCE(SUM(e.jobs_year3) FILTER (WHERE COALESCE(GREATEST(e.jobs_today, e.jobs_year1, e.jobs_year3), 0) <= 5000),0)::int AS jobs_year3,
+    COUNT(*) FILTER (WHERE COALESCE(GREATEST(e.jobs_today, e.jobs_year1, e.jobs_year3), 0) > 5000)::int AS jobs_excluded_applications`;
   if (args.group_by && GROUPS[args.group_by]) {
     const g = GROUPS[args.group_by];
     const { rows } = await pool.query(
@@ -146,7 +147,7 @@ async function portfolioStats(args) {
     return { group_by: args.group_by, groups: rows };
   }
   const { rows } = await pool.query(`SELECT ${totals} ${FROM} ${clause}`, params);
-  return { totals: rows[0] };
+  return { totals: rows[0], note: 'Jobs totals leave out applications reporting more than 5,000 jobs (not plausible); jobs_excluded_applications counts them.' };
 }
 
 // ── Fuzzy name matching (used when an exact search finds nothing) ──
