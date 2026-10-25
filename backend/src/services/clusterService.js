@@ -120,7 +120,6 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
   const order = sort === 'cost'    ? 'f.total_project_cost DESC'
               : sort === 'grant'   ? 'f.grant_requested DESC'
               : sort === 'members' ? 'm.total_members DESC'
-              : sort === 'score'   ? 'ev.total_score DESC NULLS LAST, c.cluster_name ASC'
               :                     'c.cluster_name ASC';
 
   const dataQ = `
@@ -134,13 +133,11 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
       f.machinery_source, f.lead_time,
       f.compliance_status,
       m.total_members, m.men, m.women, m.youth, m.pwd,
-      e.jobs_today, e.jobs_year1, e.jobs_year3,
-      ev.total_score, ev.band AS eval_band, ev.rank AS eval_rank
+      e.jobs_today, e.jobs_year1, e.jobs_year3
     FROM clusters c
     LEFT JOIN cluster_financials f  ON f.cluster_id = c.id
     LEFT JOIN cluster_membership m  ON m.cluster_id = c.id
     LEFT JOIN cluster_employment e  ON e.cluster_id = c.id
-    LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
     ${where}
     ORDER BY ${order}
     LIMIT $${idx} OFFSET $${idx + 1}
@@ -149,7 +146,6 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
   const countQ = `
     SELECT COUNT(*) FROM clusters c
     LEFT JOIN cluster_financials f ON f.cluster_id = c.id
-    LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
     ${where}
   `;
 

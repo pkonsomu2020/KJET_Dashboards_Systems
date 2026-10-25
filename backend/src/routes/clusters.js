@@ -11,7 +11,7 @@ const router = Router();
 const listQuerySchema = z.object({
   county: z.string().optional(),
   chain:  z.string().optional(),
-  sort:   z.enum(['name', 'cost', 'grant', 'members', 'score']).optional(),
+  sort:   z.enum(['name', 'cost', 'grant', 'members']).optional(),
   q:      z.string().max(100).optional(),
   review: z.string().optional().transform((v) => v === 'true'),
   page:   z.string().optional().transform((v) => parseInt(v) || 1),

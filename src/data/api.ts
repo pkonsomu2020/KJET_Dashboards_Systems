@@ -86,10 +86,6 @@ export interface ClusterRow {
   jobs_today: string;
   jobs_year1: string;
   jobs_year3: string;
-  // evaluation (null until the evaluation workbook has been imported)
-  total_score: string | null;
-  eval_band: string | null;
-  eval_rank: number | null;
 }
 
 export interface ClusterListResponse {

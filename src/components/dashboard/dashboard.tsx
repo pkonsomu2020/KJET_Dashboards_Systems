@@ -27,7 +27,7 @@ export type DashboardView = 'overview' | 'clusters' | 'evaluation' | 'financial'
 
 const nav = [
   { to: '/',         label: 'Overview',        icon: LayoutDashboard, view: 'overview' },
-  { to: '/clusters', label: 'Cluster explorer', icon: Building2,       view: 'clusters' },
+  { to: '/clusters', label: 'Cluster profile', icon: Building2,       view: 'clusters' },
 ] as const;
 
 const evaluationNav = [
@@ -39,7 +39,7 @@ const evaluationNav = [
 
 const titles: Record<DashboardView, [string, string]> = {
   overview: ['Portfolio overview', 'Cohort 1 co-investment matching grants & business development services'],
-  clusters: ['Cluster explorer',   '85 beneficiary clusters — search, filter and inspect every application'],
+  clusters: ['Cluster profile',   '85 beneficiary clusters — search, filter and inspect every application'],
   evaluation:  ['Evaluation overview', 'Screening, eligibility and scoring of every cluster, read live from the evaluation sheet'],
   financial:   ['Financial screening', 'The 50-50 co-investment rule and category limits, checked against each application on Drive'],
   eligibility: ['Eligibility', 'The ten eligibility tests (E1 to E10) for every cluster, with the reasons'],
@@ -489,7 +489,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                         <div><strong className="text-warning">{allReviews}</strong><span>Review required</span></div>
                         <div><strong>{allMissing}</strong><span>Missing financials</span></div>
                       </div>
-                      <Button asChild variant="outline" size="sm" className="mt-4"><Link to="/clusters">Open cluster explorer</Link></Button>
+                      <Button asChild variant="outline" size="sm" className="mt-4"><Link to="/clusters">Open cluster profiles</Link></Button>
                     </ChartPanel>
                   </div>
                 </TabsContent>

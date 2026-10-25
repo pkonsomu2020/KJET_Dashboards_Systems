@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
   Search, LayoutGrid, List, ArrowUpRight, ChevronLeft,
-  ChevronRight, MapPin, RotateCcw, SearchX, Loader2, Award,
+  ChevronRight, MapPin, RotateCcw, SearchX, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useClusters, useMeta } from '@/hooks/usePortfolio';
 import { money, number, percent } from '@/data/portfolio';
 import type { ClusterRow } from '@/data/api';
 import { SplitBar } from './profile';
-import { BandChip, ScoreBar } from './evaluation-ui';
 
 const PAGE_SIZE = 20;
 
@@ -115,7 +114,6 @@ export function ClusterExplorer({
           <option value="cost">Project cost: highest</option>
           <option value="grant">Grant: highest</option>
           <option value="members">Members: highest</option>
-          <option value="score">Evaluation score: highest</option>
         </select>
         {(query || county || chain) && (
           <Button variant="ghost" size="icon" title="Clear filters" aria-label="Clear filters" onClick={clear}>
@@ -147,7 +145,6 @@ export function ClusterExplorer({
               <col style={{ width: '14%' }} />
               <col style={{ width: '12%' }} />
               <col style={{ width: '14%' }} />
-              <col style={{ width: '15%' }} />
               <col />
               <col style={{ width: 52 }} />
             </colgroup>
@@ -158,7 +155,6 @@ export function ClusterExplorer({
                 <th>Project cost</th>
                 <th>Grant / cash split</th>
                 <th>Membership</th>
-                <th>Evaluation</th>
                 <th aria-label="Profile" />
               </tr>
             </thead>
@@ -202,16 +198,6 @@ export function ClusterExplorer({
                     </span>
                   </td>
                   <td>
-                    {c.total_score != null ? (
-                      <>
-                        <ScoreBar score={c.total_score} compact />
-                        <span className="gr-sub">
-                          <BandChip band={c.eval_band} score={c.total_score} />
-                        </span>
-                      </>
-                    ) : <span className="muted-small">Not scored</span>}
-                  </td>
-                  <td>
                     <Button variant="ghost" size="icon"
                       aria-label={`View profile of ${c.cluster_name}`}
                       title="View full profile & financials"
@@ -245,7 +231,6 @@ export function ClusterExplorer({
                 <span>{Number(c.grant_share_pct).toFixed(1)}% grant</span>
                 <span>{Number(c.cluster_share_pct).toFixed(1)}% cash</span>
               </div>
-              {c.total_score != null && <div className="mt-3"><ScoreBar score={c.total_score} compact /></div>}
               <p className="text-[10px] text-muted-foreground mt-4">
                 {number(Number(c.total_members))} members ·{' '}
                 {percent(Number(c.women), Number(c.total_members)).toFixed(1)}% women ·{' '}
