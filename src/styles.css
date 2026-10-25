@@ -631,3 +631,22 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .app-table th, .app-table td { padding:7px 9px;font-size:11.5px;vertical-align:top;overflow-wrap:anywhere; }
 .app-month { text-align:center;padding:7px 3px !important;width:26px;text-transform:capitalize; }
 .app-dot { display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--primary); }
+
+/* ── Phones and tablets ── */
+@media (max-width:900px) {
+  /* the overview tabs wrap into two columns instead of running off the screen (the sidebar still takes room on a tablet) */
+  .overview-tablist { display:grid;grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .overview-tablist button { justify-content:center;padding:10px 6px;white-space:normal;text-align:center; }
+}
+@media (max-width:640px) {
+  /* iOS zooms into any field smaller than 16px */
+  input, select, textarea { font-size:16px !important; }
+  .filter-select { min-width:0;max-width:100%; }
+  .ev-filterpanel { gap:8px;padding:10px 12px; }
+  .ev-filterpanel-actions { margin-left:0;width:100%; }
+  .ev-filterpanel-actions button { width:100%; }
+}
+@media (pointer:coarse) {
+  .nav-item, .gr-toggle, .profile-link, .report-btn { min-height:40px; }
+  .profile-tabs button, .overview-tablist button { min-height:40px; }
+}

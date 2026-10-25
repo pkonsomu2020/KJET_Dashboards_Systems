@@ -1,9 +1,18 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import {
   Bar, BarChart, CartesianGrid, Cell, LabelList, Legend, Pie, PieChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { gateTone } from './evaluation-ui';
+
+/** True on phones: axis labels get less room so the bars keep most of the width. */
+function useNarrow() {
+  return useSyncExternalStore(
+    (cb) => { const m = window.matchMedia('(max-width: 560px)'); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb); },
+    () => window.matchMedia('(max-width: 560px)').matches,
+    () => false,
+  );
+}
 
 const tick = { fontSize: 11, fill: 'var(--muted-foreground)' };
 const tip = { background: 'var(--card)', borderColor: 'var(--border)', borderRadius: 6, fontSize: 11, color: 'var(--foreground)' };
@@ -12,15 +21,16 @@ const toneColor = (label: string) => TONE[gateTone(label)];
 
 /** Eligibility tests: how each test splits into pass, hold and fail, as shares of the clusters assessed. */
 export function TestsChart({ tests }: { tests: Array<{ test: string; label: string; pass: number; hold: number; fail: number }> }) {
-  const data = tests.map((t) => ({ name: `${t.test}  ${t.label}`, Pass: t.pass, Hold: t.hold, Fail: t.fail }));
+  const narrow = useNarrow();
+  const data = tests.map((t) => ({ name: narrow ? t.test : `${t.test}  ${t.label}`, full: `${t.test}  ${t.label}`, Pass: t.pass, Hold: t.hold, Fail: t.fail }));
   return (
     <div style={{ height: data.length * 31 + 56 }} role="img" aria-label="Pass, hold and fail counts for each eligibility test">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} layout="vertical" stackOffset="expand" margin={{ top: 0, right: 12, left: 0, bottom: 0 }} barCategoryGap={7}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
           <XAxis type="number" tickFormatter={(v: number) => `${Math.round(v * 100)}%`} tick={tick} tickLine={false} axisLine={false} />
-          <YAxis type="category" dataKey="name" width={158} tick={tick} tickLine={false} axisLine={false} interval={0} />
-          <Tooltip contentStyle={tip} cursor={{ fill: 'var(--muted)' }} formatter={(v: number, n: string) => [`${v} clusters`, n]} />
+          <YAxis type="category" dataKey="name" width={narrow ? 34 : 158} tick={tick} tickLine={false} axisLine={false} interval={0} />
+          <Tooltip contentStyle={tip} cursor={{ fill: 'var(--muted)' }} formatter={(v: number, n: string) => [`${v} clusters`, n]} labelFormatter={(_l, p) => String((p?.[0]?.payload as { full?: string } | undefined)?.full ?? '')} />
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
           {([['Pass', 'var(--success)'], ['Hold', 'var(--warning)'], ['Fail', 'var(--danger)']] as const).map(([k, c]) => (
             <Bar key={k} dataKey={k} stackId="t" fill={c} stroke="var(--card)" strokeWidth={2} barSize={16}>
@@ -64,12 +74,13 @@ export function ResultsDonut({ items, total, centreLabel }: { items: Array<{ nam
 
 /** Ranked horizontal bars with the value at the end of each bar. */
 export function RankedBars({ items, color = 'var(--chart-1)', labelWidth = 200 }: { items: Array<{ name: string; value: number }>; color?: string; labelWidth?: number }) {
+  const narrow = useNarrow();
   return (
     <div style={{ height: items.length * 30 + 12 }} role="img" aria-label={items.map((i) => `${i.name}: ${i.value}`).join('; ')}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={items} layout="vertical" margin={{ top: 0, right: 34, left: 0, bottom: 0 }} barCategoryGap={6}>
           <XAxis type="number" hide domain={[0, 'dataMax']} />
-          <YAxis type="category" dataKey="name" width={labelWidth} tick={tick} tickLine={false} axisLine={false} interval={0} />
+          <YAxis type="category" dataKey="name" width={narrow ? Math.min(labelWidth, 120) : labelWidth} tick={tick} tickLine={false} axisLine={false} interval={0} />
           <Tooltip contentStyle={tip} cursor={{ fill: 'var(--muted)' }} formatter={(v: number) => [`${v} clusters`, '']} separator="" />
           <Bar dataKey="value" fill={color} radius={[0, 4, 4, 0]} barSize={14}>
             <LabelList dataKey="value" position="right" fill="var(--foreground)" fontSize={11} fontWeight={600} />
@@ -85,6 +96,7 @@ type Group = { name: string; count: number; average_score: number | null; eligib
 /** Average score per group against the 50 and 70 score lines; the tooltip carries cluster and eligible counts. */
 export function GroupScoreChart({ rows, format = (s: string) => s, initial = 10, noun }: { rows: Group[]; format?: (s: string) => string; initial?: number; noun: string }) {
   const [all, setAll] = useState(false);
+  const narrow = useNarrow();
   const scored = rows.filter((r) => r.average_score != null);
   // the groups with the most clusters first (their averages mean the most), then ordered by score
   const shown = (all ? scored : [...scored].sort((a, b) => b.count - a.count || (b.average_score ?? 0) - (a.average_score ?? 0)).slice(0, initial))
@@ -97,7 +109,7 @@ export function GroupScoreChart({ rows, format = (s: string) => s, initial = 10,
           <BarChart data={shown} layout="vertical" margin={{ top: 4, right: 30, left: 0, bottom: 0 }} barCategoryGap={6}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
             <XAxis type="number" domain={[0, 100]} ticks={[0, 25, 50, 70, 100]} tick={tick} tickLine={false} axisLine={false} />
-            <YAxis type="category" dataKey="label" width={138} tick={tick} tickLine={false} axisLine={false} interval={0} />
+            <YAxis type="category" dataKey="label" width={narrow ? 104 : 138} tick={tick} tickLine={false} axisLine={false} interval={0} />
             <ReferenceLine x={50} stroke="var(--warning)" strokeDasharray="4 3" />
             <ReferenceLine x={70} stroke="var(--success)" strokeDasharray="4 3" />
             <Tooltip
