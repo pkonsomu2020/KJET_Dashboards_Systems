@@ -11,8 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClustersRouteImport } from './routes/clusters'
-import { Route as GrantReadyRouteImport } from './routes/grant-ready'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as EvaluationIndexRouteImport } from './routes/evaluation.index'
+import { Route as EvaluationEligibilityRouteImport } from './routes/evaluation.eligibility'
+import { Route as EvaluationFinancialRouteImport } from './routes/evaluation.financial'
+import { Route as EvaluationScorecardRouteImport } from './routes/evaluation.scorecard'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -24,49 +27,98 @@ const ClustersRoute = ClustersRouteImport.update({
   path: '/clusters',
   getParentRoute: () => rootRouteImport,
 } as any)
-const GrantReadyRoute = GrantReadyRouteImport.update({
-  id: '/grant-ready',
-  path: '/grant-ready',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvaluationIndexRoute = EvaluationIndexRouteImport.update({
+  id: '/evaluation/',
+  path: '/evaluation/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvaluationEligibilityRoute = EvaluationEligibilityRouteImport.update({
+  id: '/evaluation/eligibility',
+  path: '/evaluation/eligibility',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvaluationFinancialRoute = EvaluationFinancialRouteImport.update({
+  id: '/evaluation/financial',
+  path: '/evaluation/financial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvaluationScorecardRoute = EvaluationScorecardRouteImport.update({
+  id: '/evaluation/scorecard',
+  path: '/evaluation/scorecard',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clusters': typeof ClustersRoute
-  '/grant-ready': typeof GrantReadyRoute
   '/login': typeof LoginRoute
+  '/evaluation/eligibility': typeof EvaluationEligibilityRoute
+  '/evaluation/financial': typeof EvaluationFinancialRoute
+  '/evaluation/scorecard': typeof EvaluationScorecardRoute
+  '/evaluation/': typeof EvaluationIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clusters': typeof ClustersRoute
-  '/grant-ready': typeof GrantReadyRoute
   '/login': typeof LoginRoute
+  '/evaluation/eligibility': typeof EvaluationEligibilityRoute
+  '/evaluation/financial': typeof EvaluationFinancialRoute
+  '/evaluation/scorecard': typeof EvaluationScorecardRoute
+  '/evaluation': typeof EvaluationIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clusters': typeof ClustersRoute
-  '/grant-ready': typeof GrantReadyRoute
   '/login': typeof LoginRoute
+  '/evaluation/eligibility': typeof EvaluationEligibilityRoute
+  '/evaluation/financial': typeof EvaluationFinancialRoute
+  '/evaluation/scorecard': typeof EvaluationScorecardRoute
+  '/evaluation/': typeof EvaluationIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clusters' | '/grant-ready' | '/login'
+  fullPaths:
+    | '/'
+    | '/clusters'
+    | '/login'
+    | '/evaluation/eligibility'
+    | '/evaluation/financial'
+    | '/evaluation/scorecard'
+    | '/evaluation/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clusters' | '/grant-ready' | '/login'
-  id: '__root__' | '/' | '/clusters' | '/grant-ready' | '/login'
+  to:
+    | '/'
+    | '/clusters'
+    | '/login'
+    | '/evaluation/eligibility'
+    | '/evaluation/financial'
+    | '/evaluation/scorecard'
+    | '/evaluation'
+  id:
+    | '__root__'
+    | '/'
+    | '/clusters'
+    | '/login'
+    | '/evaluation/eligibility'
+    | '/evaluation/financial'
+    | '/evaluation/scorecard'
+    | '/evaluation/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClustersRoute: typeof ClustersRoute
-  GrantReadyRoute: typeof GrantReadyRoute
   LoginRoute: typeof LoginRoute
+  EvaluationEligibilityRoute: typeof EvaluationEligibilityRoute
+  EvaluationFinancialRoute: typeof EvaluationFinancialRoute
+  EvaluationScorecardRoute: typeof EvaluationScorecardRoute
+  EvaluationIndexRoute: typeof EvaluationIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -85,18 +137,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClustersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/grant-ready': {
-      id: '/grant-ready'
-      path: '/grant-ready'
-      fullPath: '/grant-ready'
-      preLoaderRoute: typeof GrantReadyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evaluation/': {
+      id: '/evaluation/'
+      path: '/evaluation'
+      fullPath: '/evaluation/'
+      preLoaderRoute: typeof EvaluationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evaluation/eligibility': {
+      id: '/evaluation/eligibility'
+      path: '/evaluation/eligibility'
+      fullPath: '/evaluation/eligibility'
+      preLoaderRoute: typeof EvaluationEligibilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evaluation/financial': {
+      id: '/evaluation/financial'
+      path: '/evaluation/financial'
+      fullPath: '/evaluation/financial'
+      preLoaderRoute: typeof EvaluationFinancialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evaluation/scorecard': {
+      id: '/evaluation/scorecard'
+      path: '/evaluation/scorecard'
+      fullPath: '/evaluation/scorecard'
+      preLoaderRoute: typeof EvaluationScorecardRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -105,8 +178,11 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClustersRoute: ClustersRoute,
-  GrantReadyRoute: GrantReadyRoute,
   LoginRoute: LoginRoute,
+  EvaluationEligibilityRoute: EvaluationEligibilityRoute,
+  EvaluationFinancialRoute: EvaluationFinancialRoute,
+  EvaluationScorecardRoute: EvaluationScorecardRoute,
+  EvaluationIndexRoute: EvaluationIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

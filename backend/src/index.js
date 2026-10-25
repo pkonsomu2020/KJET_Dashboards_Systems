@@ -28,6 +28,7 @@ import driveRouter     from './routes/drive.js';
 import assistantRouter from './routes/assistant.js';
 import evaluationRouter from './routes/evaluation.js';
 import { ensureEvaluationSchema } from './services/evaluationImport.js';
+import { startEvaluationSheetSync } from './services/evaluationSheet.js';
 import pool from './db/pool.js';
 
 const app  = express();
@@ -135,6 +136,7 @@ async function start() {
   const driveOk = await initDriveClient();
   if (driveOk) {
     startChangesPoller();
+    startEvaluationSheetSync().catch((err) => console.error('[Evaluation] sheet sync could not start:', err.message));
   }
 
   app.listen(PORT, HOST, () => {

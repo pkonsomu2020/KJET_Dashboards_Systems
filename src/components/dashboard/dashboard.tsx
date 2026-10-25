@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, ShieldCheck, Download, ChevronRight,
   Search, Moon, Sun, Menu, X, Layers3, BriefcaseBusiness, CircleDollarSign,
   Handshake, TrendingUp, CalendarDays, AlertTriangle, Globe2,
-  MapPin, Users, Wallet, Loader2, LogOut, Award, ArrowUpRight,
+  MapPin, Users, Wallet, Loader2, LogOut, Award, ArrowUpRight, ClipboardCheck, Scale, ListChecks,
 } from 'lucide-react';
 import {
   BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer,
@@ -14,28 +14,38 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { money, number, percent, exportCSV } from '@/data/portfolio';
 import {
-  usePortfolioSummary, useByChain, useByCounty, useEvaluation,
+  usePortfolioSummary, useByChain, useByCounty, useEvaluationOverview,
 } from '@/hooks/usePortfolio';
 import { useSession, useSignOut } from '@/hooks/useAuth';
 import type { ClusterRow } from '@/data/api';
 import { ClusterExplorer } from './explorer';
 import { ClusterProfile } from './profile';
 import { AssistantPanel } from './assistant';
-import { GrantReady } from './grant-ready';
-import { BandChip, ScoreBar } from './evaluation-ui';
+import { EvaluationOverview, FinancialScreeningPage, EligibilityPage, ScorecardPage } from './evaluation-pages';
+import { ScoreBar } from './evaluation-ui';
+import { ReportButton } from './report-buttons';
 
-export type DashboardView = 'overview' | 'clusters' | 'grant-ready';
+export type DashboardView = 'overview' | 'clusters' | 'evaluation' | 'financial' | 'eligibility' | 'scorecard';
 
 const nav = [
   { to: '/',         label: 'Overview',        icon: LayoutDashboard, view: 'overview' },
   { to: '/clusters', label: 'Cluster explorer', icon: Building2,       view: 'clusters' },
-  { to: '/grant-ready', label: 'Grant-ready clusters', icon: Award,      view: 'grant-ready' },
+] as const;
+
+const evaluationNav = [
+  { to: '/evaluation',             label: 'Evaluation overview',  icon: ClipboardCheck,   view: 'evaluation' },
+  { to: '/evaluation/financial',   label: 'Financial screening',  icon: CircleDollarSign, view: 'financial' },
+  { to: '/evaluation/eligibility', label: 'Eligibility',          icon: ListChecks,       view: 'eligibility' },
+  { to: '/evaluation/scorecard',   label: 'Scorecard',            icon: Scale,            view: 'scorecard' },
 ] as const;
 
 const titles: Record<DashboardView, [string, string]> = {
   overview: ['Portfolio overview', 'Cohort 1 co-investment matching grants & business development services'],
   clusters: ['Cluster explorer',   '85 beneficiary clusters — search, filter and inspect every application'],
-  'grant-ready': ['Grant-ready clusters', 'Clusters recommended for grant support after scoring and eligibility screening'],
+  evaluation:  ['Evaluation overview', 'Screening, eligibility and scoring of every cluster, read live from the evaluation sheet'],
+  financial:   ['Financial screening', 'The 50-50 co-investment rule and category limits, checked against each application on Drive'],
+  eligibility: ['Eligibility', 'The ten eligibility tests (E1 to E10) for every cluster, with the reasons'],
+  scorecard:   ['Scorecard', 'Weighted assessment of every cluster across the six criteria'],
 };
 
 const CHART_COLORS = [
@@ -106,7 +116,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
   const { data: summary, isLoading: summaryLoading } = usePortfolioSummary();
   const { data: chainData, isLoading: chainLoading }  = useByChain();
   const { data: countyData, isLoading: countyLoading } = useByCounty();
-  const { data: evaluation } = useEvaluation();
+  const { data: evaluation } = useEvaluationOverview();
 
   // Derived values — safe defaults while loading
   const s = summary;
@@ -201,6 +211,18 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
             </Button>
           ))}
         </nav>
+
+        <div className="nav-label">Evaluation</div>
+        <nav>
+          {evaluationNav.map(n => (
+            <Button asChild variant="ghost" key={n.to} className={`nav-item ${view === n.view ? 'active' : ''}`}>
+              <Link to={n.to} onClick={() => setMenu(false)}>
+                <n.icon />
+                {n.label}
+              </Link>
+            </Button>
+          ))}
+        </nav>
       </aside>
 
       {/* ── Workspace ────────────────────────────────────────── */}
@@ -273,7 +295,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
             </div>
             <div className="heading-actions">
               <span className="cohort-badge"><CalendarDays size={13} />Cohort 1 · 2026</span>
-              {view !== 'grant-ready' && (
+              {(view === 'overview' || view === 'clusters') && (
                 <Button size="sm" onClick={() => exportCSV(exportRows)} disabled={exportRows.length === 0}>
                   <Download />Export CSV
                 </Button>
@@ -310,22 +332,25 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                 </Metric>
               </div>
 
-              {evaluation && evaluation.data.length > 0 && (
+              {evaluation && evaluation.grant_ready.length > 0 && (
                 <ChartPanel
-                  title="Top clusters by evaluation score"
-                  subtitle={`Grant-ready list: ${evaluation.summary.clusters} of ${evaluation.meta.evaluated} evaluated clusters, subject to due diligence and World Bank no-objection`}
-                  legend={<Button asChild variant="outline" size="sm"><Link to="/grant-ready">View all<ArrowUpRight /></Link></Button>}
+                  title="Grant-ready clusters"
+                  subtitle={`${evaluation.grant_ready.length} of ${evaluation.meta.evaluated} evaluated clusters are eligible and scored 70 or more, subject to due diligence and World Bank no-objection`}
+                  legend={<Button asChild variant="outline" size="sm"><Link to="/evaluation">Open evaluation<ArrowUpRight /></Link></Button>}
                 >
                   <div className="top-list">
-                    {evaluation.data.slice(0, 5).map((r) => (
-                      <button type="button" key={r.application_number} className="top-row" onClick={() => setSelectedId(r.application_number)}>
-                        <span className={`gr-rank ${r.shortlist_rank === 1 ? 'top' : ''}`}>{r.shortlist_rank}</span>
-                        <span style={{ minWidth: 0 }}>
-                          <div className="top-name">{r.cluster_name}</div>
-                          <div className="top-sub">{r.county} · {r.value_chain.replace(/_/g, ' ')} · <BandChip band={r.band} score={r.total_score} /></div>
-                        </span>
-                        <ScoreBar score={r.total_score} compact />
-                      </button>
+                    {evaluation.grant_ready.slice(0, 5).map((r) => (
+                      <div key={r.application_number} className="top-row ev-ready-row">
+                        <button type="button" className="ev-ready-main" onClick={() => setSelectedId(r.application_number)}>
+                          <span className={`gr-rank ${r.rank === 1 ? 'top' : ''}`}>{r.rank}</span>
+                          <span style={{ minWidth: 0 }}>
+                            <div className="top-name">{r.cluster_name}</div>
+                            <div className="top-sub">{r.county} · {r.application_number}</div>
+                          </span>
+                        </button>
+                        <ScoreBar score={r.score} compact />
+                        <ReportButton applicationNumber={r.application_number} clusterName={r.cluster_name} />
+                      </div>
                     ))}
                   </div>
                 </ChartPanel>
@@ -500,8 +525,11 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
             </>
           )}
 
-          {/* ── GRANT-READY ─────────────────────────────────── */}
-          {view === 'grant-ready' && <GrantReady onSelect={setSelectedId} />}
+          {/* ── EVALUATION ──────────────────────────────────── */}
+          {view === 'evaluation' && <EvaluationOverview onSelect={setSelectedId} />}
+          {view === 'financial' && <FinancialScreeningPage onSelect={setSelectedId} />}
+          {view === 'eligibility' && <EligibilityPage onSelect={setSelectedId} />}
+          {view === 'scorecard' && <ScorecardPage onSelect={setSelectedId} />}
 
           {/* ── CLUSTERS ────────────────────────────────────── */}
           {view === 'clusters' && (

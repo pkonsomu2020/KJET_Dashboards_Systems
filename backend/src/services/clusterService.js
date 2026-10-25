@@ -216,8 +216,8 @@ export async function getClusterByNumber(applicationNumber) {
     pool.query('SELECT * FROM cluster_sustainability WHERE cluster_id=$1 LIMIT 1',           [clusterId]),
     // Document text can be megabytes per cluster: the profile gets metadata only (text is read via /api/documents/:id)
     pool.query("SELECT to_jsonb(d) - 'content_text' AS doc FROM cluster_documents d WHERE d.cluster_id=$1 ORDER BY d.section, d.original_filename", [clusterId]),
-    // Evaluation results (separate dataset, loaded from the evaluation workbook)
-    pool.query('SELECT * FROM cluster_evaluation WHERE application_number=$1', [applicationNumber]),
+    // Evaluation results come from /api/evaluation/clusters/:applicationNumber
+    Promise.resolve({ rows: [] }),
   ]);
 
   const data = {

@@ -3,7 +3,7 @@
  *
  *   node scripts/import-evaluation.js "<path to KJET_CoInvestment_Evaluation_Tool ... .xlsx>"
  *
- * Re-run whenever the workbook changes. Replaces the previous evaluation in one transaction and
+ * Manual load of a downloaded copy (the server normally reads the online sheet by itself). Replaces the previous evaluation in one transaction and
  * never touches application data.
  */
 import 'dotenv/config';

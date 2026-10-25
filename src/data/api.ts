@@ -105,7 +105,6 @@ export interface ClusterListResponse {
 }
 
 export interface ClusterDetail extends ClusterRow {
-  evaluation: EvaluationRow | null;
   status: string;
   physical_address: string;
   phone: string;
@@ -258,78 +257,134 @@ export async function askAssistant(question: string, history: AssistantMessage[]
   return body;
 }
 
-// ── Evaluation (scores and grant-ready list from the evaluation workbook) ──
+// ── Evaluation (scores and findings from the online evaluation sheet; amounts and the 50-50 checks from Drive) ──
 
-type Num = string | number | null;
+export interface EvalFinancial {
+  result: string;
+  category: string;
+  issues: string[];
+  total: number | null;
+  contribution: number | null;
+  grant: number | null;
+  machinery: number | null;
+  services: number | null;
+  contribution_plus_grant: number | null;
+  total_minus_contribution_and_grant: number | null;
+  total_minus_machinery_and_services: number | null;
+  arithmetic_consistent: boolean | null;
+  implausible_amounts: boolean;
+  cluster_share: number | null;
+  kjet_share: number | null;
+  meets_50_percent_cash: boolean | null;
+  max_eligible_grant: number | null;
+  grant_above_max: number | null;
+  min_cluster_cash: number | null;
+  contribution_shortfall: number | null;
+  document_check: string | null;
+}
 
-export interface EvaluationRow {
+export interface EvalRow {
   application_number: string;
-  shortlisted: boolean | null;
-  shortlist_rank: number | null;
-  shortlist_reason: string | null;
-  total_score: Num;
+  cluster_name: string;
+  county: string;
+  constituency: string | null;
+  value_chain: string;
+  legal_form: string | null;
+  score: number | null;
   band: string | null;
   rank: number | null;
   county_rank: number | null;
-  category: string | null;
-  c1_rating: Num; c1_score: Num; c1_evidence?: string | null;
-  c2_rating: Num; c2_score: Num; c2_evidence?: string | null;
-  c3_rating: Num; c3_score: Num; c3_evidence?: string | null;
-  c4_rating: Num; c4_score: Num; c4_evidence?: string | null;
-  c5_rating: Num; c5_score: Num; c5_evidence?: string | null;
-  c6_rating: Num; c6_score: Num; c6_evidence?: string | null;
-  financial_screening: string | null;
-  data_readiness: string | null;
   eligibility: string | null;
-  due_diligence: string | null;
-  exclusion_status: string | null;
-  es_disposition: string | null;
-  system_recommendation: string | null;
-  technical_rec: string | null;
-  msea_decision: string | null;
-  approved_grant: Num;
-  wb_status: string | null;
-  conditions: string | null;
-  eval_value_chain: string | null;
-  source_file?: string | null;
-  imported_at?: string | null;
+  grant_ready: boolean;
+  grant_ready_rank: number | null;
+  criteria: Array<{ code: string; weight: number; rating: number | null; score: number | null }>;
+  tests: Record<string, string | null>;
+  financial: EvalFinancial;
+  members: number | null;
+  women: number | null;
+  youth: number | null;
+  pwd: number | null;
+  jobs_today: number | null;
+  jobs_year3: number | null;
 }
 
-export interface ShortlistRow extends EvaluationRow {
-  cluster_name: string;
-  county: string;
-  constituency: string;
-  value_chain: string;
-  legal_form: string;
-  total_project_cost: Num;
-  grant_requested: Num;
-  cluster_contribution: Num;
-  total_members: Num;
-  women: Num;
-  youth: Num;
-  pwd: Num;
-  jobs_today: Num;
-  jobs_year3: Num;
+export interface EvalSheetStatus {
+  enabled: boolean;
+  sheet_name: string | null;
+  sheet_modified: string | null;
+  last_checked: string | null;
+  last_imported: string | null;
+  last_error: string | null;
 }
 
-export interface EvaluationResponse {
+export interface EvalListResponse {
   ok: boolean;
-  data: ShortlistRow[];
-  summary: {
-    clusters: number;
-    average_score: number;
-    counties: number;
-    value_chains: number;
-    members: number;
-    women: number;
-    requested_per_drive: number;
-    project_cost: number;
-    projected_jobs_year3: number;
-  };
-  bands: Array<{ band: string; n: number }>;
-  meta: { source_file: string | null; imported_at: string | null; evaluated: number };
+  data: EvalRow[];
+  meta: { source_file: string | null; imported_at: string | null; evaluated: number; sheet: EvalSheetStatus };
+  criteria: Array<{ code: string; label: string; weight: number }>;
 }
 
-export function fetchEvaluation() {
-  return get<EvaluationResponse>('/api/evaluation');
+export interface EvalOverview {
+  ok: boolean;
+  funnel: Array<{ stage: string; count: number }>;
+  bands: Array<{ band: string; count: number }>;
+  eligibility: Array<{ status: string; count: number }>;
+  financial_results: Array<{ result: string; count: number }>;
+  categories: Array<{ category: string; count: number }>;
+  cash_shortfall_clusters: number;
+  score_distribution: Array<{ label: string; count: number }>;
+  average_score: number | null;
+  criteria_average: Array<{ code: string; label: string; weight: number; average: number | null }>;
+  tests: Array<{ test: string; label: string; pass: number; hold: number; fail: number }>;
+  counties: Array<{ name: string; count: number; average_score: number | null; eligible: number; grant_ready: number }>;
+  value_chains: Array<{ name: string; count: number; average_score: number | null; eligible: number; grant_ready: number }>;
+  top_issues: Array<{ issue: string; count: number }>;
+  grant_ready: Array<{ application_number: string; cluster_name: string; county: string; score: number; rank: number }>;
+  meta: EvalListResponse['meta'];
 }
+
+export interface EvalDetail extends EvalRow {
+  criteria: Array<{
+    code: string; label: string; weight: number; rating: number | null; score: number | null; justification: string | null;
+    indicators: Array<{ code: string; label: string; weight: number; rating: number | null }>;
+  }>;
+  eligibility_tests: Array<{ test: string; label: string; hint: string | null; decision: string | null }>;
+  eligibility_reasons: string | null;
+  evidence_files: string | null;
+  expert_remarks: string | null;
+  moderation_note: string | null;
+  evaluator_finance: { result: string | null; category: string | null; document_check: string | null; issues: string | null; note: string | null };
+  financial_detail: { result: string; category: string; issues: string[]; figures: { total: number | null; contribution: number | null; grant: number | null; machinery: number | null; services: number | null }; checks: Omit<EvalFinancial, 'result' | 'category' | 'issues' | 'total' | 'contribution' | 'grant' | 'machinery' | 'services'> };
+  eligible_clusters: number;
+  source: { file: string | null; imported_at: string | null };
+}
+
+export function fetchEvaluationList() {
+  return get<EvalListResponse>('/api/evaluation/clusters');
+}
+export function fetchEvaluationOverview() {
+  return get<EvalOverview>('/api/evaluation/overview');
+}
+export function fetchEvaluationDetail(applicationNumber: string) {
+  return get<{ ok: boolean; data: EvalDetail }>(`/api/evaluation/clusters/${encodeURIComponent(applicationNumber)}`).then((r) => r.data);
+}
+
+/** Downloads a file from the API (PDF or ZIP) with the login cookie, then saves it. */
+async function download(path: string, fallbackName: string) {
+  const res = await fetch(`${BASE}${path}`, { credentials: 'include' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { error?: string };
+    throw new Error(body.error ?? `Download failed (${res.status})`);
+  }
+  const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+export const downloadEvaluationReport = (applicationNumber: string) =>
+  download(`/api/evaluation/clusters/${encodeURIComponent(applicationNumber)}/report.pdf`, `KJET-evaluation-${applicationNumber}.pdf`);
+export const downloadEvaluationReports = (scope: 'grant_ready' | 'all') =>
+  download(`/api/evaluation/reports.zip?scope=${scope}`, `KJET-evaluation-reports-${scope}.zip`);

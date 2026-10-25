@@ -1,22 +1,25 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { GrantReady } from '@/components/dashboard/grant-ready';
+
+// Recharts measures its container with ResizeObserver, which jsdom does not provide
+globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
+import { EligibilityPage, EvaluationOverview, FinancialScreeningPage, ScorecardPage } from '@/components/dashboard/evaluation-pages';
 import { gateTone, scoreTone } from '@/components/dashboard/evaluation-ui';
-import type { EvaluationResponse, ShortlistRow } from '@/data/api';
+import type { EvalListResponse, EvalOverview, EvalRow } from '@/data/api';
 
 describe('evaluation status colours', () => {
   it('maps gate values to a tone', () => {
     expect(gateTone('PASS')).toBe('good');
+    expect(gateTone('Pass')).toBe('good');
     expect(gateTone('READY')).toBe('good');
-    expect(gateTone('Recommended – subject to DD / E&S clearance')).toBe('good');
     expect(gateTone('FOLLOW-UP: data error')).toBe('warn');
-    expect(gateTone('Hold – eligibility clarification')).toBe('warn');
-    expect(gateTone('In progress')).toBe('warn');
-    expect(gateTone('Gaps outstanding')).toBe('warn');
+    expect(gateTone('HOLD')).toBe('warn');
+    expect(gateTone('Hold')).toBe('warn');
+    expect(gateTone('Referred with Comments')).toBe('warn');
     expect(gateTone('NON-COMPLIANT: <50% cash')).toBe('bad');
-    expect(gateTone('Not eligible')).toBe('bad');
-    expect(gateTone('Not recommended – safeguards')).toBe('bad');
+    expect(gateTone('FAIL')).toBe('bad');
+    expect(gateTone('Rejected')).toBe('bad');
     expect(gateTone('')).toBe('neutral');
     expect(gateTone(null)).toBe('neutral');
   });
@@ -31,71 +34,100 @@ describe('evaluation status colours', () => {
   });
 });
 
-const base = {
-  shortlisted: true, band: 'Recommended', rank: 1, county_rank: 1, category: 'Category 2',
-  financial_screening: 'PASS', data_readiness: 'READY', eligibility: 'PASS', due_diligence: 'In progress',
-  exclusion_status: null, es_disposition: null, system_recommendation: 'Recommended – subject to DD / E&S clearance',
-  technical_rec: 'Recommended', msea_decision: null, approved_grant: null, wb_status: null, conditions: null,
-  eval_value_chain: 'Dairy', constituency: 'X', legal_form: 'cooperative',
-  total_project_cost: '1000', grant_requested: '500', cluster_contribution: '500', total_members: 100, women: 40, youth: 20, pwd: 1,
-  jobs_today: 10, jobs_year3: 30, c1_rating: 4, c1_score: 16, c2_rating: 4, c2_score: 32, c3_rating: 4, c3_score: 12,
-  c4_rating: 4, c4_score: 8, c5_rating: 4, c5_score: 8, c6_rating: 4, c6_score: 4,
-} as unknown as ShortlistRow;
+const fin = (over: Partial<EvalRow['financial']> = {}) => ({
+  result: 'PASS', category: 'Category 2', issues: [], total: 1000, contribution: 500, grant: 500, machinery: 1000, services: 0,
+  contribution_plus_grant: 1000, total_minus_contribution_and_grant: 0, total_minus_machinery_and_services: 0, arithmetic_consistent: true,
+  implausible_amounts: false, cluster_share: 0.5, kjet_share: 0.5, meets_50_percent_cash: true, max_eligible_grant: 500, grant_above_max: 0,
+  min_cluster_cash: 500, contribution_shortfall: 0, document_check: 'Complete', ...over,
+});
+const tests = (e5 = 'Pass') => ({ E1: 'Pass', E2: 'Pass', E3: 'Pass', E4: 'Pass', E5: e5, E6: 'Pass', E7: 'Pass', E8: 'Pass', E9: 'Pass', E10: 'Pass' });
+const criteria = [20, 40, 15, 10, 10, 5].map((w, i) => ({ code: `C${i + 1}`, weight: w, rating: 4, score: w * 0.8 }));
 
-const sample = {
-  ok: true,
-  data: [
-    { ...base, application_number: 'KJET-2026-000001', cluster_name: 'ALPHA DAIRY', county: 'Nyeri', value_chain: 'Dairy', total_score: 96, shortlist_rank: 1, grant_requested: '500', total_project_cost: '1000', shortlist_reason: 'Highest score in the portfolio.' },
-    {
-      ...base, application_number: 'KJET-2026-000002', cluster_name: 'BETA STONE', county: 'Baringo', value_chain: 'Construction', total_score: 71, shortlist_rank: 2,
-      total_project_cost: '15876000', grant_requested: '8038000', es_disposition: 'Not eligible', due_diligence: 'Gaps outstanding',
-      financial_screening: 'FOLLOW-UP: data error', system_recommendation: 'Not recommended – safeguards', shortlist_reason: 'Clear fit for the priority value chain.',
-    },
-  ],
-  summary: { clusters: 2, average_score: 83.5, counties: 2, value_chains: 2, members: 200, women: 80, requested_per_drive: 8038500, project_cost: 16000000, projected_jobs_year3: 60 },
-  bands: [{ band: 'Recommended', n: 3 }],
-  meta: { source_file: 'workbook.xlsx', imported_at: '2026-10-24T10:00:00Z', evaluated: 85 },
-} as unknown as EvaluationResponse;
+const alpha = {
+  application_number: 'KJET-2026-000001', cluster_name: 'ALPHA DAIRY', county: 'Nyeri', constituency: 'X', value_chain: 'Dairy', legal_form: 'cooperative',
+  score: 81, band: 'Recommended', rank: 1, county_rank: 1, eligibility: 'PASS', grant_ready: true, grant_ready_rank: 1,
+  criteria, tests: tests(), financial: fin(), members: 100, women: 40, youth: 20, pwd: 1, jobs_today: 10, jobs_year3: 30,
+} as EvalRow;
+const beta = {
+  ...alpha, application_number: 'KJET-2026-000002', cluster_name: 'BETA STONE', county: 'Baringo', value_chain: 'Construction', score: 48, band: 'Rejected',
+  rank: null, county_rank: null, eligibility: 'HOLD', grant_ready: false, grant_ready_rank: null, tests: tests('Hold'),
+  financial: fin({
+    result: 'NON-COMPLIANT: <50% cash', total: 15876000, grant: 8038000, contribution: 7838000, cluster_share: 0.4937, meets_50_percent_cash: false,
+    contribution_shortfall: 100000, grant_above_max: 100000, issues: ['Cluster cash share is 49.4%, below the 50% minimum'],
+  }),
+} as EvalRow;
 
-function renderPage() {
+const list = {
+  ok: true, data: [alpha, beta],
+  meta: { source_file: 'sheet', imported_at: '2026-10-25T10:00:00Z', evaluated: 2, sheet: { enabled: true, sheet_name: 'Evaluation Tool', sheet_modified: '2026-10-25T09:00:00Z', last_checked: null, last_imported: null, last_error: null } },
+  criteria: [],
+} as unknown as EvalListResponse;
+
+const overview = {
+  ok: true, meta: list.meta, average_score: 64.5, cash_shortfall_clusters: 1,
+  funnel: [{ stage: 'Evaluated', count: 2 }, { stage: 'Financial screening: pass', count: 1 }, { stage: 'Eligibility: pass', count: 1 }, { stage: 'Score 70 or more', count: 1 }, { stage: 'Grant-ready', count: 1 }],
+  bands: [{ band: 'Recommended', count: 1 }, { band: 'Rejected', count: 1 }], eligibility: [], categories: [],
+  financial_results: [{ result: 'PASS', count: 1 }, { result: 'NON-COMPLIANT: <50% cash', count: 1 }],
+  score_distribution: [{ label: '40-49', count: 1 }, { label: '80-89', count: 1 }],
+  criteria_average: [{ code: 'C1', label: 'Overall cluster performance and viability', weight: 20, average: 15 }],
+  tests: [{ test: 'E5', label: 'Cost share', pass: 1, hold: 1, fail: 0 }],
+  counties: [{ name: 'Nyeri', count: 1, average_score: 81, eligible: 1, grant_ready: 1 }], value_chains: [{ name: 'Dairy', count: 1, average_score: 81, eligible: 1, grant_ready: 1 }],
+  top_issues: [{ issue: 'Cluster cash below the 50% minimum', count: 1 }],
+  grant_ready: [{ application_number: alpha.application_number, cluster_name: 'ALPHA DAIRY', county: 'Nyeri', score: 81, rank: 1 }],
+} as unknown as EvalOverview;
+
+function renderWith(ui: React.ReactElement) {
   const qc = new QueryClient();
-  qc.setQueryData(['evaluation'], sample);
-  return render(<QueryClientProvider client={qc}><GrantReady onSelect={() => {}} /></QueryClientProvider>);
+  qc.setQueryData(['evaluation', 'list'], list);
+  qc.setQueryData(['evaluation', 'overview'], overview);
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
-describe('Grant-ready page', () => {
-  it('states that the clusters are recommended, not funded', () => {
-    renderPage();
-    expect(screen.getByText(/Recommended for grant support, not yet funded/)).toBeTruthy();
-    expect(screen.getByText(/World Bank\s+no-objection/)).toBeTruthy();
-  });
-
-  it('lists the ranked clusters with their scores', () => {
-    renderPage();
+describe('Evaluation pages', () => {
+  it('overview shows the funnel, the grant-ready list and a report button for each', () => {
+    renderWith(<EvaluationOverview onSelect={() => {}} />);
+    expect(screen.getByText('From application to grant-ready')).toBeTruthy();
+    expect(screen.getByText('Grant-ready', { selector: '.funnel-label' })).toBeTruthy();
     expect(screen.getByText('ALPHA DAIRY')).toBeTruthy();
-    expect(screen.getByText('BETA STONE')).toBeTruthy();
-    expect(screen.getByText('96')).toBeTruthy();
-    expect(screen.getByText('71')).toBeTruthy();
+    expect(screen.getByLabelText('Download evaluation report of ALPHA DAIRY')).toBeTruthy();
+    expect(screen.getByText(/Live from the online evaluation sheet/)).toBeTruthy();
   });
 
-  it('shows Drive amounts and has no status checks column', () => {
-    renderPage();
-    expect(screen.queryByText('Status checks')).toBeNull();
-    expect(screen.queryByText('Figures differ from Drive')).toBeNull();
-    expect(screen.getByText(/8,038,000/)).toBeTruthy();
+  it('financial screening shows Drive figures, the cash share and the shortfall, largest shortfall first', () => {
+    renderWith(<FinancialScreeningPage onSelect={() => {}} />);
+    const names = screen.getAllByText(/ALPHA DAIRY|BETA STONE/).map((n) => n.textContent ?? '');
+    expect(names[0]).toContain('BETA STONE');
+    expect(screen.getByText('49.4%')).toBeTruthy();
+    expect(screen.getByText(/short by KES 100,000/)).toBeTruthy();
+    expect(screen.getAllByText('NON-COMPLIANT: <50% cash').length).toBeGreaterThan(0);
   });
 
-  it('expands a row to show why the cluster is listed', () => {
-    renderPage();
-    expect(screen.queryByText(/Highest score in the portfolio/)).toBeNull();
-    fireEvent.click(screen.getAllByText('Why this cluster')[0]!);
-    expect(screen.getByText(/Highest score in the portfolio/)).toBeTruthy();
+  it('financial screening filters by result', () => {
+    renderWith(<FinancialScreeningPage onSelect={() => {}} />);
+    fireEvent.change(screen.getByLabelText('Filter by result'), { target: { value: 'PASS' } });
+    expect(screen.queryByText('BETA STONE')).toBeNull();
+    expect(screen.getByText('ALPHA DAIRY')).toBeTruthy();
   });
 
-  it('lists only the grant-ready clusters (nothing on hold)', () => {
-    renderPage();
-    expect(screen.queryByText(/eligibility still on hold/)).toBeNull();
-    expect(screen.queryByText('GAMMA HOLD')).toBeNull();
-    expect(screen.getAllByText('Why this cluster')).toHaveLength(2);
+  it('eligibility lists the ten tests and filters to a test on hold', () => {
+    renderWith(<EligibilityPage onSelect={() => {}} />);
+    expect(screen.getAllByTitle(/^E5: /)).toHaveLength(2);
+    fireEvent.change(screen.getByLabelText('Filter by test needing attention'), { target: { value: 'E5' } });
+    expect(screen.queryByText('ALPHA DAIRY')).toBeNull();
+    const row = screen.getByText('BETA STONE').closest('tr')!;
+    expect(within(row).getByText(/attention: E5/)).toBeTruthy();
+  });
+
+  it('scorecard shows points per criterion, highest score first, and the grant-ready badge', () => {
+    renderWith(<ScorecardPage onSelect={() => {}} />);
+    const names = screen.getAllByText(/ALPHA DAIRY|BETA STONE/).map((n) => n.textContent ?? '');
+    expect(names[0]).toContain('ALPHA DAIRY');
+    expect(screen.getByText(/Grant-ready #1/)).toBeTruthy();
+    expect(screen.getAllByText('C2').length).toBeGreaterThan(0);
+  });
+
+  it('does not show assessor or reviewer names anywhere', () => {
+    const { container } = renderWith(<ScorecardPage onSelect={() => {}} />);
+    expect(container.textContent).not.toMatch(/assessor|reviewer/i);
   });
 });

@@ -495,3 +495,72 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
   .gr-why { padding:0 !important; }
 }
 .fit-table th.gr-num, .fit-table td.gr-num { white-space:normal; }
+
+/* ── Evaluation section: overview, screening, eligibility, scorecard ── */
+.funnel { display:flex;flex-direction:column;gap:11px; }
+.funnel-row { display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) 34px;gap:12px;align-items:center;font-size:11.5px; }
+.funnel-bar { height:20px;background:var(--muted);border-radius:4px;overflow:hidden; }
+.funnel-bar i { display:block;height:100%;background:var(--primary);border-radius:4px; }
+.funnel-row strong { text-align:right;font-variant-numeric:tabular-nums; }
+.test-bars { display:flex;flex-direction:column;gap:9px; }
+.test-bar-row { display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr) 62px;gap:10px;align-items:center;font-size:11px; }
+.test-bar-label strong { margin-right:4px; }
+.stack { display:flex;height:12px;border-radius:3px;overflow:hidden;background:var(--muted); }
+.stack i { display:block;height:100%; }
+.stack i.tone-good { background:var(--success); } .stack i.tone-warn { background:var(--warning); } .stack i.tone-bad { background:var(--danger); }
+.test-bar-n { text-align:right;font-size:10px;color:var(--muted-foreground);font-variant-numeric:tabular-nums; }
+.ev-legend { display:flex;gap:14px;align-items:center;margin-top:12px;font-size:10px;color:var(--muted-foreground); }
+.ev-legend i { display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px; }
+.ev-legend i.tone-good { background:var(--success); } .ev-legend i.tone-warn { background:var(--warning); } .ev-legend i.tone-bad { background:var(--danger); }
+.ev-list { list-style:none;margin:0;padding:0;display:flex;flex-direction:column; }
+.ev-list li { display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11.5px; }
+.ev-list li:last-child { border-bottom:0; }
+.ev-sub { font-size:11px;font-weight:650;margin:16px 0 4px; }
+.ev-empty { font-size:12px;color:var(--muted-foreground);padding:6px 0; }
+.ev-group-wrap { max-height:380px;overflow-y:auto; }
+.ev-group th, .ev-group td { padding:8px 10px;font-size:11.5px; }
+.ev-ready-row { grid-template-columns:minmax(0,1fr) 150px 40px; }
+.ev-ready-main { display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:center;text-align:left;background:transparent;cursor:pointer;min-width:0; }
+.ev-ready-main:hover .top-name { color:var(--primary); }
+@media (max-width:760px) { .ev-ready-row { grid-template-columns:minmax(0,1fr) 40px; } .ev-ready-row .score-bar { grid-column:1; } .funnel-row { grid-template-columns:minmax(0,110px) minmax(0,1fr) 30px; } .test-bar-row { grid-template-columns:minmax(0,1fr) 54px; } .test-bar-row .stack { grid-column:1 / -1;order:3; } }
+
+.ev-filters { padding-top:4px; }
+.ev-count { margin-left:auto;font-size:10.5px;color:var(--muted-foreground); }
+.ev-actions-cell { display:flex;gap:2px;justify-content:flex-end; }
+.ev-actions { margin:-6px 0 18px; }
+.ev-loading { display:flex;justify-content:center;padding:26px; }
+.ev-bad { color:var(--danger); }
+.test-chips { display:flex;flex-wrap:wrap;gap:4px; }
+.test-chip { display:inline-flex;align-items:center;gap:3px;padding:3px 6px;border-radius:5px;font-size:10px;font-weight:600;line-height:1.3; }
+.test-chip i { font-style:normal;font-size:9px; }
+.crit-grid { display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px; }
+.crit-grid > div { display:flex;flex-direction:column;gap:3px;min-width:0; }
+.crit-grid > div > span:first-child { font-size:9.5px;color:var(--muted-foreground); }
+.crit-grid strong { font-size:12.5px;font-variant-numeric:tabular-nums; }
+.crit-grid strong small { font-size:9.5px;font-weight:400;color:var(--muted-foreground); }
+.crit-grid .score-track { height:5px; }
+
+.ev-panel { display:flex;flex-direction:column;gap:14px;text-align:left; }
+.ev-cols { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px; }
+.ev-cols h4, .ev-issues h4 { font-size:11px;font-weight:650;color:var(--foreground);margin:0 0 6px; }
+.ev-row { display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted-foreground); }
+.ev-row strong { color:var(--foreground);font-weight:600;text-align:right;font-variant-numeric:tabular-nums; }
+.ev-row strong.ev-bad { color:var(--danger); } .ev-row strong.ev-good { color:var(--success); } .ev-row strong.ev-warn { color:var(--warning); }
+.ev-result { display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:600; }
+.ev-issues ul { margin:0;padding-left:16px;font-size:11.5px;line-height:1.7;color:var(--muted-foreground); }
+.ev-issues p { font-size:11.5px;line-height:1.7;color:var(--muted-foreground); }
+.ev-note { font-size:11px;line-height:1.7;color:var(--muted-foreground); }
+.ev-tests { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px; }
+.ev-test { border:1px solid var(--border);border-radius:7px;padding:10px 12px;background:var(--card); }
+.ev-test-head { display:flex;align-items:center;gap:8px;font-size:11.5px;flex-wrap:wrap; }
+.ev-test-head span { color:var(--muted-foreground);flex:1;min-width:0; }
+.ev-test p { margin:6px 0 0;font-size:11px;line-height:1.6;color:var(--muted-foreground);overflow-wrap:anywhere;white-space:pre-line; }
+.eval-evidence summary strong { font-variant-numeric:tabular-nums;white-space:nowrap; }
+.ev-ind { width:calc(100% - 28px);margin:0 14px 10px;border-collapse:collapse;font-size:11px; }
+.ev-ind td { padding:5px 6px;border-bottom:1px solid var(--border);color:var(--muted-foreground);vertical-align:top; }
+.ev-ind td:first-child { font-weight:600;color:var(--foreground);white-space:nowrap; }
+.ev-ind .ev-w, .ev-ind .ev-r { text-align:right;white-space:nowrap; }
+.rating { display:inline-block;min-width:18px;text-align:center;padding:1px 5px;border-radius:4px;font-weight:700; }
+.report-failed { color:var(--danger); }
+@media (max-width:980px) { .ev-cols { grid-template-columns:1fr; } .ev-tests { grid-template-columns:1fr; } }
+@container (max-width: 760px) { .crit-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .ev-actions-cell { justify-content:flex-start; } }

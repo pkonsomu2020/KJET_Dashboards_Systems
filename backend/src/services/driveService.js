@@ -122,6 +122,7 @@ export async function initDriveClient() {
 }
 
 export function isDriveEnabled() { return driveEnabled; }
+export function getDriveClient() { return driveEnabled ? driveClient : null; }
 export function getLastSyncTime() { return lastSyncTime; }
 
 // ── Extract folder ID from Drive URL ─────────────────────────

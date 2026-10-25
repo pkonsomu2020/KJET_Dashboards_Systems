@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, PieChart, Pie, Cell } from 'recharts';
 import { money, number, percent } from '@/data/portfolio';
-import { useClusterDetail } from '@/hooks/usePortfolio';
+import { useClusterDetail, useEvaluationList } from '@/hooks/usePortfolio';
 import { useDriveFolder, useDriveFileContent } from '@/hooks/useDrive';
 import type { ClusterRow } from '@/data/api';
 import type { DriveFile } from '@/hooks/useDrive';
@@ -107,6 +107,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
   ];
 
   const tooltipStyle = { background: 'var(--card)', borderColor: 'var(--border)', borderRadius: 6 };
+  const ev = useEvaluationList().data?.data.find((r) => r.application_number === c.application_number);
 
   return (
     <>
@@ -122,12 +123,8 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
         <span className={`badge ${status === 'Within limits' ? 'success' : 'warning'}`}>
           {status === 'Within limits' ? <ShieldCheck size={11} /> : <AlertTriangle size={11} />} {status}
         </span>
-        {c.evaluation?.shortlisted && (
-          <span className="badge success"><Award size={11} />Grant-ready #{c.evaluation.shortlist_rank}</span>
-        )}
-        {c.evaluation && !c.evaluation.shortlisted && c.evaluation.total_score != null && (
-          <span className="badge">Evaluation score {Math.round(Number(c.evaluation.total_score))}</span>
-        )}
+        {ev?.grant_ready && <span className="badge success"><Award size={11} />Grant-ready #{ev.grant_ready_rank}</span>}
+        {ev && !ev.grant_ready && ev.score != null && <span className="badge">Evaluation score {Math.round(ev.score)}</span>}
       </div>
 
       <Tabs defaultValue="overview">
@@ -192,7 +189,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
         </TabsContent>
 
         {/* Evaluation (scores and decisions from the evaluation workbook) */}
-        <TabsContent value="evaluation"><EvaluationTab cluster={c} /></TabsContent>
+        <TabsContent value="evaluation"><EvaluationTab applicationNumber={c.application_number} /></TabsContent>
 
         {/* Financials */}
         <TabsContent value="financials">

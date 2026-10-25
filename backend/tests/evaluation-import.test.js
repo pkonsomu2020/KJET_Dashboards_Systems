@@ -1,91 +1,151 @@
 /**
- * evaluation-import.test.js: checks the evaluation stored in PostgreSQL against the workbook,
- * reading the workbook by raw cell address (a different route from the importer, which finds
- * columns by header name).
+ * evaluation-import.test.js: checks the evaluation stored in PostgreSQL against the online
+ * evaluation sheet, reading the sheet by raw cell address (a different route from the importer, which
+ * finds columns by header name), then checks the screening rules against the sheet's own results.
  *
- *   node tests/evaluation-import.test.js ["<path to workbook>"]
+ *   node tests/evaluation-import.test.js            (downloads the online sheet)
+ *   node tests/evaluation-import.test.js "<path to a downloaded copy>"
  *
  * Read-only.
  */
 import 'dotenv/config';
 import { createRequire } from 'module';
-import { existsSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { existsSync } from 'fs';
 import pool from '../src/db/pool.js';
+import { initDriveClient, getDriveClient } from '../src/services/driveService.js';
+import { screenFinancials } from '../src/services/financialScreening.js';
 
 const require = createRequire(import.meta.url);
 const XLSX = require('xlsx');
 
-const root = join(import.meta.dirname, '..', '..');
-const path = process.argv[2] ?? join(root, readdirSync(root).find((f) => /^KJET_CoInvestment_Evaluation_Tool.*\.xlsx$/.test(f)) ?? 'missing.xlsx');
-if (!existsSync(path)) { console.error('Workbook not found:', path); process.exit(1); }
+let wb;
+if (process.argv[2]) {
+  if (!existsSync(process.argv[2])) { console.error('Workbook not found:', process.argv[2]); process.exit(1); }
+  wb = XLSX.readFile(process.argv[2], { cellDates: false });
+} else {
+  await initDriveClient();
+  const drive = getDriveClient();
+  if (!drive || !process.env.EVALUATION_SHEET_ID) { console.error('Drive or EVALUATION_SHEET_ID not configured'); process.exit(1); }
+  const res = await drive.files.export({ fileId: process.env.EVALUATION_SHEET_ID, mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }, { responseType: 'arraybuffer' });
+  wb = XLSX.read(Buffer.from(res.data), { type: 'buffer', cellDates: false });
+}
 
 let passed = 0, failed = 0;
 const failures = [];
 const check = (label, ok, detail = '') => { if (ok) passed++; else { failed++; failures.push(`${label} | ${detail}`); console.error(`  FAIL  ${label} | ${detail}`); } };
 const norm = (v) => String(v ?? '').replace(/\s+/g, ' ').trim();
-
-const wb = XLSX.readFile(path, { cellDates: false });
 const cell = (sheet, ref) => wb.Sheets[sheet][ref]?.v ?? '';
+const close = (a, b) => (a == null && b == null) || (a != null && b != null && Math.abs(Number(a) - Number(b)) < 0.005);
 
 const { rows: db } = await pool.query('SELECT * FROM cluster_evaluation ORDER BY application_number');
 const byApp = new Map(db.map((r) => [r.application_number, r]));
+const { rows: crit } = await pool.query('SELECT * FROM cluster_eval_criteria');
+const { rows: elig } = await pool.query('SELECT * FROM cluster_eval_eligibility');
+const critKey = new Map(crit.map((c) => [`${c.application_number}|${c.code}`, c]));
+const eligKey = new Map(elig.map((e) => [`${e.application_number}|${e.test}`, e]));
 
-// Final_Decision by cell address: B app, H cost, I grant requested, J max eligible, K financial, L data, M eligibility,
-// N score, O band, P rank, Q county rank, R due diligence, T E&S, U system rec, W technical rec, X MSEA, Y approved grant
-let wbRows = 0;
-for (let r = 6; r <= 120; r++) {
-  const app = norm(cell('Final_Decision', `B${r}`));
-  if (!app.startsWith('KJET-')) continue;
-  wbRows++;
-  const d = byApp.get(app);
-  check(`${app} stored`, !!d);
-  if (!d) continue;
-  const txt = (ref, col) => check(`${app} ${col}`, norm(cell('Final_Decision', ref)) === norm(d[col]), `${JSON.stringify(cell('Final_Decision', ref))} vs ${JSON.stringify(d[col])}`);
-  const num = (ref, col) => { const w = cell('Final_Decision', ref); const h = d[col] == null ? null : Number(d[col]); const x = w === '' ? null : Number(w); check(`${app} ${col}`, (h === null && x === null) || (h !== null && x !== null && Math.abs(h - x) < 0.005), `${w} vs ${d[col]}`); };
-  num(`H${r}`, 'eval_total_cost'); num(`I${r}`, 'eval_grant_requested'); num(`J${r}`, 'max_eligible_grant');
-  txt(`K${r}`, 'financial_screening'); txt(`L${r}`, 'data_readiness'); txt(`M${r}`, 'eligibility');
-  num(`N${r}`, 'total_score'); txt(`O${r}`, 'band'); num(`P${r}`, 'rank'); num(`Q${r}`, 'county_rank');
-  txt(`R${r}`, 'due_diligence'); txt(`T${r}`, 'es_disposition'); txt(`U${r}`, 'system_recommendation');
-  txt(`W${r}`, 'technical_rec'); txt(`X${r}`, 'msea_decision'); num(`Y${r}`, 'approved_grant');
-}
-check('85 clusters in the workbook', wbRows === 85, String(wbRows));
-check('85 clusters stored', db.length === 85, String(db.length));
-
-// SCORECARD by cell address: C app, P/Y/AE/AJ/AO/AU weighted, O/X/AD/AI/AN/AT ratings, AY total
-const rating = ['O', 'X', 'AD', 'AI', 'AN', 'AT'];
-const weighted = ['P', 'Y', 'AE', 'AJ', 'AO', 'AU'];
+// ── SCORECARD by cell address ──
+// C app; sub-indicators I-N (C1), R-W (C2), AA-AC (C3), AG-AH (C4), AL-AM (C5), AQ-AS (C6)
+// criterion rating / weighted: O/P, X/Y, AD/AE, AI/AJ, AN/AO, AT/AU; AY total; AZ band; BC moderation; BE expert remarks
+const subs = {
+  C1: ['I', 'J', 'K', 'L', 'M', 'N'], C2: ['R', 'S', 'T', 'U', 'V', 'W'], C3: ['AA', 'AB', 'AC'], C4: ['AG', 'AH'], C5: ['AL', 'AM'], C6: ['AQ', 'AR', 'AS'],
+};
+const critCols = { c1: ['O', 'P'], c2: ['X', 'Y'], c3: ['AD', 'AE'], c4: ['AI', 'AJ'], c5: ['AN', 'AO'], c6: ['AT', 'AU'] };
+const evCols = { c1: 'Q', c2: 'Z', c3: 'AF', c4: 'AK', c5: 'AP', c6: 'AV' };
+const sheetScores = [];
+let n = 0;
 for (let r = 6; r <= 120; r++) {
   const app = norm(cell('SCORECARD', `C${r}`));
   if (!app.startsWith('KJET-')) continue;
+  n++;
+  const d = byApp.get(app);
+  check(`${app} stored`, !!d);
+  if (!d) continue;
+  const total = Number(cell('SCORECARD', `AY${r}`));
+  check(`${app} total_score`, close(total, d.total_score), `${total} vs ${d.total_score}`);
+  check(`${app} band`, norm(cell('SCORECARD', `AZ${r}`)) === norm(d.band), `${cell('SCORECARD', `AZ${r}`)} vs ${d.band}`);
+  check(`${app} eligibility (scorecard)`, norm(cell('SCORECARD', `H${r}`)) === norm(d.eligibility));
+  check(`${app} moderation note`, norm(cell('SCORECARD', `BC${r}`)) === norm(d.moderation_note));
+  check(`${app} expert remarks`, norm(cell('SCORECARD', `BE${r}`)) === norm(d.expert_remarks));
+  for (const [k, [rc, wc]] of Object.entries(critCols)) {
+    check(`${app} ${k}_rating`, close(cell('SCORECARD', `${rc}${r}`), d[`${k}_rating`]));
+    check(`${app} ${k}_score`, close(cell('SCORECARD', `${wc}${r}`), d[`${k}_score`]));
+    check(`${app} ${k}_evidence`, norm(cell('SCORECARD', `${evCols[k]}${r}`)) === norm(d[`${k}_evidence`]));
+  }
+  for (const [c, cols] of Object.entries(subs)) {
+    cols.forEach((col, i) => {
+      const code = `${c}.${i + 1}`;
+      const row = critKey.get(`${app}|${code}`);
+      check(`${app} ${code} rating`, !!row && close(cell('SCORECARD', `${col}${r}`), row.rating), `${cell('SCORECARD', `${col}${r}`)} vs ${row?.rating}`);
+    });
+  }
+  sheetScores.push({ app, total, c1: Number(cell('SCORECARD', `P${r}`)), c2: Number(cell('SCORECARD', `Y${r}`)), c6: Number(cell('SCORECARD', `AU${r}`)), elig: norm(cell('SCORECARD', `H${r}`)) });
+}
+check('85 clusters in the sheet', n === 85, String(n));
+check('85 clusters stored', db.length === 85, String(db.length));
+check('22 ratings per cluster', crit.length === 85 * 22, String(crit.length));
+check('10 eligibility tests per cluster', elig.length === 850, String(elig.length));
+
+// ── Eligibility by cell address: B app; hints H,J,L,...,Z; decisions I,K,M,...,AA; AC status; AD reasons; AE evidence ──
+const hintCols = ['H', 'J', 'L', 'N', 'P', 'R', 'T', 'V', 'X', 'Z'];
+const decCols = ['I', 'K', 'M', 'O', 'Q', 'S', 'U', 'W', 'Y', 'AA'];
+for (let r = 6; r <= 120; r++) {
+  const app = norm(cell('Eligibility', `B${r}`));
+  if (!app.startsWith('KJET-')) continue;
   const d = byApp.get(app);
   if (!d) continue;
-  for (let c = 0; c < 6; c++) {
-    check(`${app} C${c + 1} rating`, Math.abs(Number(cell('SCORECARD', `${rating[c]}${r}`)) - Number(d[`c${c + 1}_rating`])) < 0.005, `${cell('SCORECARD', `${rating[c]}${r}`)} vs ${d[`c${c + 1}_rating`]}`);
-    check(`${app} C${c + 1} weighted score`, Math.abs(Number(cell('SCORECARD', `${weighted[c]}${r}`)) - Number(d[`c${c + 1}_score`])) < 0.005, `${cell('SCORECARD', `${weighted[c]}${r}`)} vs ${d[`c${c + 1}_score`]}`);
-  }
-  check(`${app} scorecard total equals Final_Decision total`, Math.abs(Number(cell('SCORECARD', `AY${r}`)) - Number(d.total_score)) < 0.005, `${cell('SCORECARD', `AY${r}`)} vs ${d.total_score}`);
-  const sum = [1, 2, 3, 4, 5, 6].reduce((s, c) => s + Number(d[`c${c}_score`] ?? 0), 0);
-  check(`${app} criteria add up to the total score`, Math.abs(sum - Number(d.total_score)) < 1, `sum ${sum} vs ${d.total_score}`);
-  check(`${app} has written justifications`, [1, 2, 3, 4, 5, 6].every((c) => norm(d[`c${c}_evidence`]).length > 0), 'missing text');
-  const band = Number(d.total_score) >= 70 ? 'Recommended' : Number(d.total_score) >= 50 ? 'Referred with Comments' : 'Rejected';
-  check(`${app} band follows the score rule (70 / 50)`, norm(d.band).toLowerCase() === band.toLowerCase(), `${d.total_score} -> ${d.band}`);
+  check(`${app} eligibility status`, norm(cell('Eligibility', `AC${r}`)) === norm(d.eligibility), `${cell('Eligibility', `AC${r}`)} vs ${d.eligibility}`);
+  check(`${app} eligibility reasons`, norm(cell('Eligibility', `AD${r}`)) === norm(d.eligibility_reasons));
+  check(`${app} evidence ids`, norm(cell('Eligibility', `AE${r}`)) === norm(d.evidence_ids));
+  decCols.forEach((col, i) => {
+    const e = eligKey.get(`${app}|E${i + 1}`);
+    check(`${app} E${i + 1} decision`, !!e && norm(cell('Eligibility', `${col}${r}`)) === norm(e.decision), `${cell('Eligibility', `${col}${r}`)} vs ${e?.decision}`);
+    check(`${app} E${i + 1} hint`, !!e && norm(cell('Eligibility', `${hintCols[i]}${r}`)) === norm(e.hint));
+  });
 }
 
-// Grant Ready Clusters by cell address: rows 4..: A rank, B app, F score, H reason
-const listed = [];
-for (let r = 4; r <= 60; r++) { const app = norm(cell('Grant Ready Clusters', `B${r}`)); if (app.startsWith('KJET-')) listed.push({ app, rank: Number(cell('Grant Ready Clusters', `A${r}`)), score: Number(cell('Grant Ready Clusters', `F${r}`)), reason: norm(cell('Grant Ready Clusters', `H${r}`)) }); }
-check('shortlist size matches', db.filter((d) => d.shortlisted).length === listed.length, `${db.filter((d) => d.shortlisted).length} vs ${listed.length}`);
-for (const l of listed) {
-  const d = byApp.get(l.app);
-  check(`${l.app} shortlisted at rank ${l.rank}`, d?.shortlisted === true && d.shortlist_rank === l.rank, `${d?.shortlisted}/${d?.shortlist_rank}`);
-  check(`${l.app} shortlist score matches stored score`, Number(d?.total_score) === l.score, `${l.score} vs ${d?.total_score}`);
-  check(`${l.app} shortlist reason stored`, norm(d?.shortlist_reason) === l.reason && l.reason.length > 20, 'reason differs');
+// ── Financial_Screening by cell address: B app; F machinery, G services, H total, I contribution, J grant; Z doc check; AE note; AF result; AG issues ──
+const { rows: drive } = await pool.query(`SELECT c.application_number, f.total_project_cost t, f.cluster_contribution cc, f.grant_requested g,
+  (SELECT SUM(total_cost_kes) FROM cluster_machinery m WHERE m.cluster_id = c.id) mach, (SELECT SUM(total_cost_kes) FROM cluster_services s WHERE s.cluster_id = c.id) serv
+  FROM clusters c LEFT JOIN cluster_financials f ON f.cluster_id = c.id`);
+const driveBy = new Map(drive.map((x) => [x.application_number, x]));
+let compared = 0, differing = 0;
+for (let r = 6; r <= 120; r++) {
+  const app = norm(cell('Financial_Screening', `B${r}`));
+  if (!app.startsWith('KJET-')) continue;
+  const d = byApp.get(app);
+  check(`${app} fs result (workbook)`, norm(cell('Financial_Screening', `AF${r}`)) === norm(d.financial_screening));
+  check(`${app} fs doc check`, norm(cell('Financial_Screening', `Z${r}`)) === norm(d.fs_doc_check));
+  check(`${app} fs issues`, norm(cell('Financial_Screening', `AG${r}`)) === norm(d.fs_issues));
+  check(`${app} fs note`, norm(cell('Financial_Screening', `AE${r}`)) === norm(d.fs_note));
+  // Where Drive and the sheet hold the same figures, the dashboard's own screening must give the sheet's result and numbers
+  const dv = driveBy.get(app);
+  const same = dv && close(dv.t, cell('Financial_Screening', `H${r}`)) && close(dv.cc, cell('Financial_Screening', `I${r}`)) && close(dv.g, cell('Financial_Screening', `J${r}`))
+    && close(dv.mach ?? 0, cell('Financial_Screening', `F${r}`)) && close(dv.serv ?? 0, cell('Financial_Screening', `G${r}`));
+  if (!same) { differing++; continue; }
+  compared++;
+  const s = screenFinancials({ total: dv.t, contribution: dv.cc, grant: dv.g, machinery: dv.mach, services: dv.serv }, { docCheck: norm(cell('Financial_Screening', `Z${r}`)) || null });
+  check(`${app} screening result`, s.result === norm(cell('Financial_Screening', `AF${r}`)), `${s.result} vs ${cell('Financial_Screening', `AF${r}`)}`);
+  check(`${app} category`, s.category === norm(cell('Financial_Screening', `U${r}`)), `${s.category} vs ${cell('Financial_Screening', `U${r}`)}`);
+  check(`${app} max eligible grant`, close(s.checks.max_eligible_grant, cell('Financial_Screening', `V${r}`)));
+  check(`${app} cash shortfall`, close(s.checks.contribution_shortfall, cell('Financial_Screening', `Y${r}`)));
+  check(`${app} cluster share`, Math.abs(s.checks.cluster_share - Number(cell('Financial_Screening', `R${r}`))) < 0.0001);
 }
-check('no one outside the list is marked shortlisted', db.filter((d) => d.shortlisted && !listed.some((l) => l.app === d.application_number)).length === 0);
-check('shortlist is in score order', listed.every((l, i) => i === 0 || l.score <= listed[i - 1].score));
+check('screening compared on at least 30 clusters', compared >= 30, `${compared} compared, ${differing} differ from Drive`);
 
-console.log(`\nResults: ${passed} passed, ${failed} failed  (workbook: ${path.split(/[\\/]/).pop()})`);
-if (failed) failures.slice(0, 15).forEach((f) => console.log('  -', f));
+// ── Ranks and the grant-ready list, recomputed independently ──
+const min = Number(cell('Parameters', 'C20'));
+check('Recommended minimum is 70', min === 70, String(min));
+const eligible = sheetScores.filter((s) => s.elig === 'PASS').sort((a, b) => (b.total - a.total) || (b.c2 - a.c2) || (b.c1 - a.c1) || (b.c6 - a.c6));
+eligible.forEach((s, i) => check(`${s.app} rank`, byApp.get(s.app).rank === i + 1, `${byApp.get(s.app).rank} vs ${i + 1}`));
+const ready = eligible.filter((s) => s.total >= min);
+check('grant-ready count', db.filter((d) => d.shortlisted).length === ready.length, `${db.filter((d) => d.shortlisted).length} vs ${ready.length}`);
+ready.forEach((s, i) => check(`${s.app} grant-ready`, byApp.get(s.app).shortlisted && byApp.get(s.app).shortlist_rank === i + 1));
+check('not-eligible clusters are not ranked', db.filter((d) => d.eligibility !== 'PASS').every((d) => d.rank == null && !d.shortlisted));
+
+// ── Names of assessors and reviewers are never stored ──
+check('no assessor names stored', db.every((d) => d.assessor == null && d.reviewer == null));
+
+console.log(`\nEvaluation check: ${passed} passed, ${failed} failed (${compared} clusters re-screened from Drive figures, ${differing} differ from the sheet's figures)`);
 await pool.end();
 process.exit(failed ? 1 : 0);

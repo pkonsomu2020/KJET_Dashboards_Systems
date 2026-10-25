@@ -63,3 +63,26 @@ export function ScoreBar({ score, compact = false }: { score: number | string | 
     </div>
   );
 }
+
+/** The ten eligibility tests (E1 to E10) as small coloured chips. */
+export function TestChips({ tests, labels }: { tests: Record<string, string | null>; labels?: Record<string, string> }) {
+  return (
+    <div className="test-chips">
+      {Array.from({ length: 10 }, (_, i) => `E${i + 1}`).map((t) => {
+        const d = tests[t] ?? null;
+        const tone = gateTone(d);
+        return (
+          <span key={t} className={`test-chip tone-${tone}`} title={`${t}${labels?.[t] ? ` ${labels[t]}` : ''}: ${d ?? 'Not assessed'}`}>
+            {t}<i aria-hidden="true">{tone === 'good' ? '✓' : tone === 'bad' ? '✕' : tone === 'warn' ? '!' : '·'}</i>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Status text with a tone (for eligibility and financial screening results). */
+export function StatusChip({ value, empty = 'Not assessed' }: { value: string | null | undefined; empty?: string }) {
+  const shown = (value ?? '').trim() || empty;
+  return <span className={`gate-chip tone-${gateTone(value)}`}>{shown}</span>;
+}

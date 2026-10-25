@@ -7,6 +7,7 @@
  * Totals, counts and percentages are all computed here, in Postgres.
  */
 import pool from '../db/pool.js';
+import { getEvaluationList, getEvaluationDetail } from './evaluationService.js';
 import { getClusterByNumber } from './clusterService.js';
 
 const MAX_ROWS = 50;
@@ -277,51 +278,44 @@ async function getDocument({ document_id, offset, length }) {
   };
 }
 
-// ── Evaluation tools (scores and grant-ready list from the evaluation workbook) ──
+// ── Evaluation tools (scores and findings from the online evaluation sheet; amounts and the 50-50 checks from Drive) ──
 
-const EVAL_NOTE = 'Scores, ranks and decisions come from the evaluation workbook; all amounts come from the application on Drive (drive_total_project_cost, drive_grant_requested). Recommended clusters remain subject to due diligence, environmental and social clearance, and World Bank no-objection. Do not call a cluster approved or funded unless msea_decision or approved_grant below says so.';
+const EVAL_NOTE = 'Scores, ranks, bands, eligibility tests E1-E10 and justifications come from the evaluation sheet. All amounts and the financial screening (50-50 rule, category, shortfall) are worked out from the application on Drive. Recommended clusters remain subject to due diligence, environmental and social clearance and World Bank no-objection: never say a cluster is approved or funded.';
 
-const EVAL_LIST = `
-  ev.application_number, c.cluster_name, c.county, c.value_chain, ev.total_score, ev.band, ev.rank,
-  ev.shortlisted, ev.shortlist_rank, ev.eligibility, ev.financial_screening, ev.data_readiness, ev.due_diligence,
-  ev.es_disposition, ev.system_recommendation, ev.technical_rec`;
+const slim = (d) => ({
+  application_number: d.application_number, cluster_name: d.cluster_name, county: d.county, value_chain: d.value_chain,
+  score: d.score, band: d.band, rank_among_eligible: d.rank, eligibility: d.eligibility, grant_ready: d.grant_ready, grant_ready_rank: d.grant_ready_rank,
+  eligibility_tests: d.tests, financial_screening: d.financial.result, category: d.financial.category,
+  grant_requested_drive: d.financial.grant, total_project_cost_drive: d.financial.total, cluster_contribution_drive: d.financial.contribution,
+  meets_50_percent_cash: d.financial.meets_50_percent_cash, contribution_shortfall: d.financial.contribution_shortfall, financial_issues: d.financial.issues,
+});
 
 async function getEvaluation({ application_number }) {
-  const { rows } = await pool.query(
-    `SELECT ev.*, c.cluster_name, c.county, c.value_chain, f.total_project_cost AS drive_total_project_cost, f.grant_requested AS drive_grant_requested
-       FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number
-       LEFT JOIN cluster_financials f ON f.cluster_id = c.id WHERE ev.application_number = $1`,
-    [String(application_number ?? '').trim()]);
-  if (!rows.length) return { found: false, application_number, note: 'This cluster has no evaluation results in the database.' };
-  const { eval_total_cost, eval_grant_requested, max_eligible_grant, ...evaluation } = rows[0];   // amounts come from Drive only
-  return { found: true, note: EVAL_NOTE, evaluation };
+  const detail = await getEvaluationDetail(application_number);
+  if (!detail) return { found: false, application_number, note: 'This cluster has no evaluation results in the database.' };
+  const { source, ...rest } = detail;
+  return { found: true, note: EVAL_NOTE, evaluation: rest };
 }
 
 async function listShortlist() {
-  const { rows } = await pool.query(`SELECT ${EVAL_LIST} FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number WHERE ev.shortlisted ORDER BY ev.shortlist_rank`);
+  const { data } = await getEvaluationList();
+  const ready = data.filter((d) => d.grant_ready).sort((a, b) => a.grant_ready_rank - b.grant_ready_rank);
   return {
     note: EVAL_NOTE,
-    rule: 'The grant-ready list is the clusters scoring 70 or more out of 100 whose eligibility check is PASS.',
-    total_grant_ready: rows.length,
-    clusters: rows,
+    rule: 'The grant-ready list is the clusters whose eligibility check is PASS and whose score is 70 or more out of 100.',
+    total_grant_ready: ready.length,
+    clusters: ready.map(slim),
   };
 }
 
 async function rankByScore(args) {
   const limit = Math.min(MAX_ROWS, Math.max(1, Number(args.limit) || 10));
-  const where = [];
-  const params = [];
-  const add = (sql, v) => { params.push(v); where.push(sql.replace('?', `$${params.length}`)); };
-  if (args.band) add('ev.band ILIKE ?', args.band);
-  if (args.eligibility) add('ev.eligibility = ?', String(args.eligibility).toUpperCase());
-  if (args.county) add('c.county ILIKE ?', args.county);
-  if (args.value_chain) add('c.value_chain ILIKE ?', `%${args.value_chain}%`);
-  const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const [{ rows }, { rows: [count] }] = await Promise.all([
-    pool.query(`SELECT ${EVAL_LIST} FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number ${clause} ORDER BY ev.total_score DESC NULLS LAST, c.cluster_name LIMIT ${limit}`, params),
-    pool.query(`SELECT COUNT(*)::int AS total FROM cluster_evaluation ev JOIN clusters c ON c.application_number = ev.application_number ${clause}`, params),
-  ]);
-  return { note: EVAL_NOTE, total_matching: count.total, clusters: rows };
+  const { data } = await getEvaluationList();
+  const eq = (a, b) => String(a ?? '').toLowerCase() === String(b ?? '').toLowerCase();
+  const rows = data.filter((d) =>
+    (!args.band || eq(d.band, args.band)) && (!args.eligibility || eq(d.eligibility, args.eligibility))
+    && (!args.county || eq(d.county, args.county)) && (!args.value_chain || String(d.value_chain ?? '').toLowerCase().includes(String(args.value_chain).toLowerCase())));
+  return { note: EVAL_NOTE, total_matching: rows.length, clusters: rows.slice(0, limit).map(slim) };
 }
 
 export const toolImpl = {

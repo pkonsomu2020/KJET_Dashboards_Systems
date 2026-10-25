@@ -6,7 +6,9 @@ import {
   fetchMeta,
   fetchClusters,
   fetchClusterDetail,
-  fetchEvaluation,
+  fetchEvaluationList,
+  fetchEvaluationOverview,
+  fetchEvaluationDetail,
   type ClusterListParams,
 } from '@/data/api';
 
@@ -68,12 +70,32 @@ export function useClusterDetail(applicationNumber: string | null) {
   });
 }
 
-// ── Evaluation (grant-ready list) ─────────────────────────────
+// ── Evaluation ────────────────────────────────────────────────
+// The backend re-reads the online evaluation sheet every 30 seconds; the screens refresh with it.
 
-export function useEvaluation() {
+export function useEvaluationList() {
   return useQuery({
-    queryKey: ['evaluation'],
-    queryFn: fetchEvaluation,
-    staleTime: 5 * 60 * 1000,
+    queryKey: ['evaluation', 'list'],
+    queryFn: fetchEvaluationList,
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+}
+
+export function useEvaluationOverview() {
+  return useQuery({
+    queryKey: ['evaluation', 'overview'],
+    queryFn: fetchEvaluationOverview,
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+}
+
+export function useEvaluationDetail(applicationNumber: string | null) {
+  return useQuery({
+    queryKey: ['evaluation', 'detail', applicationNumber],
+    queryFn: () => fetchEvaluationDetail(applicationNumber!),
+    enabled: !!applicationNumber,
+    staleTime: 60 * 1000,
   });
 }
