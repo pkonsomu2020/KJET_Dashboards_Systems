@@ -73,7 +73,6 @@ const overview = {
   tests: [{ test: 'E5', label: 'Cost share', pass: 1, hold: 1, fail: 0 }],
   counties: [{ name: 'Nyeri', count: 1, average_score: 81, eligible: 1 }], value_chains: [{ name: 'Dairy', count: 1, average_score: 81, eligible: 1 }],
   top_issues: [{ issue: 'Cluster cash below the 50% minimum', count: 1 }],
-  top_eligible: [{ application_number: alpha.application_number, cluster_name: 'ALPHA DAIRY', county: 'Nyeri', score: 81, rank: 1 }],
 } as unknown as EvalOverview;
 
 function renderWith(ui: React.ReactElement) {
@@ -84,12 +83,12 @@ function renderWith(ui: React.ReactElement) {
 }
 
 describe('Evaluation pages', () => {
-  it('overview shows the funnel, the top eligible clusters and a report button for each', () => {
+  it('overview shows the funnel and the zip download', () => {
     renderWith(<EvaluationOverview onSelect={() => {}} />);
     expect(screen.getByText('Screening funnel')).toBeTruthy();
     expect(screen.queryByText(/grant-ready/i)).toBeNull();
-    expect(screen.getByText('ALPHA DAIRY')).toBeTruthy();
-    expect(screen.getByLabelText('Download evaluation report of ALPHA DAIRY')).toBeTruthy();
+    expect(screen.getByText('Download all reports (ZIP)')).toBeTruthy();
+    expect(screen.queryByText(/Highest-scoring/)).toBeNull();
     expect(screen.queryByText(/Live from the online evaluation sheet/)).toBeNull();
   });
 

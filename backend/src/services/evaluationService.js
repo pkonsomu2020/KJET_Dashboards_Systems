@@ -101,7 +101,6 @@ export async function getEvaluationOverview() {
   const passFin = data.filter((d) => d.financial.result === 'PASS');
   const passElig = data.filter((d) => d.eligibility === 'PASS');
   const recommended = data.filter((d) => d.band === 'Recommended');
-  const top = data.filter((d) => d.rank != null).sort((a, b) => a.rank - b.rank).slice(0, 10);
   const avg = (xs) => (xs.length ? Math.round((xs.reduce((s, v) => s + v, 0) / xs.length) * 10) / 10 : null);
 
   const testIds = Array.from({ length: 10 }, (_, i) => `E${i + 1}`);
@@ -151,7 +150,6 @@ export async function getEvaluationOverview() {
     counties: group('county'),
     value_chains: group('value_chain'),
     top_issues: Object.entries(issueCounts).map(([issue, count]) => ({ issue, count })).sort((a, b) => b.count - a.count).slice(0, 8),
-    top_eligible: top.map((d) => ({ application_number: d.application_number, cluster_name: d.cluster_name, county: d.county, score: d.score, rank: d.rank })),
     meta,
   };
   await cacheSet(key, result, TTL);

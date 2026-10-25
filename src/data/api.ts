@@ -333,7 +333,6 @@ export interface EvalOverview {
   counties: Array<{ name: string; count: number; average_score: number | null; eligible: number }>;
   value_chains: Array<{ name: string; count: number; average_score: number | null; eligible: number }>;
   top_issues: Array<{ issue: string; count: number }>;
-  top_eligible: Array<{ application_number: string; cluster_name: string; county: string; score: number; rank: number }>;
   meta: EvalListResponse['meta'];
 }
 

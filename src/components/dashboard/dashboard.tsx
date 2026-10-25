@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { money, number, percent, exportCSV } from '@/data/portfolio';
 import {
-  usePortfolioSummary, useByChain, useByCounty, useEvaluationOverview,
+  usePortfolioSummary, useByChain, useByCounty,
 } from '@/hooks/usePortfolio';
 import { useSession, useSignOut } from '@/hooks/useAuth';
 import type { ClusterRow } from '@/data/api';
@@ -22,8 +22,6 @@ import { ClusterExplorer } from './explorer';
 import { ClusterProfile } from './profile';
 import { AssistantPanel } from './assistant';
 import { EvaluationOverview, FinancialScreeningPage, EligibilityPage, ScorecardPage } from './evaluation-pages';
-import { ScoreBar } from './evaluation-ui';
-import { ReportButton } from './report-buttons';
 
 export type DashboardView = 'overview' | 'clusters' | 'evaluation' | 'financial' | 'eligibility' | 'scorecard';
 
@@ -115,7 +113,6 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
   const { data: summary, isLoading: summaryLoading } = usePortfolioSummary();
   const { data: chainData, isLoading: chainLoading }  = useByChain();
   const { data: countyData, isLoading: countyLoading } = useByCounty();
-  const { data: evaluation } = useEvaluationOverview();
 
   // Derived values — safe defaults while loading
   const s = summary;
@@ -330,30 +327,6 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
                   <span>Applicant-reported</span>
                 </Metric>
               </div>
-
-              {evaluation && evaluation.top_eligible.length > 0 && (
-                <ChartPanel
-                  title="Highest-scoring eligible clusters"
-                  subtitle={`Eligible clusters ranked by evaluation score, out of ${evaluation.meta.evaluated} evaluated. A ranking only: selection for funding is decided by MSEA`}
-                  legend={<Button asChild variant="outline" size="sm"><Link to="/evaluation">Open evaluation<ArrowUpRight /></Link></Button>}
-                >
-                  <div className="top-list">
-                    {evaluation.top_eligible.slice(0, 5).map((r) => (
-                      <div key={r.application_number} className="top-row ev-ready-row">
-                        <button type="button" className="ev-ready-main" onClick={() => setSelectedId(r.application_number)}>
-                          <span className={`gr-rank ${r.rank === 1 ? 'top' : ''}`}>{r.rank}</span>
-                          <span style={{ minWidth: 0 }}>
-                            <div className="top-name">{r.cluster_name}</div>
-                            <div className="top-sub">{r.county} · {r.application_number}</div>
-                          </span>
-                        </button>
-                        <ScoreBar score={r.score} compact />
-                        <ReportButton applicationNumber={r.application_number} clusterName={r.cluster_name} />
-                      </div>
-                    ))}
-                  </div>
-                </ChartPanel>
-              )}
 
               <Tabs defaultValue="investment" className="overview-tabs">
                 <TabsList className="overview-tablist">

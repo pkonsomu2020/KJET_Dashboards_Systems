@@ -597,3 +597,5 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .donut-legend small { text-align:right;color:var(--muted-foreground);font-variant-numeric:tabular-nums; }
 .ev-legend i.tone-bad { background:var(--danger); }
 @media (max-width:560px) { .donut-layout { grid-template-columns:1fr; } .donut-box { margin:0 auto;width:190px; } }
+
+.ev-toolbar { display:flex;justify-content:flex-end;margin-bottom:14px; }

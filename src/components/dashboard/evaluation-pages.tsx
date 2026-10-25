@@ -70,6 +70,8 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
   return (
     <>
 
+      <div className="ev-toolbar"><ReportsZipButton label="Download all reports (ZIP)" /></div>
+
       <div className="metrics-grid">
         <Tile label="Clusters evaluated" value={String(o.meta.evaluated)} icon={ClipboardCheck}><span>average score {o.average_score ?? 'n/a'} of 100</span></Tile>
         <Tile label="Eligible" value={String(eligible)} icon={ListChecks}><span>passed all ten tests</span></Tile>
@@ -126,34 +128,13 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
         </Panel>
       </div>
 
-      <div className="analytics-grid">
+      <div className="analytics-grid" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
         <Panel title="Financial screening results" subtitle="Worked out from the application figures on Drive">
           <ResultsDonut
             items={o.financial_results.map((r) => ({ name: r.result, value: r.count }))}
             total={o.meta.evaluated} centreLabel="clusters screened" />
           <h4 className="ev-sub">Most common issues</h4>
           <RankedBars items={o.top_issues.map((i) => ({ name: i.issue, value: i.count }))} color="var(--chart-2)" labelWidth={230} />
-        </Panel>
-
-        <Panel title="Highest-scoring eligible clusters" subtitle="A ranking by evaluation score. Selection for funding is decided by MSEA"
-          action={<ReportsZipButton label="All reports (ZIP)" />}>
-          {o.top_eligible.length === 0 ? <p className="ev-empty">No cluster has passed eligibility yet.</p> : (
-            <div className="top-list">
-              {o.top_eligible.map((r) => (
-                <div key={r.application_number} className="top-row ev-ready-row">
-                  <button type="button" className="ev-ready-main" onClick={() => onSelect(r.application_number)}>
-                    <span className={`gr-rank ${r.rank === 1 ? 'top' : ''}`}>{r.rank}</span>
-                    <span style={{ minWidth: 0 }}>
-                      <div className="top-name">{r.cluster_name}</div>
-                      <div className="top-sub">{r.county} · {r.application_number}</div>
-                    </span>
-                  </button>
-                  <ScoreBar score={r.score} compact />
-                  <ReportButton applicationNumber={r.application_number} clusterName={r.cluster_name} />
-                </div>
-              ))}
-            </div>
-          )}
         </Panel>
       </div>
 
