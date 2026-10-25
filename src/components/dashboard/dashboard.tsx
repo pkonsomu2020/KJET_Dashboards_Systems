@@ -197,7 +197,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
         <nav>
           {nav.map(n => (
             <Button asChild variant="ghost" key={n.to} className={`nav-item ${view === n.view ? 'active' : ''}`}>
-              <Link to={n.to} onClick={() => setMenu(false)}>
+              <Link to={n.to} activeOptions={{ exact: true }} onClick={() => setMenu(false)}>
                 <n.icon />
                 {n.label}
                 {n.view === 'clusters' && (
@@ -212,7 +212,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
         <nav>
           {evaluationNav.map(n => (
             <Button asChild variant="ghost" key={n.to} className={`nav-item ${view === n.view ? 'active' : ''}`}>
-              <Link to={n.to} onClick={() => setMenu(false)}>
+              <Link to={n.to} activeOptions={{ exact: true }} onClick={() => setMenu(false)}>
                 <n.icon />
                 {n.label}
               </Link>

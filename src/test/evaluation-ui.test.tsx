@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 // Recharts measures its container with ResizeObserver, which jsdom does not provide
 globalThis.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
 import { EligibilityPage, EvaluationOverview, FinancialScreeningPage, ScorecardPage } from '@/components/dashboard/evaluation-pages';
 import { gateTone, scoreTone } from '@/components/dashboard/evaluation-ui';
+import { setCountyFilter } from '@/hooks/useCountyFilter';
 import type { EvalListResponse, EvalOverview, EvalRow } from '@/data/api';
 
 describe('evaluation status colours', () => {
@@ -78,11 +79,13 @@ const overview = {
 function renderWith(ui: React.ReactElement) {
   const qc = new QueryClient();
   qc.setQueryData(['evaluation', 'list'], list);
-  qc.setQueryData(['evaluation', 'overview'], overview);
+  qc.setQueryData(['evaluation', 'overview', ''], overview);
   return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 
 describe('Evaluation pages', () => {
+  afterEach(() => setCountyFilter(''));
+
   it('overview shows the funnel and the zip download', () => {
     renderWith(<EvaluationOverview onSelect={() => {}} />);
     expect(screen.getByText('Screening funnel')).toBeTruthy();
@@ -128,5 +131,14 @@ describe('Evaluation pages', () => {
   it('does not show assessor or reviewer names anywhere', () => {
     const { container } = renderWith(<ScorecardPage onSelect={() => {}} />);
     expect(container.textContent).not.toMatch(/assessor|reviewer/i);
+  });
+
+  it('the county filter limits every list page to that county', () => {
+    setCountyFilter('Baringo');
+    renderWith(<ScorecardPage onSelect={() => {}} />);
+    expect(screen.queryByText('ALPHA DAIRY')).toBeNull();
+    expect(screen.getByText('BETA STONE')).toBeTruthy();
+    expect(screen.getByLabelText('Filter the evaluation by county')).toBeTruthy();
+    expect(screen.getByText(/Showing 1 cluster\(s\) in Baringo/)).toBeTruthy();
   });
 });

@@ -92,11 +92,15 @@ export async function getEvaluationList() {
 const countBy = (arr, fn) => arr.reduce((m, x) => { const k = fn(x); m[k] = (m[k] ?? 0) + 1; return m; }, {});
 
 /** Portfolio-level picture: the funnel, bands, score spread, counties, value chains and where clusters fall short. */
-export async function getEvaluationOverview() {
-  const key = 'evaluation:overview';
+export async function getEvaluationOverview(countyFilter = '') {
+  const all = await getEvaluationList();
+  // only a county that exists is accepted, so the cache cannot be filled with arbitrary keys
+  const county = all.data.some((d) => d.county === countyFilter) ? countyFilter : '';
+  const key = `evaluation:overview:${county}`;
   const cached = await cacheGet(key);
   if (cached) return { ...cached, cached: true };
-  const { data, meta } = await getEvaluationList();
+  const data = county ? all.data.filter((d) => d.county === county) : all.data;
+  const meta = { ...all.meta, evaluated: data.length };
 
   const passFin = data.filter((d) => d.financial.result === 'PASS');
   const passElig = data.filter((d) => d.eligibility === 'PASS');
@@ -150,6 +154,7 @@ export async function getEvaluationOverview() {
     counties: group('county'),
     value_chains: group('value_chain'),
     top_issues: Object.entries(issueCounts).map(([issue, count]) => ({ issue, count })).sort((a, b) => b.count - a.count).slice(0, 8),
+    county,
     meta,
   };
   await cacheSet(key, result, TTL);

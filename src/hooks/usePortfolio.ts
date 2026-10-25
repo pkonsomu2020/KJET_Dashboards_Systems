@@ -82,10 +82,10 @@ export function useEvaluationList() {
   });
 }
 
-export function useEvaluationOverview() {
+export function useEvaluationOverview(county = '') {
   return useQuery({
-    queryKey: ['evaluation', 'overview'],
-    queryFn: fetchEvaluationOverview,
+    queryKey: ['evaluation', 'overview', county],
+    queryFn: () => fetchEvaluationOverview(county),
     staleTime: 60 * 1000,
     refetchInterval: 60 * 1000,
   });

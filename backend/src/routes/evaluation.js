@@ -11,7 +11,7 @@ const APP_RE = /^KJET-\d{4}-\d{6}$/;
 
 // GET /api/evaluation/overview  portfolio picture: funnel, bands, score spread, counties, value chains, common issues
 router.get('/overview', async (_req, res, next) => {
-  try { res.json({ ok: true, ...(await getEvaluationOverview()) }); } catch (err) { next(err); }
+  try { res.json({ ok: true, ...(await getEvaluationOverview(typeof _req.query.county === 'string' ? _req.query.county : '')) }); } catch (err) { next(err); }
 });
 
 // GET /api/evaluation/clusters  every evaluated cluster (scores, E1-E10 outcomes, screening from Drive)

@@ -1,12 +1,13 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import {
   Award, ArrowUpRight, ChevronDown, ChevronUp, CircleDollarSign, ClipboardCheck, Info, ListChecks,
-  Loader2, Scale, SearchX, ShieldCheck, TriangleAlert, Search, RotateCcw,
+  Loader2, MapPin, Scale, SearchX, ShieldCheck, TriangleAlert, Search, RotateCcw,
 } from 'lucide-react';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { money } from '@/data/portfolio';
 import { useEvaluationList, useEvaluationOverview } from '@/hooks/usePortfolio';
+import { useCountyFilter } from '@/hooks/useCountyFilter';
 import type { EvalRow } from '@/data/api';
 import { BandChip, ScoreBar, StatusChip, TestChips, gateTone } from './evaluation-ui';
 import { EligibilityPanel, FinancialPanel, ScorePanel, WithDetail } from './evaluation-panels';
@@ -51,6 +52,33 @@ function Panel({ title, subtitle, action, children }: { title: string; subtitle?
   );
 }
 
+// ── County filter panel (shared by every evaluation page) ──
+
+function CountyFilter({ shown, children }: { shown?: number; children?: ReactNode }) {
+  const [county, setCounty] = useCountyFilter();
+  const { data } = useEvaluationList();
+  const counties = useMemo(() => [...new Set((data?.data ?? []).map((r) => r.county))].sort(), [data]);
+  return (
+    <div className="ev-filterpanel">
+      <label>
+        <MapPin size={15} aria-hidden="true" />
+        <span>County</span>
+        <select className="filter-select" aria-label="Filter the evaluation by county" value={county} onChange={(e) => setCounty(e.target.value)}>
+          <option value="">All counties</option>
+          {counties.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </label>
+      {county && (
+        <Button type="button" variant="ghost" size="sm" onClick={() => setCounty('')}><RotateCcw />Clear</Button>
+      )}
+      <span className="ev-filterpanel-note">
+        {county ? `Showing ${shown ?? (data?.data ?? []).filter((r) => r.county === county).length} cluster(s) in ${county}` : 'Showing every county'}
+      </span>
+      {children && <div className="ev-filterpanel-actions">{children}</div>}
+    </div>
+  );
+}
+
 // ── Overview ─────────────────────────────────────────────────
 
 function Bar100({ value, max, tone = 'good' }: { value: number; max: number; tone?: 'good' | 'warn' | 'bad' | 'neutral' }) {
@@ -58,10 +86,11 @@ function Bar100({ value, max, tone = 'good' }: { value: number; max: number; ton
 }
 
 export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber: string) => void }) {
-  const { data: o, isLoading, error } = useEvaluationOverview();
+  const [county] = useCountyFilter();
+  const { data: o, isLoading, error } = useEvaluationOverview(county);
   if (isLoading) return <Loading />;
   if (error || !o) return <Failed />;
-  if (o.meta.evaluated === 0) return <div className="empty-state"><SearchX size={30} /><p>No evaluation results have been loaded yet.</p></div>;
+  if (o.meta.evaluated === 0 && !county) return <div className="empty-state"><SearchX size={30} /><p>No evaluation results have been loaded yet.</p></div>;
 
   const eligible = o.funnel.find((f) => f.stage === 'Eligibility: pass')?.count ?? 0;
   const recommended = o.bands.find((b) => b.band === 'Recommended')?.count ?? 0;
@@ -70,7 +99,7 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
   return (
     <>
 
-      <div className="ev-toolbar"><ReportsZipButton label="Download all reports (ZIP)" /></div>
+      <CountyFilter shown={o.meta.evaluated}><ReportsZipButton label="Download all reports (ZIP)" /></CountyFilter>
 
       <div className="metrics-grid">
         <Tile label="Clusters evaluated" value={String(o.meta.evaluated)} icon={ClipboardCheck}><span>average score {o.average_score ?? 'n/a'} of 100</span></Tile>
@@ -138,10 +167,12 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
         </Panel>
       </div>
 
-      <div className="analytics-grid">
-        <Panel title="Average score by county" subtitle="Counties with the most clusters; select to show all">
-          <GroupScoreChart rows={o.counties} noun="county" />
-        </Panel>
+      <div className="analytics-grid" style={county ? { gridTemplateColumns: 'minmax(0, 1fr)' } : undefined}>
+        {!county && (
+          <Panel title="Average score by county" subtitle="Counties with the most clusters; select to show all">
+            <GroupScoreChart rows={o.counties} noun="county" />
+          </Panel>
+        )}
         <Panel title="Average score by value chain" subtitle="Dashed lines mark the 50 and 70 score thresholds">
           <GroupScoreChart rows={o.value_chains} format={chain} noun="value chain" />
         </Panel>
@@ -156,14 +187,15 @@ type Filters = { q: string; a: string; b: string };
 
 function useRows(filterFn: (r: EvalRow, f: Filters) => boolean, sortFn?: (a: EvalRow, b: EvalRow) => number) {
   const { data, isLoading, error } = useEvaluationList();
+  const [county] = useCountyFilter();
   const [f, setF] = useState<Filters>({ q: '', a: '', b: '' });
   const rows = useMemo(() => {
     const q = f.q.trim().toLowerCase();
     const out = (data?.data ?? []).filter((r) =>
-      (!q || r.cluster_name.toLowerCase().includes(q) || r.application_number.toLowerCase().includes(q) || r.county.toLowerCase().includes(q))
+      (!county || r.county === county) && (!q || r.cluster_name.toLowerCase().includes(q) || r.application_number.toLowerCase().includes(q) || r.county.toLowerCase().includes(q))
       && filterFn(r, f));
     return sortFn ? [...out].sort(sortFn) : out;
-  }, [data, f, filterFn, sortFn]);
+  }, [data, county, f, filterFn, sortFn]);
   return { data, isLoading, error, rows, f, setF };
 }
 
@@ -226,6 +258,7 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
   if (error || !data) return <Failed />;
   return (
     <>
+      <CountyFilter shown={rows.length} />
       <div className="chart-panel">
         <div className="panel-header">
           <div><h2>Financial screening</h2><p>The 50-50 rule and category limits, worked out from each application on Drive. Largest cash shortfall first.</p></div>
@@ -294,6 +327,7 @@ export function EligibilityPage({ onSelect }: { onSelect: (a: string) => void })
   const counts = (s: string) => data.data.filter((r) => r.eligibility === s).length;
   return (
     <>
+      <CountyFilter shown={rows.length} />
       <div className="chart-panel">
         <div className="panel-header">
           <div>
@@ -353,6 +387,7 @@ export function ScorecardPage({ onSelect }: { onSelect: (a: string) => void }) {
   if (error || !data) return <Failed />;
   return (
     <>
+      <CountyFilter shown={rows.length} />
       <div className="chart-panel">
         <div className="panel-header">
           <div><h2>Scorecard</h2><p>Six weighted criteria add up to 100 points. 70 or more is Recommended, 50 to 69 Referred with comments, below 50 Rejected. Highest score first.</p></div>

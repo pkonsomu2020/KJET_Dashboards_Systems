@@ -354,8 +354,8 @@ export interface EvalDetail extends EvalRow {
 export function fetchEvaluationList() {
   return get<EvalListResponse>('/api/evaluation/clusters');
 }
-export function fetchEvaluationOverview() {
-  return get<EvalOverview>('/api/evaluation/overview');
+export function fetchEvaluationOverview(county = '') {
+  return get<EvalOverview>(`/api/evaluation/overview${county ? `?county=${encodeURIComponent(county)}` : ''}`);
 }
 export function fetchEvaluationDetail(applicationNumber: string) {
   return get<{ ok: boolean; data: EvalDetail }>(`/api/evaluation/clusters/${encodeURIComponent(applicationNumber)}`).then((r) => r.data);
