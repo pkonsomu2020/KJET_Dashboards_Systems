@@ -162,7 +162,7 @@ export async function getEvaluationOverview() {
 export async function getEvaluationDetail(applicationNumber) {
   const app = String(applicationNumber ?? '').trim();
   const { rows } = await pool.query(`SELECT ${BASE}, ev.c1_evidence, ev.c2_evidence, ev.c3_evidence, ev.c4_evidence, ev.c5_evidence, ev.c6_evidence,
-      ev.eligibility_reasons, ev.evidence_ids, ev.fs_note, ev.fs_issues, ev.fs_category, ev.expert_remarks, ev.moderation_note, ev.source_file, ev.imported_at
+      ev.eligibility_reasons, ev.evidence_ids, ev.fs_note, ev.fs_issues, ev.fs_category, ev.expert_remarks, ev.source_file, ev.imported_at
     ${FROM} WHERE ev.application_number = $1`, [app]);
   if (!rows.length) return null;
   const r = rows[0];
@@ -185,7 +185,6 @@ export async function getEvaluationDetail(applicationNumber) {
     eligibility_reasons: r.eligibility_reasons,
     evidence_files: r.evidence_ids,
     expert_remarks: r.expert_remarks,
-    moderation_note: r.moderation_note,
     evaluator_finance: { result: r.workbook_financial_result, category: r.fs_category, document_check: r.fs_doc_check, issues: r.fs_issues, note: r.fs_note },
     financial_detail: fin,
     eligible_clusters: peers,

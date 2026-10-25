@@ -346,7 +346,6 @@ export interface EvalDetail extends EvalRow {
   eligibility_reasons: string | null;
   evidence_files: string | null;
   expert_remarks: string | null;
-  moderation_note: string | null;
   evaluator_finance: { result: string | null; category: string | null; document_check: string | null; issues: string | null; note: string | null };
   financial_detail: { result: string; category: string; issues: string[]; figures: { total: number | null; contribution: number | null; grant: number | null; machinery: number | null; services: number | null }; checks: Omit<EvalFinancial, 'result' | 'category' | 'issues' | 'total' | 'contribution' | 'grant' | 'machinery' | 'services'> };
   eligible_clusters: number;

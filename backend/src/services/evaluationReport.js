@@ -197,10 +197,9 @@ export async function buildEvaluationReport(applicationNumber) {
     if (!noted && k.justification) card('Justification', '', COLORS.muted, [[null, k.justification]]);
   }
 
-  if (d.expert_remarks || d.moderation_note) {
+  if (d.expert_remarks) {
     h2('5. Expert review');
     if (d.expert_remarks) para(d.expert_remarks);
-    if (d.moderation_note) { doc.moveDown(0.3); para(`Moderation note: ${d.moderation_note}`, { size: 8.5, color: COLORS.muted }); }
   }
 
   // ── Footer on every page ──
