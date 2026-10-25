@@ -90,7 +90,7 @@ describe('Evaluation pages', () => {
     expect(screen.queryByText(/grant-ready/i)).toBeNull();
     expect(screen.getByText('ALPHA DAIRY')).toBeTruthy();
     expect(screen.getByLabelText('Download evaluation report of ALPHA DAIRY')).toBeTruthy();
-    expect(screen.getByText(/Live from the online evaluation sheet/)).toBeTruthy();
+    expect(screen.queryByText(/Live from the online evaluation sheet/)).toBeNull();
   });
 
   it('financial screening shows Drive figures, the cash share and the shortfall, largest shortfall first', () => {

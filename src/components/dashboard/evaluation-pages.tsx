@@ -51,24 +51,6 @@ function Panel({ title, subtitle, action, children }: { title: string; subtitle?
   );
 }
 
-/** Small "last updated" line showing the link to the online sheet. */
-function SourceLine() {
-  const { data } = useEvaluationList();
-  const s = data?.meta.sheet;
-  if (!s) return null;
-  const t = (iso: string | null) => (iso ? new Date(iso).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : 'not yet');
-  return (
-    <div className="gr-banner">
-      <ShieldCheck size={17} />
-      <div>
-        <strong>Live from the online evaluation sheet.</strong> Scores, eligibility tests and findings are read from <em>{s.sheet_name ?? 'the evaluation sheet'}</em>
-        {' '}(sheet last edited {t(s.sheet_modified)}); amounts and the 50-50 checks are worked out from the applications on Drive.
-        {s.last_error && <> The last check reported a problem and the previous results are being shown.</>}
-      </div>
-    </div>
-  );
-}
-
 // ── Overview ─────────────────────────────────────────────────
 
 function Bar100({ value, max, tone = 'good' }: { value: number; max: number; tone?: 'good' | 'warn' | 'bad' | 'neutral' }) {
@@ -87,7 +69,6 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
 
   return (
     <>
-      <SourceLine />
 
       <div className="metrics-grid">
         <Tile label="Clusters evaluated" value={String(o.meta.evaluated)} icon={ClipboardCheck}><span>average score {o.average_score ?? 'n/a'} of 100</span></Tile>
@@ -264,7 +245,6 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
   if (error || !data) return <Failed />;
   return (
     <>
-      <SourceLine />
       <div className="chart-panel">
         <div className="panel-header">
           <div><h2>Financial screening</h2><p>The 50-50 rule and category limits, worked out from each application on Drive. Largest cash shortfall first.</p></div>
@@ -333,7 +313,6 @@ export function EligibilityPage({ onSelect }: { onSelect: (a: string) => void })
   const counts = (s: string) => data.data.filter((r) => r.eligibility === s).length;
   return (
     <>
-      <SourceLine />
       <div className="chart-panel">
         <div className="panel-header">
           <div>
@@ -393,7 +372,6 @@ export function ScorecardPage({ onSelect }: { onSelect: (a: string) => void }) {
   if (error || !data) return <Failed />;
   return (
     <>
-      <SourceLine />
       <div className="chart-panel">
         <div className="panel-header">
           <div><h2>Scorecard</h2><p>Six weighted criteria add up to 100 points. 70 or more is Recommended, 50 to 69 Referred with comments, below 50 Rejected. Highest score first.</p></div>
