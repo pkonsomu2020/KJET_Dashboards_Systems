@@ -36,15 +36,24 @@ const BASE = `
   ev.c4_rating, ev.c4_score, ev.c5_rating, ev.c5_score, ev.c6_rating, ev.c6_score,
   ev.fs_doc_check, ev.financial_screening AS workbook_financial_result,
   COALESCE(ev.eval_value_chain, c.value_chain) AS value_chain,
+  ev.eval_total_cost, ev.eval_grant_requested, ev.eval_contribution, ev.eval_machinery, ev.eval_services, ev.eval_s5_budget,
   f.total_project_cost, f.grant_requested, f.cluster_contribution, f.section5_budget_total,
   f.machinery_subtotal AS machinery_total, f.services_subtotal AS services_total,
   m.total_members, m.women, m.youth, m.pwd, e.jobs_today, e.jobs_year3`;
 
 const n = (v) => (v == null ? null : Number(v));
 
-/** The screening runs on the amounts in the cluster's application (application_details.csv): one set per cluster. */
+/**
+ * The screening runs on ONE set of amounts per cluster: the application amounts as evaluated (the evaluation sheet's
+ * Financial_Screening tab), which are the amounts the selection report is built on. If a cluster has none there,
+ * the amounts in its application file are used.
+ */
 function screenRow(r) {
-  return screenFinancials({
+  const hasSheet = r.eval_total_cost != null || r.eval_grant_requested != null;
+  return screenFinancials(hasSheet ? {
+    total: r.eval_total_cost, contribution: r.eval_contribution, grant: r.eval_grant_requested,
+    machinery: r.eval_machinery, services: r.eval_services, s5: r.eval_s5_budget,
+  } : {
     total: r.total_project_cost, contribution: r.cluster_contribution, grant: r.grant_requested,
     machinery: r.machinery_total, services: r.services_total, s5: r.section5_budget_total,
   }, { docCheck: r.fs_doc_check });

@@ -25,7 +25,7 @@ export function WithDetail({ applicationNumber, children }: { applicationNumber:
   return <>{children(data)}</>;
 }
 
-/** Financial screening: the 50-50 checks, worked out from the amounts in the cluster's application. */
+/** Financial screening: the 50-50 checks, worked out from the application amounts as evaluated. */
 export function FinancialPanel({ d }: { d: EvalDetail }) {
   const f = d.financial_detail;
   const c = f.checks;
@@ -33,7 +33,7 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
     <div className="ev-panel">
       <div className="ev-cols">
         <div>
-          <h4>Application figures</h4>
+          <h4>Application figures (as evaluated)</h4>
           <Row label="Total project cost" value={kes(f.figures.total)} />
           <Row label="Matching grant requested" value={kes(f.figures.grant)} />
           <Row label="Cluster cash contribution" value={kes(f.figures.contribution)} />

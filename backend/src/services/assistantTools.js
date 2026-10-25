@@ -281,7 +281,7 @@ async function getDocument({ document_id, offset, length }) {
 
 // ── Evaluation tools (scores and findings from the online evaluation sheet; amounts and the 50/50 checks from the cluster's application) ──
 
-const EVAL_NOTE = 'Scores, ranks, bands, eligibility tests E1-E10 and justifications come from the evaluation sheet. Amounts and the financial screening (50/50 matching rule, window, cluster cash contribution shortfall) are worked out from the amounts in each cluster application (application_details.csv). Recommended clusters are provisionally recommended: approval for financing rests with the MSEA Director General/CEO after the IETP and onsite verification, so never say a cluster is approved or funded.';
+const EVAL_NOTE = 'Scores, ranks, bands, eligibility tests E1-E10 and justifications come from the evaluation sheet. Amounts and the financial screening (50/50 matching rule, window, cluster cash contribution shortfall) are worked out from the application amounts as evaluated (the Financial_Screening figures of the evaluation sheet, which the selection report uses). Recommended clusters are provisionally recommended: approval for financing rests with the MSEA Director General/CEO after the IETP and onsite verification, so never say a cluster is approved or funded.';
 
 const slim = (d) => ({
   application_number: d.application_number, cluster_name: d.cluster_name, county: d.county, value_chain: d.value_chain,

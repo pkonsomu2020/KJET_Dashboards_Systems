@@ -137,9 +137,9 @@ export async function buildEvaluationReport(applicationNumber) {
   ]);
   para('This report records the evaluation scores and findings. Approval for financing rests with the Director General/CEO of MSEA, after review by the Independent Evaluation Technical Panel (IETP) and onsite verification.', { size: 8, color: COLORS.muted });
 
-  // ── Amounts in the cluster's application ──
+  // ── Application amounts as evaluated (the figures the selection report is built on) ──
   const f = d.financial_detail;
-  h2('1. Application figures');
+  h2('1. Application figures (as evaluated)');
   facts([
     ['Total project cost', kes(f.figures.total)],
     ['Matching grant requested', kes(f.figures.grant)],

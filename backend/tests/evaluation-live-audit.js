@@ -91,30 +91,25 @@ const critCols = { C1: 'P', C2: 'Y', C3: 'AE', C4: 'AJ', C5: 'AO', C6: 'AU' };
 for (const [a, r] of live) {
   const f = csv.get(a);
   if (!f) { check('Drive CSV readable', false, a); continue; }
-  // one set of amounts per cluster: the cluster's application_details.csv on Drive
+  // one set of amounts per cluster: the application amounts as evaluated (the sheet's Financial_Screening tab), as in the selection report
+  const fr = fsRow.get(a);
+  const nz = (ref) => { const v = cell('Financial_Screening', ref); return v === '' ? null : Number(v); };
+  const total = nz(`H${fr}`), cash = nz(`I${fr}`), grant = nz(`J${fr}`), mach = nz(`F${fr}`), serv = nz(`G${fr}`);
   const fin = r.financial;
-  const total = num(f, 'Total project cost'), cash = num(f, 'Cluster contribution'), grant = num(f, 'Grant requested');
-  const mach = num(f, 'Machinery subtotal'), serv = num(f, 'Services subtotal');
-  check('amounts: total project cost = application', close(fin.total, total), `${a}: ${fin.total} vs ${total}`);
-  check('amounts: cluster cash contribution = application', close(fin.contribution, cash), `${a}: ${fin.contribution} vs ${cash}`);
-  check('amounts: matching grant requested = application', close(fin.grant, grant), `${a}: ${fin.grant} vs ${grant}`);
-  check('amounts: machinery subtotal = application', close(fin.machinery, mach), `${a}: ${fin.machinery} vs ${mach}`);
-  check('amounts: services subtotal = application', close(fin.services, serv), `${a}: ${fin.services} vs ${serv}`);
+  check('amounts: total project cost = evaluation sheet', close(fin.total, total), `${a}: ${fin.total} vs ${total}`);
+  check('amounts: cluster cash contribution = evaluation sheet', close(fin.contribution, cash), `${a}: ${fin.contribution} vs ${cash}`);
+  check('amounts: matching grant requested = evaluation sheet', close(fin.grant, grant), `${a}: ${fin.grant} vs ${grant}`);
+  check('amounts: machinery subtotal = evaluation sheet', close(fin.machinery, mach), `${a}: ${fin.machinery} vs ${mach}`);
+  check('amounts: services subtotal = evaluation sheet', close(fin.services, serv), `${a}: ${fin.services} vs ${serv}`);
   check('members: women = application (blank counts as 0)', close(r.women ?? 0, num(f, 'Total members women') ?? 0), `${a}: ${r.women} vs ${num(f, 'Total members women')}`);
   check('members: youth = application (blank counts as 0)', close(r.youth ?? 0, num(f, 'Total members youth') ?? 0), `${a}: ${r.youth} vs ${num(f, 'Total members youth')}`);
   check('jobs: year 3 = application', close(r.jobs_year3, num(f, 'Jobs year3')), `${a}: ${r.jobs_year3} vs ${num(f, 'Jobs year3')}`);
 
-  // screening: the sheet's rules (Parameters sheet) applied to those amounts, worked out here independently
-  if (total != null && cash != null && grant != null) {
-    const exp = expectedResult(total, cash, grant, mach, serv, fin.document_check);
-    check('screening result = the sheet rules on the application amounts', fin.result === exp, `${a}: ${fin.result} vs ${exp}`);
-    const win = grant <= 0 ? 'Invalid grant (zero or less)' : grant <= P.cat1 ? 'Window 1 (Growth Window)' : grant <= P.cat2 ? 'Window 2 (Transformational Window)' : 'Above the Window 2 ceiling';
-    check('screening window by matching grant requested', fin.category === win, `${a}: ${fin.category} vs ${win}`);
-    check('screening: cluster cash share = cash / total', total > 0 ? close(fin.cluster_share, cash / total, 0.0001) : true, `${a}`);
-    check('screening: maximum matching grant', total > 0 ? close(fin.max_eligible_grant, Math.min(total * P.kjet, P.cat2)) : true, `${a}: ${fin.max_eligible_grant}`);
-    const shortfall = total > 0 ? Math.max(0, (total - Math.min(total * P.kjet, P.cat2)) - cash) : null;
-    check('screening: cluster cash contribution shortfall', total > 0 ? close(fin.contribution_shortfall, shortfall) : true, `${a}: ${fin.contribution_shortfall} vs ${shortfall}`);
-  }
+  // screening result, window, maximum and shortfall = the sheet's own, on the same amounts
+  check('screening result = the sheet', norm(fin.result) === norm(cell('Financial_Screening', `AF${fr}`)), `${a}: ${fin.result} vs ${cell('Financial_Screening', `AF${fr}`)}`);
+  check('screening window = the sheet', norm(fin.category) === WINDOW[norm(cell('Financial_Screening', `U${fr}`))], `${a}`);
+  check('screening: maximum matching grant = the sheet', close(fin.max_eligible_grant, nz(`V${fr}`)), `${a}`);
+  check('screening: cluster cash contribution shortfall = the sheet', close(fin.contribution_shortfall, nz(`Y${fr}`)), `${a}`);
 
   // scores and tests = the online sheet
   const sr = scRow.get(a), er = elRow.get(a);
