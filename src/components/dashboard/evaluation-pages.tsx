@@ -158,7 +158,7 @@ export function EvaluationOverview({ onSelect }: { onSelect: (applicationNumber:
       </div>
 
       <div className="analytics-grid" style={{ gridTemplateColumns: 'minmax(0, 1fr)' }}>
-        <Panel title="Financial screening results" subtitle="Worked out from the application figures on Drive">
+        <Panel title="Financial screening results" subtitle="Worked out from the figures the evaluation was made on">
           <ResultsDonut
             items={o.financial_results.map((r) => ({ name: r.result, value: r.count }))}
             total={o.meta.evaluated} centreLabel="clusters screened" />
@@ -261,7 +261,7 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
       <CountyFilter shown={rows.length} />
       <div className="chart-panel">
         <div className="panel-header">
-          <div><h2>Financial screening</h2><p>The 50-50 rule and category limits, worked out from each application on Drive. Largest cash shortfall first.</p></div>
+          <div><h2>Financial screening</h2><p>The 50-50 rule and category limits, worked out from the figures the evaluation was made on. Largest cash shortfall first.</p></div>
         </div>
         <FilterBar f={f} setF={setF} count={rows.length} total={data.data.length}>
           <select className="filter-select" aria-label="Filter by result" value={f.a} onChange={(e) => setF({ ...f, a: e.target.value })}>
@@ -276,7 +276,7 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
           <div className="fit-wrap">
             <table className="portfolio-table fit-table">
               <colgroup><col style={{ width: '22%' }} /><col style={{ width: '9%' }} /><col style={{ width: '18%' }} /><col style={{ width: '12%' }} /><col /><col style={{ width: 176 }} /></colgroup>
-              <thead><tr><th>Cluster</th><th>Category</th><th className="gr-num">Drive figures</th><th>Cash share</th><th>Result</th><th aria-label="Actions" /></tr></thead>
+              <thead><tr><th>Cluster</th><th>Category</th><th className="gr-num">Evaluation figures</th><th>Cash share</th><th>Result</th><th aria-label="Actions" /></tr></thead>
               <tbody>
                 {rows.map((r) => {
                   const isOpen = open === r.application_number;
@@ -290,6 +290,7 @@ export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => 
                           <strong>{kes(fin.grant)}</strong>
                           <span className="gr-sub">grant requested</span>
                           <span className="gr-sub">cost {kes(fin.total)} · cash {kes(fin.contribution)}</span>
+                          {fin.drive.differs && <span className="gr-sub ev-sheetdiff" title={`Application on Drive today: cost ${kes(fin.drive.total)}, cash ${kes(fin.drive.contribution)}, grant ${kes(fin.drive.grant)}`}>Drive today: grant {kes(fin.drive.grant)}</span>}
                         </td>
                         <td>
                           <strong className={fin.meets_50_percent_cash === false ? 'ev-bad' : undefined}>{pct(fin.cluster_share)}</strong>

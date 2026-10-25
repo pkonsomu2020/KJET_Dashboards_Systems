@@ -25,7 +25,7 @@ export function WithDetail({ applicationNumber, children }: { applicationNumber:
   return <>{children(data)}</>;
 }
 
-/** Financial screening: the 50-50 checks, worked out from the application figures on Drive. */
+/** Financial screening: the 50-50 checks, worked out from the figures the evaluation was made on. */
 export function FinancialPanel({ d }: { d: EvalDetail }) {
   const f = d.financial_detail;
   const c = f.checks;
@@ -33,12 +33,20 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
     <div className="ev-panel">
       <div className="ev-cols">
         <div>
-          <h4>Figures (application on Drive)</h4>
+          <h4>Figures used by the evaluation</h4>
           <Row label="Total project cost" value={kes(f.figures.total)} />
           <Row label="KJET grant requested" value={kes(f.figures.grant)} />
           <Row label="Cluster contribution" value={kes(f.figures.contribution)} />
           <Row label="Machinery subtotal" value={kes(f.figures.machinery)} />
           <Row label="Services subtotal" value={kes(f.figures.services)} />
+          {d.financial.drive.differs && (
+            <>
+              <h4 style={{ marginTop: 12 }}>Application on Drive today</h4>
+              <Row label="Total project cost" value={kes(d.financial.drive.total)} tone="warn" />
+              <Row label="KJET grant requested" value={kes(d.financial.drive.grant)} tone="warn" />
+              <Row label="Cluster contribution" value={kes(d.financial.drive.contribution)} tone="warn" />
+            </>
+          )}
         </div>
         <div>
           <h4>50-50 rule and category</h4>

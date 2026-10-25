@@ -70,6 +70,10 @@ export async function ensureEvaluationSchema(db) {
       ADD COLUMN IF NOT EXISTS fs_issues          TEXT,
       ADD COLUMN IF NOT EXISTS fs_note            TEXT,
       ADD COLUMN IF NOT EXISTS fs_category        TEXT,
+      ADD COLUMN IF NOT EXISTS eval_machinery     NUMERIC,
+      ADD COLUMN IF NOT EXISTS eval_services      NUMERIC,
+      ADD COLUMN IF NOT EXISTS eval_contribution  NUMERIC,
+      ADD COLUMN IF NOT EXISTS eval_s5_budget     NUMERIC,
       ADD COLUMN IF NOT EXISTS expert_remarks     TEXT,
       ADD COLUMN IF NOT EXISTS moderation_note    TEXT`);
   await db.query(`
@@ -146,7 +150,7 @@ function parseEvaluationWorkbook(wb, sourceFile) {
   const sc = sheetRows(wb, 'SCORECARD');
   const s = columnFinder(sc[4], 'SCORECARD');
   const scCol = {
-    app: s('Application No.'), category: s('Category'), elig: s('Eligibility status'), total: s('TOTAL SCORE'), band: s('Decision band'),
+    app: s('Application No.'), category: s('Category'), chain: s('Value chain'), elig: s('Eligibility status'), total: s('TOTAL SCORE'), band: s('Decision band'),
     moderation: s('Moderation note'),
   };
   const optional = (name) => { try { return s(name); } catch { return -1; } };
@@ -186,6 +190,8 @@ function parseEvaluationWorkbook(wb, sourceFile) {
   const fsCol = {
     app: fc('Application No.'), cat: fc('Category (by KJET request)'), docs: fc('Category document check'), note: fc('Note (Evaluation'),
     issues: fc('Issues identified'), result: fc('FINANCIAL SCREENING RESULT'),
+    machinery: fc('Machinery subtotal (portal)'), services: fc('Services subtotal (portal)'), total: fc('Total investment (Evaluation'),
+    contribution: fc('Cluster contribution (Evaluation'), grant: fc('KJET matching contribution (Evaluation'), s5: fc('Section 5 budget total (portal)'),
   };
   const fsByApp = new Map(fsr.slice(5).filter((r) => String(r[fsCol.app]).startsWith('KJET-')).map((r) => [String(r[fsCol.app]).trim(), r]));
 
@@ -206,6 +212,7 @@ function parseEvaluationWorkbook(wb, sourceFile) {
     const row = {
       application_number: app,
       category: clean(sr[scCol.category]),
+      eval_value_chain: clean(sr[scCol.chain]),   // the sheet's final classification (the report groups by it)
       financial_screening: fr ? clean(fr[fsCol.result]) : null,
       eligibility: clean(sr[scCol.elig]) ?? (er ? clean(er[e('ELIGIBILITY STATUS')]) : null),
       total_score: numOrNull(sr[scCol.total]), band: clean(sr[scCol.band]),
@@ -217,6 +224,10 @@ function parseEvaluationWorkbook(wb, sourceFile) {
       fs_issues: fr ? clean(fr[fsCol.issues]) : null,
       fs_note: fr ? clean(fr[fsCol.note]) : null,
       fs_category: fr ? clean(fr[fsCol.cat]) : null,
+      // the figures the evaluation (and the selection report) were made on
+      eval_machinery: fr ? numOrNull(fr[fsCol.machinery]) : null, eval_services: fr ? numOrNull(fr[fsCol.services]) : null,
+      eval_total_cost: fr ? numOrNull(fr[fsCol.total]) : null, eval_contribution: fr ? numOrNull(fr[fsCol.contribution]) : null,
+      eval_grant_requested: fr ? numOrNull(fr[fsCol.grant]) : null, eval_s5_budget: fr ? numOrNull(fr[fsCol.s5]) : null,
     };
     for (let c = 1; c <= 6; c++) {
       row[`c${c}_rating`] = numOrNull(sr[scCol[`c${c}r`]]);

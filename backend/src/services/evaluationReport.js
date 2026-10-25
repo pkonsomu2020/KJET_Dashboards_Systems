@@ -137,15 +137,16 @@ export async function buildEvaluationReport(applicationNumber) {
   ]);
   para('This report records the evaluation scores and findings. Selecting clusters for funding is a decision for MSEA.', { size: 8, color: COLORS.muted });
 
-  // ── Application figures (Drive) ──
+  // ── Figures the evaluation was made on, with Drive today beside them ──
   const f = d.financial_detail;
-  h2('1. Application figures (from the application on Drive)');
+  h2('1. Application figures (as evaluated)');
   facts([
     ['Total project cost', kes(f.figures.total)],
     ['KJET grant requested', kes(f.figures.grant)],
     ['Cluster contribution', kes(f.figures.contribution)],
     ['Machinery subtotal', kes(f.figures.machinery)],
     ['Services subtotal', kes(f.figures.services)],
+    ...(d.financial.drive.differs ? [['Application on Drive today', `cost ${kes(d.financial.drive.total)}, grant ${kes(d.financial.drive.grant)}, cash ${kes(d.financial.drive.contribution)}`, COLORS.hold]] : []),
     ['Members / women / youth', `${d.members ?? 'n/a'} / ${d.women ?? 'n/a'} / ${d.youth ?? 'n/a'}`],
     ['Jobs today / year 3 (applicant-reported)', `${d.jobs_today ?? 'n/a'} / ${d.jobs_year3 ?? 'n/a'}`],
   ]);

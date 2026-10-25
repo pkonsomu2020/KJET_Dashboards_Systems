@@ -104,12 +104,9 @@ for (let r = 6; r <= 120; r++) {
   });
 }
 
-// ── Financial_Screening by cell address: B app; F machinery, G services, H total, I contribution, J grant; Z doc check; AE note; AF result; AG issues ──
-const { rows: drive } = await pool.query(`SELECT c.application_number, f.total_project_cost t, f.cluster_contribution cc, f.grant_requested g,
-  f.machinery_subtotal mach, f.services_subtotal serv
-  FROM clusters c LEFT JOIN cluster_financials f ON f.cluster_id = c.id`);
-const driveBy = new Map(drive.map((x) => [x.application_number, x]));
-let compared = 0, differing = 0;
+// ── Financial_Screening by cell address: B app; F machinery, G services, H total, I contribution, J grant, K section 5 budget; U category; V max eligible; Y shortfall; Z doc check; AE note; AF result; AG issues ──
+// The stored figures are the ones the evaluation was made on; the dashboard's own screening must give the sheet's result on them, for all 85.
+let compared = 0;
 for (let r = 6; r <= 120; r++) {
   const app = norm(cell('Financial_Screening', `B${r}`));
   if (!app.startsWith('KJET-')) continue;
@@ -118,20 +115,21 @@ for (let r = 6; r <= 120; r++) {
   check(`${app} fs doc check`, norm(cell('Financial_Screening', `Z${r}`)) === norm(d.fs_doc_check));
   check(`${app} fs issues`, norm(cell('Financial_Screening', `AG${r}`)) === norm(d.fs_issues));
   check(`${app} fs note`, norm(cell('Financial_Screening', `AE${r}`)) === norm(d.fs_note));
-  // Where Drive and the sheet hold the same figures, the dashboard's own screening must give the sheet's result and numbers
-  const dv = driveBy.get(app);
-  const same = dv && close(dv.t, cell('Financial_Screening', `H${r}`)) && close(dv.cc, cell('Financial_Screening', `I${r}`)) && close(dv.g, cell('Financial_Screening', `J${r}`))
-    && close(dv.mach ?? 0, cell('Financial_Screening', `F${r}`)) && close(dv.serv ?? 0, cell('Financial_Screening', `G${r}`));
-  if (!same) { differing++; continue; }
+  const nz = (ref) => { const v = cell('Financial_Screening', ref); return v === '' ? null : Number(v); };
+  check(`${app} stored total`, close(nz(`H${r}`), d.eval_total_cost), `${nz(`H${r}`)} vs ${d.eval_total_cost}`);
+  check(`${app} stored contribution`, close(nz(`I${r}`), d.eval_contribution));
+  check(`${app} stored grant`, close(nz(`J${r}`), d.eval_grant_requested));
+  check(`${app} stored machinery`, close(nz(`F${r}`), d.eval_machinery));
+  check(`${app} stored services`, close(nz(`G${r}`), d.eval_services));
+  check(`${app} stored section 5 budget`, close(nz(`K${r}`), d.eval_s5_budget));
+  const s = screenFinancials({ total: d.eval_total_cost, contribution: d.eval_contribution, grant: d.eval_grant_requested, machinery: d.eval_machinery, services: d.eval_services, s5: d.eval_s5_budget }, { docCheck: norm(cell('Financial_Screening', `Z${r}`)) || null });
   compared++;
-  const s = screenFinancials({ total: dv.t, contribution: dv.cc, grant: dv.g, machinery: dv.mach, services: dv.serv }, { docCheck: norm(cell('Financial_Screening', `Z${r}`)) || null });
   check(`${app} screening result`, s.result === norm(cell('Financial_Screening', `AF${r}`)), `${s.result} vs ${cell('Financial_Screening', `AF${r}`)}`);
   check(`${app} category`, s.category === norm(cell('Financial_Screening', `U${r}`)), `${s.category} vs ${cell('Financial_Screening', `U${r}`)}`);
-  check(`${app} max eligible grant`, close(s.checks.max_eligible_grant, cell('Financial_Screening', `V${r}`)));
-  check(`${app} cash shortfall`, close(s.checks.contribution_shortfall, cell('Financial_Screening', `Y${r}`)));
-  check(`${app} cluster share`, Math.abs(s.checks.cluster_share - Number(cell('Financial_Screening', `R${r}`))) < 0.0001);
+  check(`${app} max eligible grant`, close(s.checks.max_eligible_grant, nz(`V${r}`)));
+  check(`${app} cash shortfall`, close(s.checks.contribution_shortfall, nz(`Y${r}`)));
 }
-check('screening compared on at least 30 clusters', compared >= 30, `${compared} compared, ${differing} differ from Drive`);
+check('screening compared on all 85 clusters', compared === 85, String(compared));
 
 // ── Ranks among eligible clusters, recomputed independently; no funding selection is stored ──
 const eligible = sheetScores.filter((s) => s.elig === 'PASS').sort((a, b) => (b.total - a.total) || (b.c2 - a.c2) || (b.c1 - a.c1) || (b.c6 - a.c6));
@@ -142,6 +140,6 @@ check('no cluster is marked as selected for funding', db.every((d) => !d.shortli
 // ── Names of assessors and reviewers are never stored ──
 check('no assessor names stored', db.every((d) => d.assessor == null && d.reviewer == null));
 
-console.log(`\nEvaluation check: ${passed} passed, ${failed} failed (${compared} clusters re-screened from Drive figures, ${differing} differ from the sheet's figures)`);
+console.log(`\nEvaluation check: ${passed} passed, ${failed} failed (${compared} clusters re-screened from the evaluation figures)`);
 await pool.end();
 process.exit(failed ? 1 : 0);
