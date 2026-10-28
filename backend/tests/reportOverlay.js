@@ -16,7 +16,9 @@ export function overlayReport(wb) {
   });
   const el = wb.Sheets['Eligibility'];
   const er = XLSX.utils.sheet_to_json(el, { header: 1, defval: '' });
-  const col = er[4].findIndex((h) => String(h).replace(/\s+/g, ' ').trim() === 'E3 decision');
-  er.forEach((r, ri) => { if (String(r[1]).startsWith('KJET-')) el[XLSX.utils.encode_cell({ r: ri, c: col })] = { t: 's', v: REPORT.eligibility.E3 }; });
+  for (const [test, value] of Object.entries(REPORT.eligibility)) {
+    const col = er[4].findIndex((h) => String(h).replace(/\s+/g, ' ').trim() === `${test} decision`);
+    er.forEach((r, ri) => { if (String(r[1]).startsWith('KJET-')) el[XLSX.utils.encode_cell({ r: ri, c: col })] = { t: 's', v: value }; });
+  }
   return wb;
 }

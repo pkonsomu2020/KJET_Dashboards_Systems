@@ -37,8 +37,6 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
           <Row label="Total project cost" value={kes(f.figures.total)} />
           <Row label="Matching grant requested" value={kes(f.figures.grant)} />
           <Row label="Cluster cash contribution" value={kes(f.figures.contribution)} />
-          <Row label="Machinery subtotal" value={kes(f.figures.machinery)} />
-          <Row label="Services subtotal" value={kes(f.figures.services)} />
         </div>
         <div>
           <h4>50-50 rule and category</h4>
@@ -52,13 +50,11 @@ export function FinancialPanel({ d }: { d: EvalDetail }) {
           <Row label="Cluster cash contribution shortfall" value={kes(c.contribution_shortfall)} tone={c.contribution_shortfall ? 'bad' : undefined} />
         </div>
         <div>
-          <h4>Arithmetic and documents</h4>
+          <h4>Arithmetic</h4>
           <Row label="Cluster cash contribution plus matching grant" value={kes(c.contribution_plus_grant)} />
           <Row label="Total minus (cluster cash contribution plus matching grant)" value={kes(c.total_minus_contribution_and_grant)} />
-          <Row label="Total minus (machinery plus services)" value={kes(c.total_minus_machinery_and_services)} />
           <Row label="Arithmetic consistent" value={yn(c.arithmetic_consistent)} tone={c.arithmetic_consistent === false ? 'bad' : undefined} />
           <Row label="Placeholder amounts" value={yn(c.implausible_amounts)} />
-          <Row label="Document check" value={c.document_check ?? 'Not stated'} tone={c.document_check?.startsWith('Missing') ? 'warn' : undefined} />
         </div>
       </div>
       <div className="ev-result"><span>Screening result</span><StatusChip value={f.result} /></div>
@@ -108,7 +104,6 @@ export function ScorePanel({ d }: { d: EvalDetail }) {
   return (
     <div className="ev-panel">
       <div className="ev-signoff">
-        <span><em>Primary assessor</em>{a.assessor ?? 'Not recorded'}{a.assessed_on ? ` · ${a.assessed_on}` : ''}</span>
         <span><em>Expert reviewer</em>{a.reviewer ?? 'Not yet reviewed'}{a.reviewed_on ? ` · ${a.reviewed_on}` : ''}</span>
       </div>
       <div className="eval-criteria">

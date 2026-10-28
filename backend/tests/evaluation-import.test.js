@@ -37,7 +37,7 @@ const check = (label, ok, detail = '') => { if (ok) passed++; else { failed++; f
 // the sheet says Category 1 / Category 2 / Exceeds KES 32M cap; the dashboard uses the Operations Manual's names for the windows
 const WINDOW = { 'Category 1': 'Window 1 (Growth Window)', 'Category 2': 'Window 2 (Transformational Window)', 'Exceeds KES 32M cap': 'Above the Window 2 ceiling', 'Invalid grant (≤0)': 'Invalid grant (zero or less)', 'Incomplete data': 'Incomplete data' };
 const norm = (v) => String(v ?? '').replace(/\s+/g, ' ').trim();
-overlayReport(wb);   // where the selection report differs from the live sheet (Spalla, E3), the report is the reference
+overlayReport(wb);   // where the selection report differs from the live sheet (none at present), the report is the reference
 const cell = (sheet, ref) => wb.Sheets[sheet][ref]?.v ?? '';
 const close = (a, b) => (a == null && b == null) || (a != null && b != null && Math.abs(Number(a) - Number(b)) < 0.005);
 
@@ -90,17 +90,17 @@ check('85 clusters stored', db.length === 85, String(db.length));
 check('22 ratings per cluster', crit.length === 85 * 22, String(crit.length));
 check('10 eligibility tests per cluster', elig.length === 850, String(elig.length));
 
-// ── Eligibility by cell address: B app; hints H,J,L,...,Z; decisions I,K,M,...,AA; AC status; AD reasons; AE evidence ──
-const hintCols = ['H', 'J', 'L', 'N', 'P', 'R', 'T', 'V', 'X', 'Z'];
-const decCols = ['I', 'K', 'M', 'O', 'Q', 'S', 'U', 'W', 'Y', 'AA'];
+// ── Eligibility by cell address: B app; hints G,I,K,...,Y; decisions H,J,L,...,Z; AB status; AC reasons; AD evidence ──
+const hintCols = ['G', 'I', 'K', 'M', 'O', 'Q', 'S', 'U', 'W', 'Y'];
+const decCols = ['H', 'J', 'L', 'N', 'P', 'R', 'T', 'V', 'X', 'Z'];
 for (let r = 6; r <= 120; r++) {
   const app = norm(cell('Eligibility', `B${r}`));
   if (!app.startsWith('KJET-')) continue;
   const d = byApp.get(app);
   if (!d) continue;
-  check(`${app} eligibility status`, norm(cell('Eligibility', `AC${r}`)) === norm(d.eligibility), `${cell('Eligibility', `AC${r}`)} vs ${d.eligibility}`);
-  check(`${app} eligibility reasons`, norm(cell('Eligibility', `AD${r}`)) === norm(d.eligibility_reasons));
-  check(`${app} evidence ids`, norm(cell('Eligibility', `AE${r}`)) === norm(d.evidence_ids));
+  check(`${app} eligibility status`, norm(cell('Eligibility', `AB${r}`)) === norm(d.eligibility), `${cell('Eligibility', `AB${r}`)} vs ${d.eligibility}`);
+  check(`${app} eligibility reasons`, norm(cell('Eligibility', `AC${r}`)) === norm(d.eligibility_reasons));
+  check(`${app} evidence ids`, norm(cell('Eligibility', `AD${r}`)) === norm(d.evidence_ids));
   decCols.forEach((col, i) => {
     const e = eligKey.get(`${app}|E${i + 1}`);
     check(`${app} E${i + 1} decision`, !!e && norm(cell('Eligibility', `${col}${r}`)) === norm(e.decision), `${cell('Eligibility', `${col}${r}`)} vs ${e?.decision}`);
@@ -110,14 +110,21 @@ for (let r = 6; r <= 120; r++) {
 
 // ── Financial_Screening by cell address: B app; F machinery, G services, H total, I contribution, J grant, K section 5 budget; U category; V max eligible; Y shortfall; Z doc check; AE note; AF result; AG issues ──
 // The stored figures are the ones the evaluation was made on; the dashboard's own screening must give the sheet's result on them, for all 85.
+// The screening rule, restated here independently of the app: it uses only Total investment, Cluster contribution and KJET matching contribution.
+const expectedResult = (t, c, g) => {
+  if (t == null || c == null || g == null || g <= 0 || t < 50000 || c < 1000 || Math.abs(t - (c + g)) > 100) return 'FOLLOW-UP: data error';
+  if (g > 32000000) return 'FOLLOW-UP: exceeds cap';
+  if (c / t < 0.5 - 0.001) return 'NON-COMPLIANT: <50% cash';
+  return 'PASS';
+};
+const expectedWindow = (g) => (g == null ? 'Incomplete data' : g <= 0 ? 'Invalid grant (zero or less)' : g <= 5000000 ? 'Window 1 (Growth Window)' : g <= 32000000 ? 'Window 2 (Transformational Window)' : 'Above the Window 2 ceiling');
 let compared = 0;
 for (let r = 6; r <= 120; r++) {
   const app = norm(cell('Financial_Screening', `B${r}`));
   if (!app.startsWith('KJET-')) continue;
   const d = byApp.get(app);
-  check(`${app} fs result (workbook)`, norm(cell('Financial_Screening', `AF${r}`)) === norm(d.financial_screening));
   check(`${app} fs doc check`, norm(cell('Financial_Screening', `Z${r}`)) === norm(d.fs_doc_check));
-  check(`${app} fs issues`, norm(cell('Financial_Screening', `AG${r}`)) === norm(d.fs_issues));
+  check(`${app} fs issues`, norm(cell('Financial_Screening', `AF${r}`)) === norm(d.fs_issues));
   check(`${app} fs note`, norm(cell('Financial_Screening', `AE${r}`)) === norm(d.fs_note));
   const nz = (ref) => { const v = cell('Financial_Screening', ref); return v === '' ? null : Number(v); };
   check(`${app} stored total`, close(nz(`H${r}`), d.eval_total_cost), `${nz(`H${r}`)} vs ${d.eval_total_cost}`);
@@ -126,12 +133,12 @@ for (let r = 6; r <= 120; r++) {
   check(`${app} stored machinery`, close(nz(`F${r}`), d.eval_machinery));
   check(`${app} stored services`, close(nz(`G${r}`), d.eval_services));
   check(`${app} stored section 5 budget`, close(nz(`K${r}`), d.eval_s5_budget));
-  const s = screenFinancials({ total: d.eval_total_cost, contribution: d.eval_contribution, grant: d.eval_grant_requested, machinery: d.eval_machinery, services: d.eval_services, s5: d.eval_s5_budget }, { docCheck: norm(cell('Financial_Screening', `Z${r}`)) || null });
+  const s = screenFinancials({ total: d.eval_total_cost, contribution: d.eval_contribution, grant: d.eval_grant_requested });
   compared++;
-  check(`${app} screening result`, s.result === norm(cell('Financial_Screening', `AF${r}`)), `${s.result} vs ${cell('Financial_Screening', `AF${r}`)}`);
-  check(`${app} window`, s.category === WINDOW[norm(cell('Financial_Screening', `U${r}`))], `${s.category} vs ${cell('Financial_Screening', `U${r}`)}`);
-  check(`${app} max eligible grant`, close(s.checks.max_eligible_grant, nz(`V${r}`)));
-  check(`${app} cash shortfall`, close(s.checks.contribution_shortfall, nz(`Y${r}`)));
+  // the result comes from the three columns alone: the sheet's H, I and J, read straight from the cells
+  check(`${app} screening result`, s.result === expectedResult(nz(`H${r}`), nz(`I${r}`), nz(`J${r}`)), `${s.result} vs ${expectedResult(nz(`H${r}`), nz(`I${r}`), nz(`J${r}`))}`);
+  check(`${app} window`, s.category === expectedWindow(nz(`J${r}`)), `${s.category} vs ${expectedWindow(nz(`J${r}`))}`);
+  { const t = nz(`H${r}`), c = nz(`I${r}`); const max = Math.min(t * 0.5, 32000000); check(`${app} max eligible grant`, close(s.checks.max_eligible_grant, max)); check(`${app} cash shortfall`, close(s.checks.contribution_shortfall, Math.max(0, (t - max) - c))); }
 }
 check('screening compared on all 85 clusters', compared === 85, String(compared));
 

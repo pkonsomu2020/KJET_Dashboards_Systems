@@ -221,9 +221,11 @@ function parseEvaluationWorkbook(wb, sourceFile) {
   // ── Financial_Screening: the evaluator's findings (result, category, document check, issues, note); amounts come from Drive ──
   const fsr = sheetRows(wb, 'Financial_Screening');
   const fc = columnFinder(fsr[4], 'Financial_Screening');
+  // the sheet's own result column was removed by its owners; the dashboard works the result out itself
+  const fcOpt = (name) => { try { return fc(name); } catch { return -1; } };
   const fsCol = {
     app: fc('Application No.'), cat: fc('Category (by KJET request)'), docs: fc('Category document check'), note: fc('Note (Evaluation'),
-    issues: fc('Issues identified'), result: fc('FINANCIAL SCREENING RESULT'),
+    issues: fc('Issues identified'), result: fcOpt('FINANCIAL SCREENING RESULT'),
     machinery: fc('Machinery subtotal (portal)'), services: fc('Services subtotal (portal)'), total: fc('Total investment (Evaluation'),
     contribution: fc('Cluster contribution (Evaluation'), grant: fc('KJET matching contribution (Evaluation'), s5: fc('Section 5 budget total (portal)'),
   };
@@ -247,7 +249,7 @@ function parseEvaluationWorkbook(wb, sourceFile) {
       application_number: app,
       category: clean(sr[scCol.category]),
       eval_value_chain: clean(sr[scCol.chain]),   // the sheet's final classification (the report groups by it)
-      financial_screening: fr ? clean(fr[fsCol.result]) : null,
+      financial_screening: fr && fsCol.result >= 0 ? clean(fr[fsCol.result]) : null,
       eligibility: clean(sr[scCol.elig]) ?? (er ? clean(er[e('ELIGIBILITY STATUS')]) : null),
       total_score: numOrNull(sr[scCol.total]), band: clean(sr[scCol.band]),
       expert_remarks: scCol.expertRemarks >= 0 ? clean(sr[scCol.expertRemarks]) : null,

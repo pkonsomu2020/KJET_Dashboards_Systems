@@ -1,7 +1,5 @@
 {
-  "note": "Values the final selection report is built on, where they differ from the live evaluation sheet and the report is to be followed. Currently only E3 (all 85 Pass). Spalla Construction Workers (KJET-2026-655159) follows the live sheet (user decision 2026-10-25): the sheet is edited as the work goes on.",
+  "note": "Values to use in place of the live evaluation sheet's. None at present: the dashboard follows the live sheet exactly (user decision 2026-10-28).",
   "scorecard": {},
-  "eligibility": {
-    "E3": "Pass"
-  }
+  "eligibility": {}
 }

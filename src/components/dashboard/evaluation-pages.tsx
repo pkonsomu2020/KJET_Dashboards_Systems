@@ -270,7 +270,7 @@ function FigureList({ title, grant, total, cash, compare }: {
 
 // ── Financial screening ───────────────────────────────────────
 
-const FIN_RESULTS = ['PASS', 'FOLLOW-UP: data error', 'FOLLOW-UP: documents', 'FOLLOW-UP: exceeds cap', 'NON-COMPLIANT: <50% cash'];
+const FIN_RESULTS = ['PASS', 'FOLLOW-UP: data error', 'FOLLOW-UP: exceeds cap', 'NON-COMPLIANT: <50% cash'];
 
 export function FinancialScreeningPage({ onSelect }: { onSelect: (a: string) => void }) {
   const [open, setOpen] = useState<string | null>(null);

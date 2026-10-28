@@ -37,9 +37,9 @@ describe('evaluation status colours', () => {
 
 const fin = (over: Partial<EvalRow['financial']> = {}) => ({
   result: 'PASS', sheet_result: 'PASS', drive: { total: 1000, contribution: 500, grant: 500, differs: false }, category: 'Window 2 (Transformational Window)', issues: [], total: 1000, contribution: 500, grant: 500, machinery: 1000, services: 0,
-  contribution_plus_grant: 1000, total_minus_contribution_and_grant: 0, total_minus_machinery_and_services: 0, arithmetic_consistent: true,
+  contribution_plus_grant: 1000, total_minus_contribution_and_grant: 0, arithmetic_consistent: true,
   implausible_amounts: false, cluster_share: 0.5, kjet_share: 0.5, meets_50_percent_cash: true, max_eligible_grant: 500, grant_above_max: 0,
-  min_cluster_cash: 500, contribution_shortfall: 0, document_check: 'Complete', ...over,
+  min_cluster_cash: 500, contribution_shortfall: 0, ...over,
 });
 const tests = (e5 = 'Pass') => ({ E1: 'Pass', E2: 'Pass', E3: 'Pass', E4: 'Pass', E5: e5, E6: 'Pass', E7: 'Pass', E8: 'Pass', E9: 'Pass', E10: 'Pass' });
 const criteria = [20, 40, 15, 10, 10, 5].map((w, i) => ({ code: `C${i + 1}`, weight: w, rating: 4, score: w * 0.8 }));
@@ -139,9 +139,9 @@ describe('Evaluation pages', () => {
     qc.setQueryData(['evaluation', 'detail', alpha.application_number], detail);
     render(<QueryClientProvider client={qc}><ScorecardPage onSelect={() => {}} /></QueryClientProvider>);
     fireEvent.click(screen.getAllByText('Show the ratings')[0]!);
-    expect(screen.getByText(/BRENDA/)).toBeTruthy();
+    expect(screen.queryByText(/BRENDA/)).toBeNull();
     expect(screen.getByText(/JANETRIX/)).toBeTruthy();
-    expect(screen.getByText('Primary assessor')).toBeTruthy();
+    expect(screen.queryByText('Primary assessor')).toBeNull();
     expect(screen.getByText('Expert reviewer')).toBeTruthy();
   });
 

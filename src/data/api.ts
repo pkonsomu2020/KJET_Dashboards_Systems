@@ -268,11 +268,8 @@ export interface EvalFinancial {
   total: number | null;
   contribution: number | null;
   grant: number | null;
-  machinery: number | null;
-  services: number | null;
   contribution_plus_grant: number | null;
   total_minus_contribution_and_grant: number | null;
-  total_minus_machinery_and_services: number | null;
   arithmetic_consistent: boolean | null;
   implausible_amounts: boolean;
   cluster_share: number | null;
@@ -282,9 +279,6 @@ export interface EvalFinancial {
   grant_above_max: number | null;
   min_cluster_cash: number | null;
   contribution_shortfall: number | null;
-  document_check: string | null;
-  section5_budget: number | null;
-  section5_budget_differs: boolean | null;
 }
 
 export interface EvalRow {
@@ -355,7 +349,7 @@ export interface EvalDetail extends EvalRow {
   expert_remarks: string | null;
   assessment: { assessor: string | null; assessed_on: string | null; reviewer: string | null; reviewed_on: string | null; eligibility_assessor: string | null; eligibility_assessed_on: string | null };
   evaluator_finance: { result: string | null; category: string | null; document_check: string | null; issues: string | null; note: string | null };
-  financial_detail: { result: string; category: string; issues: string[]; figures: { total: number | null; contribution: number | null; grant: number | null; machinery: number | null; services: number | null }; checks: Omit<EvalFinancial, 'result' | 'category' | 'issues' | 'total' | 'contribution' | 'grant' | 'machinery' | 'services'> };
+  financial_detail: { result: string; category: string; issues: string[]; figures: { total: number | null; contribution: number | null; grant: number | null }; checks: Omit<EvalFinancial, 'result' | 'category' | 'issues' | 'total' | 'contribution' | 'grant'> };
   clusters_ranked: number;
   source: { file: string | null; imported_at: string | null };
 }

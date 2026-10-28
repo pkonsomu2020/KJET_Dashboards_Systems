@@ -52,11 +52,9 @@ function screenRow(r) {
   const hasSheet = r.eval_total_cost != null || r.eval_grant_requested != null;
   return screenFinancials(hasSheet ? {
     total: r.eval_total_cost, contribution: r.eval_contribution, grant: r.eval_grant_requested,
-    machinery: r.eval_machinery, services: r.eval_services, s5: r.eval_s5_budget,
   } : {
     total: r.total_project_cost, contribution: r.cluster_contribution, grant: r.grant_requested,
-    machinery: r.machinery_total, services: r.services_total, s5: r.section5_budget_total,
-  }, { docCheck: r.fs_doc_check });
+  });
 }
 
 function shapeRow(r, tests) {
@@ -140,8 +138,7 @@ export async function getEvaluationOverview(countyFilter = '') {
 
   const issueLabel = (t) => (/cash contribution is/.test(t) ? 'Cluster cash contribution below the 50% minimum'
     : /above the maximum matching grant/.test(t) ? 'Matching grant above the maximum (50% of the project cost)'
-      : /machinery plus services/.test(t) ? 'Total differs from machinery plus services'
-        : /contribution plus matching grant/.test(t) ? 'Total differs from cluster cash contribution plus matching grant' : t);
+      : /contribution plus matching grant/.test(t) ? 'Total differs from cluster cash contribution plus matching grant' : t);
   const issueCounts = countBy(data.flatMap((d) => d.financial.issues.map(issueLabel)), (t) => t);
 
   const result = {
