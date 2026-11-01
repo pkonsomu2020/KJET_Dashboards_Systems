@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClustersRouteImport } from './routes/clusters'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as Cohort1FinalistsRouteImport } from './routes/cohort-1.finalists'
+import { Route as Cohort2FinalistsRouteImport } from './routes/cohort-2.finalists'
+import { Route as Cohort2OverviewRouteImport } from './routes/cohort-2.overview'
 import { Route as EvaluationIndexRouteImport } from './routes/evaluation.index'
 import { Route as EvaluationEligibilityRouteImport } from './routes/evaluation.eligibility'
 import { Route as EvaluationFinancialRouteImport } from './routes/evaluation.financial'
@@ -30,6 +33,21 @@ const ClustersRoute = ClustersRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Cohort1FinalistsRoute = Cohort1FinalistsRouteImport.update({
+  id: '/cohort-1/finalists',
+  path: '/cohort-1/finalists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Cohort2FinalistsRoute = Cohort2FinalistsRouteImport.update({
+  id: '/cohort-2/finalists',
+  path: '/cohort-2/finalists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Cohort2OverviewRoute = Cohort2OverviewRouteImport.update({
+  id: '/cohort-2/overview',
+  path: '/cohort-2/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EvaluationIndexRoute = EvaluationIndexRouteImport.update({
@@ -57,6 +75,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clusters': typeof ClustersRoute
   '/login': typeof LoginRoute
+  '/cohort-1/finalists': typeof Cohort1FinalistsRoute
+  '/cohort-2/finalists': typeof Cohort2FinalistsRoute
+  '/cohort-2/overview': typeof Cohort2OverviewRoute
   '/evaluation/eligibility': typeof EvaluationEligibilityRoute
   '/evaluation/financial': typeof EvaluationFinancialRoute
   '/evaluation/scorecard': typeof EvaluationScorecardRoute
@@ -66,6 +87,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clusters': typeof ClustersRoute
   '/login': typeof LoginRoute
+  '/cohort-1/finalists': typeof Cohort1FinalistsRoute
+  '/cohort-2/finalists': typeof Cohort2FinalistsRoute
+  '/cohort-2/overview': typeof Cohort2OverviewRoute
   '/evaluation/eligibility': typeof EvaluationEligibilityRoute
   '/evaluation/financial': typeof EvaluationFinancialRoute
   '/evaluation/scorecard': typeof EvaluationScorecardRoute
@@ -76,6 +100,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/clusters': typeof ClustersRoute
   '/login': typeof LoginRoute
+  '/cohort-1/finalists': typeof Cohort1FinalistsRoute
+  '/cohort-2/finalists': typeof Cohort2FinalistsRoute
+  '/cohort-2/overview': typeof Cohort2OverviewRoute
   '/evaluation/eligibility': typeof EvaluationEligibilityRoute
   '/evaluation/financial': typeof EvaluationFinancialRoute
   '/evaluation/scorecard': typeof EvaluationScorecardRoute
@@ -87,6 +114,9 @@ export interface FileRouteTypes {
     | '/'
     | '/clusters'
     | '/login'
+    | '/cohort-1/finalists'
+    | '/cohort-2/finalists'
+    | '/cohort-2/overview'
     | '/evaluation/eligibility'
     | '/evaluation/financial'
     | '/evaluation/scorecard'
@@ -96,6 +126,9 @@ export interface FileRouteTypes {
     | '/'
     | '/clusters'
     | '/login'
+    | '/cohort-1/finalists'
+    | '/cohort-2/finalists'
+    | '/cohort-2/overview'
     | '/evaluation/eligibility'
     | '/evaluation/financial'
     | '/evaluation/scorecard'
@@ -105,6 +138,9 @@ export interface FileRouteTypes {
     | '/'
     | '/clusters'
     | '/login'
+    | '/cohort-1/finalists'
+    | '/cohort-2/finalists'
+    | '/cohort-2/overview'
     | '/evaluation/eligibility'
     | '/evaluation/financial'
     | '/evaluation/scorecard'
@@ -115,6 +151,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClustersRoute: typeof ClustersRoute
   LoginRoute: typeof LoginRoute
+  Cohort1FinalistsRoute: typeof Cohort1FinalistsRoute
+  Cohort2FinalistsRoute: typeof Cohort2FinalistsRoute
+  Cohort2OverviewRoute: typeof Cohort2OverviewRoute
   EvaluationEligibilityRoute: typeof EvaluationEligibilityRoute
   EvaluationFinancialRoute: typeof EvaluationFinancialRoute
   EvaluationScorecardRoute: typeof EvaluationScorecardRoute
@@ -142,6 +181,27 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cohort-1/finalists': {
+      id: '/cohort-1/finalists'
+      path: '/cohort-1/finalists'
+      fullPath: '/cohort-1/finalists'
+      preLoaderRoute: typeof Cohort1FinalistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cohort-2/finalists': {
+      id: '/cohort-2/finalists'
+      path: '/cohort-2/finalists'
+      fullPath: '/cohort-2/finalists'
+      preLoaderRoute: typeof Cohort2FinalistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cohort-2/overview': {
+      id: '/cohort-2/overview'
+      path: '/cohort-2/overview'
+      fullPath: '/cohort-2/overview'
+      preLoaderRoute: typeof Cohort2OverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/evaluation/': {
@@ -179,6 +239,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClustersRoute: ClustersRoute,
   LoginRoute: LoginRoute,
+  Cohort1FinalistsRoute: Cohort1FinalistsRoute,
+  Cohort2FinalistsRoute: Cohort2FinalistsRoute,
+  Cohort2OverviewRoute: Cohort2OverviewRoute,
   EvaluationEligibilityRoute: EvaluationEligibilityRoute,
   EvaluationFinancialRoute: EvaluationFinancialRoute,
   EvaluationScorecardRoute: EvaluationScorecardRoute,

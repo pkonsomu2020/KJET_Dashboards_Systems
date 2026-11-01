@@ -9,6 +9,8 @@ import {
   fetchEvaluationList,
   fetchEvaluationOverview,
   fetchEvaluationDetail,
+  fetchFinalists,
+  fetchFinalistDetail,
   type ClusterListParams,
 } from '@/data/api';
 
@@ -96,6 +98,27 @@ export function useEvaluationDetail(applicationNumber: string | null) {
     queryKey: ['evaluation', 'detail', applicationNumber],
     queryFn: () => fetchEvaluationDetail(applicationNumber!),
     enabled: !!applicationNumber,
+    staleTime: 60 * 1000,
+  });
+}
+
+// ── Finalists ─────────────────────────────────────────────────
+// The backend re-reads each cohort's online sheet every 15 seconds; the page refreshes with it.
+
+export function useFinalists(cohort: number) {
+  return useQuery({
+    queryKey: ['finalists', cohort, 'list'],
+    queryFn: () => fetchFinalists(cohort),
+    staleTime: 15 * 1000,
+    refetchInterval: 15 * 1000,
+  });
+}
+
+export function useFinalistDetail(cohort: number, applicantId: string | null) {
+  return useQuery({
+    queryKey: ['finalists', cohort, 'detail', applicantId],
+    queryFn: () => fetchFinalistDetail(cohort, applicantId!),
+    enabled: applicantId != null,
     staleTime: 60 * 1000,
   });
 }

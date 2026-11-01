@@ -668,3 +668,91 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 
 .win-cell { overflow-wrap:normal !important;word-break:normal;hyphens:none; }
 .win-cell small { display:block;font-size:10px;color:var(--muted-foreground);margin-top:2px; }
+
+/* ── Sidebar groups (Cohort 1 / Cohort 2) ── */
+.nav-group { margin-bottom:6px; }
+.nav-group-head { width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin-bottom:6px;background:transparent;border:0;border-radius:5px;cursor:pointer;color:var(--foreground);font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase; }
+.nav-group-head:hover { background:var(--muted); }
+.nav-group-head svg { width:15px;height:15px;color:var(--muted-foreground);transition:transform .15s;transform:rotate(-90deg); }
+.nav-group-head svg.open { transform:rotate(0); }
+.nav-group-body { padding-left:6px; }
+.nav-sublabel { font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--primary);padding:10px 12px 10px;font-weight:600; }
+
+/* ── Finalists ── */
+.fn-link { display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--primary);text-decoration:none;margin-top:6px; }
+.fn-link:hover { text-decoration:underline; }
+.fn-count { font-weight:400;font-size:11px;color:var(--muted-foreground);margin-left:6px; }
+.fn-note { font-size:11px;color:var(--muted-foreground);margin:0 0 10px; }
+.fn-answer { white-space:pre-wrap;overflow-wrap:anywhere; }
+.fn-logic { max-width:260px;white-space:normal;overflow-wrap:anywhere; }
+.fn-docgroup { margin-bottom:14px; }
+.fn-docgroup ul { margin:4px 0 0;padding:0;list-style:none; }
+.fn-docgroup li { display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:11px; }
+.fn-docgroup li a { display:inline-flex;align-items:center;gap:6px;color:var(--primary);text-decoration:none;overflow-wrap:anywhere; }
+.fn-docgroup li a:hover { text-decoration:underline; }
+.fn-docgroup li small { color:var(--muted-foreground);white-space:nowrap; }
+
+/* Finalist application cards */
+.fn-card { border:1px solid var(--border);border-radius:8px;background:var(--card);padding:14px 16px 12px;margin-top:12px; }
+.fn-card header { display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-bottom:9px;margin-bottom:10px;border-bottom:1px solid var(--border); }
+.fn-card h4 { margin:0;font-size:13px;font-weight:650;color:var(--foreground); }
+.fn-card header span { font-size:10px;color:var(--muted-foreground);white-space:nowrap; }
+.fn-prose { font-size:12.5px;line-height:1.7;color:var(--foreground);max-width:68ch; }
+.fn-prose p { margin:0 0 9px;overflow-wrap:anywhere; }
+.fn-prose ul { margin:0 0 9px;padding-left:18px;list-style:disc; }
+.fn-prose li { margin:0 0 5px;padding-left:2px;overflow-wrap:anywhere; }
+.fn-prose li::marker { color:var(--primary); }
+.fn-prose > :last-child { margin-bottom:0; }
+.fn-prompt { margin-top:11px;padding-top:9px;border-top:1px dashed var(--border); }
+.fn-prompt summary { cursor:pointer;font-size:10.5px;color:var(--primary);list-style:none; }
+.fn-prompt summary::-webkit-details-marker { display:none; }
+.fn-prompt p { margin:7px 0 0;font-size:10.5px;line-height:1.6;color:var(--muted-foreground);overflow-wrap:anywhere; }
+.profile-section .fn-prose p, .fn-prose p { color:var(--foreground);font-size:12.5px;line-height:1.7; }
+
+/* Finalist table: the six scoring items */
+/* Finalists table: always a table (never cards). Narrow screens scroll sideways, so nothing can overlap or be squeezed. */
+.fn-scroll { overflow-x:auto;container-type:inline-size; }
+.fn-table { table-layout:fixed;width:100%;min-width:990px;white-space:normal; }
+.fn-table th, .fn-table td { padding:12px;vertical-align:top;overflow-wrap:break-word; }
+.fn-table .gate-chip, .fn-table .band-chip { white-space:normal;text-align:left;max-width:100%; }
+.fn-table td.fn-score-cell { min-width:0;overflow:hidden; }
+/* one column per scoring item (A3.1 to A3.6): just the rating out of 5. The table always fits its box; only on a phone-sized box does it scroll. */
+.fn-table { min-width:0; }
+.fn-table th.fn-rate-head, .fn-table td.fn-rate { padding-left:8px;padding-right:8px;white-space:nowrap;text-align:left; }
+.fn-rate strong { display:block;font-size:12.5px;font-variant-numeric:tabular-nums; }
+.fn-rate strong small { font-size:9.5px;font-weight:400;color:var(--muted-foreground); }
+@container (max-width: 759px) { .fn-table { min-width:720px; } }
+.fn-legend { display:flex;flex-wrap:wrap;gap:4px 18px;margin:0 20px 12px;font-size:10.5px;color:var(--muted-foreground); }
+.fn-legend strong { color:var(--foreground);margin-right:3px; }
+
+/* Finalist eligibility tab */
+.fn-result { display:flex;align-items:flex-start;gap:12px;margin-bottom:12px; }
+.fn-result p { margin:0;font-size:12.5px;line-height:1.6;color:var(--foreground); }
+.fn-rule { margin-top:12px;padding:11px 14px;border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:6px;background:var(--card);font-size:11.5px;color:var(--foreground); }
+.fn-rule strong { display:block;margin-bottom:5px;font-size:11.5px; }
+.fn-rule ul { margin:0;padding-left:16px;list-style:disc; }
+.fn-rule li { margin:0 0 3px;line-height:1.55;overflow-wrap:anywhere; }
+.fn-rule p { margin:0;line-height:1.6;overflow-wrap:anywhere; }
+.fn-rule small { display:block;margin-top:6px;font-size:10px;color:var(--muted-foreground); }
+.fn-tests td { vertical-align:top; }
+.fn-check { display:inline-flex;align-items:flex-start;gap:5px;font-size:11px;line-height:1.5; }
+.fn-check svg { flex:none;margin-top:2px; }
+.fn-check.tone-good { color:var(--success);background:transparent; }
+.fn-check.tone-warn { color:var(--warning);background:transparent; }
+.fn-check.tone-neutral { color:var(--muted-foreground);background:transparent; }
+
+/* Finalist overview record: a long value (an address, an explanation) takes the full row */
+.fn-wide { grid-column:1 / -1; }
+.fn-value { white-space:pre-wrap;overflow-wrap:anywhere; }
+.fn-wide .fn-prose { margin-top:4px; }
+
+/* Cohort 2 overview and the notice about a folder that is not shown */
+.fn-grid2 { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:24px; }
+@media (max-width:1000px) { .fn-grid2 { grid-template-columns:minmax(0,1fr); } }
+.fn-split { margin-top:16px;padding-top:12px;border-top:1px solid var(--border); }
+.fn-split strong { font-size:12px;color:var(--foreground); }
+.fn-split p { margin:3px 0 8px;font-size:10.5px;color:var(--muted-foreground); }
+.fn-split-first { margin-top:0;padding-top:0;border-top:0; }
+.fn-split .ev-row span { display:inline-flex;align-items:center;gap:6px; }
+.fn-notice { display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;line-height:1.55;font-size:11.5px; }
+.fn-notice svg { flex:none;margin-top:2px; }

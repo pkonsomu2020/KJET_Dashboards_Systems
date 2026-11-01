@@ -27,8 +27,10 @@ import clustersRouter  from './routes/clusters.js';
 import driveRouter     from './routes/drive.js';
 import assistantRouter from './routes/assistant.js';
 import evaluationRouter from './routes/evaluation.js';
+import finalistsRouter from './routes/finalists.js';
 import { ensureEvaluationSchema } from './services/evaluationImport.js';
 import { startEvaluationSheetSync, setEvaluationNotifier } from './services/evaluationSheet.js';
+import { startFinalistSheetSync } from './services/finalists.js';
 import pool from './db/pool.js';
 
 const app  = express();
@@ -121,6 +123,7 @@ app.use('/api/clusters',  requireAuth, clustersRouter);
 app.use('/api/drive',     requireAuth, driveRouter);
 app.use('/api/assistant', requireAuth, assistantRouter);
 app.use('/api/evaluation', requireAuth, evaluationRouter);
+app.use('/api/finalists', requireAuth, finalistsRouter);
 
 // ── Root ─────────────────────────────────────────────────────
 app.get('/', (_req, res) =>
@@ -148,6 +151,7 @@ async function start() {
   if (driveOk) {
     startChangesPoller();
     startEvaluationSheetSync().catch((err) => console.error('[Evaluation] sheet sync could not start:', err.message));
+    startFinalistSheetSync().catch((err) => console.error('[Finalists] sheet sync could not start:', err.message));
   }
 
   app.listen(PORT, HOST, () => {

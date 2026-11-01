@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Building2, ShieldCheck, Download, ChevronRight,
   Search, Moon, Sun, Menu, X, Layers3, BriefcaseBusiness, CircleDollarSign,
   Handshake, TrendingUp, CalendarDays, AlertTriangle, Globe2,
-  MapPin, Users, Wallet, Loader2, LogOut, Award, ArrowUpRight, ClipboardCheck, Scale, ListChecks,
+  MapPin, Users, Wallet, Loader2, LogOut, Award, ArrowUpRight, ClipboardCheck, Scale, ListChecks, Trophy, ChevronDown,
 } from 'lucide-react';
 import {
   BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer,
@@ -22,12 +22,19 @@ import { ClusterExplorer } from './explorer';
 import { ClusterProfile } from './profile';
 import { AssistantPanel } from './assistant';
 import { EvaluationOverview, FinancialScreeningPage, EligibilityPage, ScorecardPage } from './evaluation-pages';
+import { FinalistsPage } from './finalists-pages';
+import { Cohort2Overview } from './cohort2-overview';
 
-export type DashboardView = 'overview' | 'clusters' | 'evaluation' | 'financial' | 'eligibility' | 'scorecard';
+export type DashboardView = 'overview' | 'clusters' | 'finalists1' | 'evaluation' | 'financial' | 'eligibility' | 'scorecard' | 'overview2' | 'finalists2';
 
-const nav = [
-  { to: '/',         label: 'Overview',        icon: LayoutDashboard, view: 'overview' },
-  { to: '/clusters', label: 'Cluster profile', icon: Building2,       view: 'clusters' },
+/** Which cohort a page belongs to: the breadcrumb and the badge in the heading follow it. */
+const cohortOf = (view: DashboardView): 1 | 2 => (view === 'overview2' || view === 'finalists2' ? 2 : 1);
+
+// Cohort 1: the pages that come before the co-investment evaluation, then the evaluation itself
+const cohort1Nav = [
+  { to: '/',                   label: 'Portfolio overview', icon: LayoutDashboard, view: 'overview' },
+  { to: '/cohort-1/finalists', label: 'Cohort 1 Finalists', icon: Trophy,          view: 'finalists1' },
+  { to: '/clusters',           label: 'Cluster profile',    icon: Building2,       view: 'clusters' },
 ] as const;
 
 const evaluationNav = [
@@ -37,9 +44,18 @@ const evaluationNav = [
   { to: '/evaluation/scorecard',   label: 'Scoring',            icon: Scale,            view: 'scorecard' },
 ] as const;
 
+// Cohort 2: the finalists come first; the co-investment and BDS have not started for this cohort
+const cohort2Nav = [
+  { to: '/cohort-2/overview',  label: 'Cohort 2 Overview',  icon: LayoutDashboard, view: 'overview2' },
+  { to: '/cohort-2/finalists', label: 'Cohort 2 Finalists', icon: Trophy,          view: 'finalists2' },
+] as const;
+
 const titles: Record<DashboardView, [string, string]> = {
   overview: ['Portfolio overview', 'Cohort 1 co-investment matching grants & business development services'],
   clusters: ['Cluster profile',   '85 beneficiary clusters — search, filter and inspect every application'],
+  finalists1:  ['Cohort 1 Finalists', 'The 90 finalists, two per county, with their selection scores, application forms and documents'],
+  overview2:   ['Cohort 2 Overview', 'The Cohort 2 finalists at a glance, read live from the Cohort 2 spreadsheet and the application forms'],
+  finalists2:  ['Cohort 2 Finalists', 'The finalists, six per county, with their selection scores, application forms and documents'],
   evaluation:  ['Evaluation overview', 'Screening, eligibility and scoring of every cluster, read live from the evaluation sheet'],
   financial:   ['Financial screening', 'The 50-50 co-investment rule and Window 1 and Window 2 limits, checked for every application'],
   eligibility: ['Eligibility', 'The ten eligibility tests (E1 to E10) for every cluster, with the reasons'],
@@ -85,6 +101,22 @@ function ChartPanel({ title, subtitle, children, footer, legend }: {
   );
 }
 
+// ── Sidebar group that folds open and shut; the choice is remembered in the browser ──
+const NAV_KEY = 'kjet-nav-open';
+function readNavState(): Record<string, boolean> {
+  try { return JSON.parse(localStorage.getItem(NAV_KEY) ?? '{}') as Record<string, boolean>; } catch { return {}; }
+}
+function NavGroup({ id, title, open, onToggle, children }: { id: string; title: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+  return (
+    <div className="nav-group">
+      <button type="button" className="nav-group-head" aria-expanded={open} aria-controls={`nav-${id}`} onClick={onToggle}>
+        <span>{title}</span><ChevronDown className={open ? 'open' : ''} />
+      </button>
+      {open && <div id={`nav-${id}`} className="nav-group-body">{children}</div>}
+    </div>
+  );
+}
+
 function LoadingPanel() {
   return (
     <div className="chart-panel" style={{ minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -104,6 +136,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [exportRows, setExportRows] = useState<ClusterRow[]>([]);
   const [time, setTime] = useState('');
+  const [navOpen, setNavOpen] = useState<Record<string, boolean>>({});
 
   const navigate  = useNavigate();
   const { data: session } = useSession();
@@ -164,7 +197,17 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
     { name: 'After investment (Year 3)',   jobs: allYear3 },
   ];
 
+  // every group starts open; each keeps whatever the user last chose
+  const cohort1Open = navOpen['cohort1'] ?? true;
+  const cohort2Open = navOpen['cohort2'] ?? true;
+  const toggleGroup = (id: string) => setNavOpen((prev) => {
+    const next = { ...prev, [id]: !(prev[id] ?? true) };
+    try { localStorage.setItem(NAV_KEY, JSON.stringify(next)); } catch { /* storage blocked: the choice just is not remembered */ }
+    return next;
+  });
+
   useEffect(() => {
+    setNavOpen(readNavState());
     const preferred = localStorage.getItem('kjet-theme') === 'dark';
     setDark(preferred);
     document.documentElement.classList.toggle('dark', preferred);
@@ -198,32 +241,46 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
           </div>
         </Link>
 
-        <div className="nav-label">Workspace</div>
-        <nav>
-          {nav.map(n => (
-            <Button asChild variant="ghost" key={n.to} className={`nav-item ${view === n.view ? 'active' : ''}`}>
-              <Link to={n.to} activeOptions={{ exact: true }} onClick={() => setMenu(false)}>
-                <n.icon />
-                {n.label}
-                {n.view === 'clusters' && (
-                  <span className="nav-count">{allCount || 85}</span>
-                )}
-              </Link>
-            </Button>
-          ))}
-        </nav>
+        <NavGroup id="cohort1" title="Cohort 1" open={cohort1Open} onToggle={() => toggleGroup('cohort1')}>
+          <nav>
+            {cohort1Nav.map(n => (
+              <Button asChild variant="ghost" key={n.to} className={`nav-item ${view === n.view ? 'active' : ''}`}>
+                <Link to={n.to} activeOptions={{ exact: true }} onClick={() => setMenu(false)}>
+                  <n.icon />
+                  {n.label}
+                  {n.view === 'clusters' && (
+                    <span className="nav-count">{allCount || 85}</span>
+                  )}
+                </Link>
+              </Button>
+            ))}
+          </nav>
 
-        <div className="nav-label">Evaluation</div>
-        <nav>
-          {evaluationNav.map(n => (
-            <Button asChild variant="ghost" key={n.to} className={`nav-item ${view === n.view ? 'active' : ''}`}>
-              <Link to={n.to} activeOptions={{ exact: true }} onClick={() => setMenu(false)}>
-                <n.icon />
-                {n.label}
-              </Link>
-            </Button>
-          ))}
-        </nav>
+          <div className="nav-sublabel">Co-investment</div>
+          <nav>
+            {evaluationNav.map(n => (
+              <Button asChild variant="ghost" key={n.to} className={`nav-item ${view === n.view ? 'active' : ''}`}>
+                <Link to={n.to} activeOptions={{ exact: true }} onClick={() => setMenu(false)}>
+                  <n.icon />
+                  {n.label}
+                </Link>
+              </Button>
+            ))}
+          </nav>
+        </NavGroup>
+
+        <NavGroup id="cohort2" title="Cohort 2" open={cohort2Open} onToggle={() => toggleGroup('cohort2')}>
+          <nav>
+            {cohort2Nav.map(n => (
+              <Button asChild variant="ghost" key={n.to} className={`nav-item ${view === n.view ? 'active' : ''}`}>
+                <Link to={n.to} activeOptions={{ exact: true }} onClick={() => setMenu(false)}>
+                  <n.icon />
+                  {n.label}
+                </Link>
+              </Button>
+            ))}
+          </nav>
+        </NavGroup>
       </aside>
 
       {/* ── Workspace ────────────────────────────────────────── */}
@@ -285,7 +342,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
 
         <main className="content">
           <div className="breadcrumb">
-            KJET Project <ChevronRight size={10} /> Cohort 1 <ChevronRight size={10} />
+            KJET Project <ChevronRight size={10} /> Cohort {cohortOf(view)} <ChevronRight size={10} />
             <span className="text-foreground">{titles[view][0]}</span>
           </div>
 
@@ -295,7 +352,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
               <p>{titles[view][1]}</p>
             </div>
             <div className="heading-actions">
-              <span className="cohort-badge"><CalendarDays size={13} />Cohort 1 · 2026</span>
+              <span className="cohort-badge"><CalendarDays size={13} />{cohortOf(view) === 1 ? 'Cohort 1 · 2026' : 'Cohort 2'}</span>
               {(view === 'overview' || view === 'clusters') && (
                 <Button size="sm" onClick={() => exportCSV(exportRows)} disabled={exportRows.length === 0}>
                   <Download />Export CSV
@@ -513,6 +570,13 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
           {view === 'financial' && <FinancialScreeningPage onSelect={setSelectedId} />}
           {view === 'eligibility' && <EligibilityPage onSelect={setSelectedId} />}
           {view === 'scorecard' && <ScorecardPage onSelect={setSelectedId} />}
+
+          {/* ── COHORT 1 FINALISTS ──────────────────────────── */}
+          {view === 'finalists1' && <FinalistsPage cohort={1} />}
+
+          {/* ── COHORT 2 ────────────────────────────────────── */}
+          {view === 'overview2' && <Cohort2Overview />}
+          {view === 'finalists2' && <FinalistsPage cohort={2} />}
 
           {/* ── CLUSTERS ────────────────────────────────────── */}
           {view === 'clusters' && (

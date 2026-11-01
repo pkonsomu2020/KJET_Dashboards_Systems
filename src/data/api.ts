@@ -382,3 +382,101 @@ async function download(path: string, fallbackName: string) {
 export const downloadEvaluationReport = (applicationNumber: string) =>
   download(`/api/evaluation/clusters/${encodeURIComponent(applicationNumber)}/report.pdf`, `KJET-evaluation-${applicationNumber}.pdf`);
 export const downloadEvaluationReports = () => download('/api/evaluation/reports.zip', 'KJET-evaluation-reports.zip');
+
+// ── Finalists (the clusters shortlisted from all applications, per cohort) ──
+
+export interface FinalistSplit { males: number | null; females: number | null; age_18_35: number | null; age_36_50: number | null; age_over_50: number | null }
+
+export interface FinalistForm {
+  members: Record<string, number | null>;
+  employees: Record<string, number | null>;
+  males: number | null;
+  females: number | null;
+  age_18_35: number | null;
+  age_36_50: number | null;
+  age_over_50: number | null;
+  /** Cohort 2 forms give the gender and age split for every year; the Cohort 1 form gives one split. */
+  demographics: Record<string, FinalistSplit> | null;
+  women_owned: string | null;
+  registration_status: string | null;
+  constituency: string | null;
+  ward: string | null;
+}
+
+export type FormStatus = 'ok' | 'wrong_application' | 'missing';
+
+export interface Finalist {
+  cohort: number;
+  /** The finalist's key: the sheet's Application ID without "Applicant" ("297", "KJET-20251229171110-PYGB"). */
+  applicant_id: string;
+  /** The Application ID as the finalist sheet writes it, for example "applicant 297". */
+  application_id: string | null;
+  cluster_name: string | null;
+  application_number: string | null;
+  registration_number: string | null;
+  registration_status: string | null;
+  county: string;
+  constituency: string | null;
+  ward: string | null;
+  value_chain: string | null;
+  /** Cohort 2: what the evaluator wrote when the value chain is "Other". */
+  other_value_chain: string | null;
+  checks: { e1: string | null; e2: string | null; e3: string | null; e4: string | null; e5: string | null };
+  /** Cohort 1: Pass or Fail. Cohort 2 has no such column (the Selected tab lists those who met the criteria): null. */
+  result: string | null;
+  reason: string | null;
+  criteria: Array<{ code: string; label: string; rating: number | null; logic: string | null }>;
+  disqualifier: string | null;
+  tier: string | null;
+  normalized: Array<{ code: string; value: number | null }>;
+  weighted: Array<{ code: string; value: number | null }>;
+  total: number | null;
+  /** Cohort 2 only. */
+  equity_points: number | null;
+  penalty: number | null;
+  composite: number | null;
+  rank: number | null;
+  evaluator: string | null;
+  track_years: number | null;
+  rank_in_county: number | null;
+  sheet_link: string;
+  drive_link: string | null;
+  drive_file: string | null;
+  /** Cohort 2: phone and e-mail from the sheet's Final Contact Info tab. */
+  contact: { phone: string | null; alt_phone: string | null; email: string | null } | null;
+  /** Things worth knowing about this finalist's data, in words (a blank tier filled from another tab, a Drive link that was not used...). */
+  flags: string[];
+  /** Only filled when the application folder on disk really is this finalist's own. */
+  form: FinalistForm | null;
+  form_status: FormStatus;
+  form_note: string | null;
+  form_notes: string[];
+  /** What the bundle's own MISSING_FILES_REPORT.txt says could not be found. */
+  missing_files: Array<{ type: string; count: number }> | null;
+  documents: { total: number; by_type: Record<string, number>; financial_types: string[] };
+}
+
+export interface FinalistSheetStatus {
+  enabled?: boolean; sheet_name: string | null; sheet_modified: string | null; last_checked: string | null; last_imported: string | null; last_error: string | null;
+}
+
+/** The rules the sheet prints in its own headings, line by line. */
+export interface FinalistRules { eligibility: string[]; disqualifiers: string[]; tiers: string[]; financial_evidence: string[] }
+
+export interface FinalistListResponse {
+  ok: boolean;
+  data: Finalist[];
+  meta: { sheet: FinalistSheetStatus; sheet_link: string; forms_read: number; forms_wrong: number; rules: FinalistRules };
+}
+
+export interface FinalistDetail extends Finalist {
+  folder: string | null;
+  questions: Array<{ n: number; question: string; answer: string; section: string }>;
+  documents_list: Array<{ index: number; name: string; type: string; size: number }>;
+}
+
+export const fetchFinalists = (cohort: number) => get<FinalistListResponse>(`/api/finalists/${cohort}`);
+export const fetchFinalistDetail = (cohort: number, applicantId: string) =>
+  get<{ ok: boolean; data: FinalistDetail }>(`/api/finalists/${cohort}/${encodeURIComponent(applicantId)}`).then((r) => r.data);
+/** Address of one document of a finalist: opens in the browser with the login cookie. */
+export const finalistDocumentUrl = (cohort: number, applicantId: string, index: number) => `${BASE}/api/finalists/${cohort}/${encodeURIComponent(applicantId)}/documents/${index}`;
