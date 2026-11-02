@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClustersRouteImport } from './routes/clusters'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as Cohort1FinalistsRouteImport } from './routes/cohort-1.finalists'
+import { Route as Cohort1OverviewRouteImport } from './routes/cohort-1.overview'
 import { Route as Cohort2FinalistsRouteImport } from './routes/cohort-2.finalists'
 import { Route as Cohort2OverviewRouteImport } from './routes/cohort-2.overview'
 import { Route as EvaluationIndexRouteImport } from './routes/evaluation.index'
@@ -38,6 +39,11 @@ const LoginRoute = LoginRouteImport.update({
 const Cohort1FinalistsRoute = Cohort1FinalistsRouteImport.update({
   id: '/cohort-1/finalists',
   path: '/cohort-1/finalists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Cohort1OverviewRoute = Cohort1OverviewRouteImport.update({
+  id: '/cohort-1/overview',
+  path: '/cohort-1/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Cohort2FinalistsRoute = Cohort2FinalistsRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/clusters': typeof ClustersRoute
   '/login': typeof LoginRoute
   '/cohort-1/finalists': typeof Cohort1FinalistsRoute
+  '/cohort-1/overview': typeof Cohort1OverviewRoute
   '/cohort-2/finalists': typeof Cohort2FinalistsRoute
   '/cohort-2/overview': typeof Cohort2OverviewRoute
   '/evaluation/eligibility': typeof EvaluationEligibilityRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/clusters': typeof ClustersRoute
   '/login': typeof LoginRoute
   '/cohort-1/finalists': typeof Cohort1FinalistsRoute
+  '/cohort-1/overview': typeof Cohort1OverviewRoute
   '/cohort-2/finalists': typeof Cohort2FinalistsRoute
   '/cohort-2/overview': typeof Cohort2OverviewRoute
   '/evaluation/eligibility': typeof EvaluationEligibilityRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/clusters': typeof ClustersRoute
   '/login': typeof LoginRoute
   '/cohort-1/finalists': typeof Cohort1FinalistsRoute
+  '/cohort-1/overview': typeof Cohort1OverviewRoute
   '/cohort-2/finalists': typeof Cohort2FinalistsRoute
   '/cohort-2/overview': typeof Cohort2OverviewRoute
   '/evaluation/eligibility': typeof EvaluationEligibilityRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/clusters'
     | '/login'
     | '/cohort-1/finalists'
+    | '/cohort-1/overview'
     | '/cohort-2/finalists'
     | '/cohort-2/overview'
     | '/evaluation/eligibility'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/clusters'
     | '/login'
     | '/cohort-1/finalists'
+    | '/cohort-1/overview'
     | '/cohort-2/finalists'
     | '/cohort-2/overview'
     | '/evaluation/eligibility'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/clusters'
     | '/login'
     | '/cohort-1/finalists'
+    | '/cohort-1/overview'
     | '/cohort-2/finalists'
     | '/cohort-2/overview'
     | '/evaluation/eligibility'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   ClustersRoute: typeof ClustersRoute
   LoginRoute: typeof LoginRoute
   Cohort1FinalistsRoute: typeof Cohort1FinalistsRoute
+  Cohort1OverviewRoute: typeof Cohort1OverviewRoute
   Cohort2FinalistsRoute: typeof Cohort2FinalistsRoute
   Cohort2OverviewRoute: typeof Cohort2OverviewRoute
   EvaluationEligibilityRoute: typeof EvaluationEligibilityRoute
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/cohort-1/finalists'
       fullPath: '/cohort-1/finalists'
       preLoaderRoute: typeof Cohort1FinalistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cohort-1/overview': {
+      id: '/cohort-1/overview'
+      path: '/cohort-1/overview'
+      fullPath: '/cohort-1/overview'
+      preLoaderRoute: typeof Cohort1OverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cohort-2/finalists': {
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClustersRoute: ClustersRoute,
   LoginRoute: LoginRoute,
   Cohort1FinalistsRoute: Cohort1FinalistsRoute,
+  Cohort1OverviewRoute: Cohort1OverviewRoute,
   Cohort2FinalistsRoute: Cohort2FinalistsRoute,
   Cohort2OverviewRoute: Cohort2OverviewRoute,
   EvaluationEligibilityRoute: EvaluationEligibilityRoute,

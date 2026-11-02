@@ -756,3 +756,22 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .fn-split .ev-row span { display:inline-flex;align-items:center;gap:6px; }
 .fn-notice { display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;line-height:1.55;font-size:11.5px; }
 .fn-notice svg { flex:none;margin-top:2px; }
+
+/* ── General Overview ── */
+.nav-top { margin:0 0 6px; }
+.go-pills { list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px; }
+.go-pills li { display:grid;grid-template-columns:minmax(96px,34%) minmax(0,1fr) 48px;align-items:center;gap:10px;font-size:11.5px; }
+.go-pill-label { text-align:right;color:var(--foreground);line-height:1.25; }
+.go-pill-track { display:block;background:var(--muted);border-radius:999px;height:26px;overflow:hidden; }
+.go-pill { display:flex;align-items:center;justify-content:flex-end;height:100%;border-radius:999px;padding:0 10px;color:#fff;min-width:30px; }
+.go-pill b { font-size:11px;font-weight:700; }
+.go-pill-share { color:var(--muted-foreground);font-size:11px; }
+.go-key { display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 4px 0 12px; }
+.go-county { display:block;margin-bottom:14px; }
+.go-select { width:100%;max-width:none;height:40px;font-size:12.5px; }
+.go-mini { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px; }
+.go-mini div { background:var(--muted);border-radius:8px;padding:10px 12px; }
+.go-mini small { display:block;font-size:10.5px;color:var(--muted-foreground); }
+.go-mini strong { font-size:20px;color:var(--foreground); }
+@media (max-width:560px) { .go-pills li { grid-template-columns:minmax(78px,32%) minmax(0,1fr) 42px;gap:7px; } }
+@media (min-width:1001px) { .go-tiles { grid-template-columns:repeat(4,minmax(0,1fr)); } }

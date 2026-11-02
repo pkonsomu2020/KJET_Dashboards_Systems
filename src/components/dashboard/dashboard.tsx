@@ -24,15 +24,16 @@ import { AssistantPanel } from './assistant';
 import { EvaluationOverview, FinancialScreeningPage, EligibilityPage, ScorecardPage } from './evaluation-pages';
 import { FinalistsPage } from './finalists-pages';
 import { Cohort2Overview } from './cohort2-overview';
+import { GeneralOverview } from './general-overview';
 
-export type DashboardView = 'overview' | 'clusters' | 'finalists1' | 'evaluation' | 'financial' | 'eligibility' | 'scorecard' | 'overview2' | 'finalists2';
+export type DashboardView = 'general' | 'overview' | 'clusters' | 'finalists1' | 'evaluation' | 'financial' | 'eligibility' | 'scorecard' | 'overview2' | 'finalists2';
 
 /** Which cohort a page belongs to: the breadcrumb and the badge in the heading follow it. */
-const cohortOf = (view: DashboardView): 1 | 2 => (view === 'overview2' || view === 'finalists2' ? 2 : 1);
+const cohortOf = (view: DashboardView): 0 | 1 | 2 => (view === 'general' ? 0 : view === 'overview2' || view === 'finalists2' ? 2 : 1);
 
 // Cohort 1: the pages that come before the co-investment evaluation, then the evaluation itself
 const cohort1Nav = [
-  { to: '/',                   label: 'Portfolio overview', icon: LayoutDashboard, view: 'overview' },
+  { to: '/cohort-1/overview',  label: 'Portfolio overview', icon: LayoutDashboard, view: 'overview' },
   { to: '/cohort-1/finalists', label: 'Cohort 1 Finalists', icon: Trophy,          view: 'finalists1' },
   { to: '/clusters',           label: 'Cluster profile',    icon: Building2,       view: 'clusters' },
 ] as const;
@@ -51,6 +52,7 @@ const cohort2Nav = [
 ] as const;
 
 const titles: Record<DashboardView, [string, string]> = {
+  general: ['General Overview', 'Cohort 1 from its 90 finalists to the co-investment evaluation, at a glance'],
   overview: ['Portfolio overview', 'Cohort 1 co-investment matching grants & business development services'],
   clusters: ['Cluster profile',   '85 beneficiary clusters — search, filter and inspect every application'],
   finalists1:  ['Cohort 1 Finalists', 'The 90 finalists, two per county, with their selection scores, application forms and documents'],
@@ -125,7 +127,7 @@ function LoadingPanel() {
   );
 }
 
-export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
+export function Dashboard({ view = 'general' }: { view?: DashboardView }) {
   const [dark, setDark] = useState(false);
   const [menu, setMenu] = useState(false);
   const [query, setQuery] = useState('');
@@ -241,6 +243,15 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
           </div>
         </Link>
 
+        <nav className="nav-top">
+          <Button asChild variant="ghost" className={`nav-item ${view === 'general' ? 'active' : ''}`}>
+            <Link to="/" activeOptions={{ exact: true }} onClick={() => setMenu(false)}>
+              <LayoutDashboard />
+              General Overview
+            </Link>
+          </Button>
+        </nav>
+
         <NavGroup id="cohort1" title="Cohort 1" open={cohort1Open} onToggle={() => toggleGroup('cohort1')}>
           <nav>
             {cohort1Nav.map(n => (
@@ -342,7 +353,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
 
         <main className="content">
           <div className="breadcrumb">
-            KJET Project <ChevronRight size={10} /> Cohort {cohortOf(view)} <ChevronRight size={10} />
+            KJET Project <ChevronRight size={10} /> {cohortOf(view) ? `Cohort ${cohortOf(view)}` : 'Overview'} <ChevronRight size={10} />
             <span className="text-foreground">{titles[view][0]}</span>
           </div>
 
@@ -352,7 +363,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
               <p>{titles[view][1]}</p>
             </div>
             <div className="heading-actions">
-              <span className="cohort-badge"><CalendarDays size={13} />{cohortOf(view) === 1 ? 'Cohort 1 · 2026' : 'Cohort 2'}</span>
+              <span className="cohort-badge"><CalendarDays size={13} />{cohortOf(view) === 0 ? 'Cohort 1 · 2026' : cohortOf(view) === 1 ? 'Cohort 1 · 2026' : 'Cohort 2'}</span>
               {(view === 'overview' || view === 'clusters') && (
                 <Button size="sm" onClick={() => exportCSV(exportRows)} disabled={exportRows.length === 0}>
                   <Download />Export CSV
@@ -575,6 +586,7 @@ export function Dashboard({ view = 'overview' }: { view?: DashboardView }) {
           {view === 'finalists1' && <FinalistsPage cohort={1} />}
 
           {/* ── COHORT 2 ────────────────────────────────────── */}
+          {view === 'general' && <GeneralOverview />}
           {view === 'overview2' && <Cohort2Overview />}
           {view === 'finalists2' && <FinalistsPage cohort={2} />}
 
