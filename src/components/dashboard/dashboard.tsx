@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
   LayoutDashboard, Building2, ShieldCheck, Download, ChevronRight,
   Search, Moon, Sun, Menu, X, Layers3, BriefcaseBusiness, CircleDollarSign,
   Handshake, TrendingUp, CalendarDays, AlertTriangle, Globe2,
-  MapPin, Users, Wallet, Loader2, LogOut, Award, ArrowUpRight, ClipboardCheck, Scale, ListChecks, Trophy, ChevronDown,
+  MapPin, Users, Wallet, LogOut, Award, ArrowUpRight, ClipboardCheck, Scale, ListChecks, Trophy, ChevronDown,
 } from 'lucide-react';
 import {
   BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer,
@@ -25,6 +25,7 @@ import { EvaluationOverview, FinancialScreeningPage, EligibilityPage, ScorecardP
 import { FinalistsPage } from './finalists-pages';
 import { Cohort2Overview } from './cohort2-overview';
 import { GeneralOverview } from './general-overview';
+import { CountUp, PanelLoader, TopProgress, useScrollReveal } from './motion';
 
 export type DashboardView = 'general' | 'overview' | 'clusters' | 'finalists1' | 'evaluation' | 'financial' | 'eligibility' | 'scorecard' | 'overview2' | 'finalists2';
 
@@ -81,7 +82,7 @@ function Metric({ label, value, icon: Icon, children, loading }: {
     <article className="metric">
       <div className="metric-label"><span>{label}</span><Icon /></div>
       <div className="metric-value">
-        {loading ? <Loader2 size={20} className="animate-spin text-muted-foreground" /> : value}
+        {loading ? <span className="sk-line sk-big sk-inline" /> : <CountUp value={value} />}
       </div>
       <div className="metric-foot">{children}</div>
     </article>
@@ -121,13 +122,13 @@ function NavGroup({ id, title, open, onToggle, children }: { id: string; title: 
 
 function LoadingPanel() {
   return (
-    <div className="chart-panel" style={{ minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Loader2 size={24} className="animate-spin text-muted-foreground" />
-    </div>
+    <PanelLoader label="Loading the chart" />
   );
 }
 
 export function Dashboard({ view = 'general' }: { view?: DashboardView }) {
+  const mainRef = useRef<HTMLElement>(null);
+  useScrollReveal(mainRef);
   const [dark, setDark] = useState(false);
   const [menu, setMenu] = useState(false);
   const [query, setQuery] = useState('');
@@ -351,7 +352,8 @@ export function Dashboard({ view = 'general' }: { view?: DashboardView }) {
           </div>
         </header>
 
-        <main className="content">
+        <main className="content" ref={mainRef}>
+          <TopProgress />
           <div className="breadcrumb">
             KJET Project <ChevronRight size={10} /> {cohortOf(view) ? `Cohort ${cohortOf(view)}` : 'Overview'} <ChevronRight size={10} />
             <span className="text-foreground">{titles[view][0]}</span>

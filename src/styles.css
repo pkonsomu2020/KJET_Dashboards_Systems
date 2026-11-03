@@ -784,3 +784,59 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .go-table th:last-child,.go-table td:last-child { text-align:right;font-weight:700;white-space:nowrap; }
 .go-sub { margin:2px 0 8px;font-size:11px;font-weight:600;color:var(--muted-foreground); }
 .go-sub:not(:first-child) { margin-top:18px; }
+
+/* ── Motion: scroll reveal, loading placeholders and small touches (see components/dashboard/motion.tsx) ── */
+.rv { opacity:0; }
+.rv.rv-in { opacity:1;animation:rv-rise .6s cubic-bezier(.2,.7,.2,1) var(--rv-delay,0ms) backwards; }
+.rv-in .chart-box .recharts-surface { animation:rv-sweep .9s cubic-bezier(.3,.6,.2,1) calc(var(--rv-delay,0ms) + 120ms) backwards; }
+.rv-in .go-pill { animation:rv-sweep .8s cubic-bezier(.3,.6,.2,1) calc(var(--rv-delay,0ms) + 120ms) backwards; }
+@keyframes rv-rise { from { opacity:0;transform:translateY(16px); } to { opacity:1;transform:none; } }
+@keyframes rv-sweep { from { clip-path:inset(0 100% 0 0); } to { clip-path:inset(0 0 0 0); } }
+
+.breadcrumb,.page-heading { animation:rv-rise .45s ease-out backwards; }
+.profile-section,.fn-card { animation:rv-rise .4s ease-out backwards; }
+.metric { transition:transform .2s ease,box-shadow .2s ease; }
+.metric:hover { transform:translateY(-3px);box-shadow:0 10px 24px var(--overlay); }
+.chart-panel { transition:box-shadow .2s ease; }
+.chart-panel:hover { box-shadow:0 8px 22px var(--overlay); }
+.live-dot { position:relative; }
+.live-dot::after { content:'';position:absolute;inset:0;border-radius:50%;background:var(--success);animation:live-ping 2s ease-out infinite; }
+@keyframes live-ping { from { transform:scale(1);opacity:.7; } to { transform:scale(3.2);opacity:0; } }
+
+.sk-line { display:block;height:12px;border-radius:5px;background:var(--muted);margin-bottom:12px;animation:sk-pulse 1.3s ease-in-out infinite; }
+.sk-thin { height:9px; }
+.sk-big { height:26px; }
+.sk-inline { width:60%;margin:0; }
+.sk-tile { animation:sk-pulse 1.3s ease-in-out infinite; }
+.sk-tile .sk-line { animation:none; }
+.sk-panel { padding:20px 22px;min-height:240px;display:flex;flex-direction:column; }
+.sk-panels { display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px; }
+.sk-bars { display:flex;align-items:flex-end;gap:10px;flex:1;min-height:150px;margin-top:8px; }
+.sk-bars i { flex:1;border-radius:4px 4px 0 0;background:var(--primary);opacity:.22;transform-origin:bottom;animation:sk-bar 1.3s ease-in-out infinite; }
+.sk-label { display:flex;align-items:center;justify-content:center;gap:10px;margin:18px 0 0;font-size:12px;color:var(--muted-foreground); }
+.sk-drawer { display:flex;flex-direction:column;padding-top:8px; }
+.sk-tabs { display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0 22px; }
+.sk-tabs .sk-line { height:28px;margin:0; }
+.sk-drawer .sk-bars { min-height:180px;margin-top:20px; }
+@keyframes sk-pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+@keyframes sk-bar { 0%,100% { transform:scaleY(.55); } 50% { transform:scaleY(1); } }
+
+.brand-loader { display:flex;flex-direction:column;align-items:center;gap:14px; }
+.brand-loader p { margin:0;font-size:12px;color:var(--muted-foreground); }
+.brand-loader-mark { width:52px;height:52px;border-radius:12px; }
+.brand-loader-mark .layer { animation:layer-drop 1.5s ease-in-out infinite; }
+.brand-loader-mark .l2 { animation-delay:.16s; }
+.brand-loader-mark .l3 { animation-delay:.32s; }
+@keyframes layer-drop { 0%,70%,100% { opacity:1;transform:translateY(0); } 35% { opacity:.35;transform:translateY(-2px); } }
+.brand-loader-track { width:140px;height:3px;border-radius:3px;background:var(--muted);overflow:hidden; }
+.brand-loader-track i { display:block;width:40%;height:100%;border-radius:3px;background:var(--primary);animation:track-slide 1.2s ease-in-out infinite; }
+.top-progress { position:fixed;top:0;left:0;right:0;height:3px;z-index:60;overflow:hidden; }
+.top-progress i { display:block;width:35%;height:100%;background:var(--primary);animation:track-slide 1.1s ease-in-out infinite; }
+@keyframes track-slide { from { transform:translateX(-110%); } to { transform:translateX(320%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-line,.sk-tile,.sk-bars i,.live-dot::after,.brand-loader-mark .layer,.brand-loader-track i,.top-progress i { animation:none; }
+  .live-dot::after { display:none; }
+  .metric:hover { transform:none; }
+}
+@media print { .rv { opacity:1!important;animation:none!important; } .top-progress { display:none; } }

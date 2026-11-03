@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Award, Building2, ExternalLink, FileText, FolderOpen, Info, Loader2, MapPin, Sheet as SheetIcon, ShieldCheck, TriangleAlert, Users } from 'lucide-react';
+import { Award, Building2, ExternalLink, FileText, FolderOpen, Info, MapPin, Sheet as SheetIcon, ShieldCheck, TriangleAlert, Users } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { BarChart, Bar, CartesianGrid, Legend, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
@@ -7,6 +7,7 @@ import { number } from '@/data/portfolio';
 import { useFinalistDetail } from '@/hooks/usePortfolio';
 import { finalistDocumentUrl, type FinalistDetail, type FinalistRules } from '@/data/api';
 import { EligibilityTab } from './finalist-eligibility';
+import { DrawerLoader } from './motion';
 
 const FINANCE_NOTE = 'Application form answers are as the clusters stated them. The finance questions of the form (turnover or revenue, profit and price-cost margins) are left out: money is judged from the attached documents only.';
 const tooltipStyle = { background: 'var(--card)', borderColor: 'var(--border)', borderRadius: 6 };
@@ -500,7 +501,7 @@ export function FinalistProfile({ cohort, applicantId, rules, onClose }: { cohor
         {error ? (
           <div className="notice"><Info size={16} /><span>The finalist could not be loaded. Please close this panel and try again.</span></div>
         ) : isLoading || !data ? (
-          <div className="flex items-center justify-center h-full"><Loader2 size={32} className="animate-spin text-muted-foreground" /></div>
+          <DrawerLoader />
         ) : (
           <Profile d={data} rules={rules} />
         )}

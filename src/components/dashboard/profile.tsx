@@ -11,6 +11,7 @@ import type { ClusterRow } from '@/data/api';
 import type { DriveFile } from '@/hooks/useDrive';
 import { EvaluationTab } from './evaluation-tab';
 import { ApplicationTab } from './application-tab';
+import { DrawerLoader } from './motion';
 
 const palette = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)'];
 
@@ -70,9 +71,7 @@ export function ClusterProfile({ applicationNumber, onClose }: Props) {
     <Sheet open={isOpen} onOpenChange={open => { if (!open) onClose(); }}>
       <SheetContent className="profile-sheet">
         {isLoading || !cluster ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 size={32} className="animate-spin text-muted-foreground" />
-          </div>
+          <DrawerLoader />
         ) : (
           <ProfileContent cluster={cluster} />
         )}

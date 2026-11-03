@@ -8,6 +8,7 @@ import { useClusters, useMeta } from '@/hooks/usePortfolio';
 import { money, number, percent } from '@/data/portfolio';
 import type { ClusterRow } from '@/data/api';
 import { SplitBar } from './profile';
+import { PanelLoader } from './motion';
 
 const PAGE_SIZE = 20;
 
@@ -124,10 +125,7 @@ export function ClusterExplorer({
 
       {/* Loading skeleton */}
       {isLoading ? (
-        <div className="empty-state">
-          <Loader2 size={30} className="animate-spin" />
-          <p>Loading clusters...</p>
-        </div>
+        <PanelLoader label="Loading clusters" />
 
       ) : rows.length === 0 ? (
         <div className="empty-state">

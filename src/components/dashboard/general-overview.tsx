@@ -1,9 +1,10 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Award, Banknote, BriefcaseBusiness, Building2, Handshake, Info, Loader2, MapPin, Trophy, Users } from 'lucide-react';
+import { Award, Banknote, BriefcaseBusiness, Building2, Handshake, Info, MapPin, Trophy, Users } from 'lucide-react';
 import { money, number, percent } from '@/data/portfolio';
 import { useByChain, useEvaluationList, useEvaluationOverview, useFinalists, usePortfolioSummary } from '@/hooks/usePortfolio';
 import { Stat } from './finalists-pages';
+import { PageLoader } from './motion';
 
 const tooltipStyle = { background: 'var(--card)', borderColor: 'var(--border)', borderRadius: 6, fontSize: 11, color: 'var(--foreground)' };
 const PILL_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--success)', 'var(--warning)', 'var(--muted-foreground)'];
@@ -78,7 +79,7 @@ export function GeneralOverview() {
   }, [ov, evaluated, finalistRows]);
 
   const loading = summary.isLoading || chains.isLoading || evalOverview.isLoading || evalList.isLoading || finalists.isLoading;
-  if (loading) return <div className="chart-panel" style={{ minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={26} className="animate-spin text-muted-foreground" /></div>;
+  if (loading) return <PageLoader label="Loading the overview" />;
   if (!s || !ov || !finalists.data) return <div className="notice"><Info size={16} /><span>The overview could not be loaded. Please refresh the page.</span></div>;
 
   const countyCount = new Set(finalistRows.map((r) => r.county)).size;

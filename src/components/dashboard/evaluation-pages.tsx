@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import {
   Award, ArrowUpRight, ChevronDown, ChevronUp, CircleDollarSign, ClipboardCheck, Info, ListChecks,
-  Loader2, MapPin, Scale, SearchX, ShieldCheck, TriangleAlert, Search, RotateCcw,
+  MapPin, Scale, SearchX, ShieldCheck, TriangleAlert, Search, RotateCcw,
 } from 'lucide-react';
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from 'recharts';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { BandChip, ScoreBar, StatusChip, TestChips, gateTone } from './evaluatio
 import { EligibilityPanel, FinancialPanel, ScorePanel, WithDetail } from './evaluation-panels';
 import { ReportButton, ReportsZipButton } from './report-buttons';
 import { GroupScoreChart, RankedBars, ResultsDonut, TestsChart } from './evaluation-charts';
+import { CountUp, PageLoader } from './motion';
 
 const tooltipStyle = { background: 'var(--card)', borderColor: 'var(--border)', borderRadius: 6, fontSize: 11, color: 'var(--foreground)' };
 const kes = (v: number | null | undefined) => (v == null ? 'n/a' : money(v, false));
@@ -20,11 +21,7 @@ const pct = (v: number | null | undefined) => (v == null ? 'n/a' : `${(v * 100).
 const chain = (v: string) => v.replace(/_/g, ' ');
 
 function Loading() {
-  return (
-    <div className="chart-panel" style={{ minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Loader2 size={26} className="animate-spin text-muted-foreground" />
-    </div>
-  );
+  return <PageLoader label="Loading the evaluation" />;
 }
 function Failed() {
   return <div className="notice"><Info size={16} /><span>The evaluation results could not be loaded. Please refresh the page.</span></div>;
@@ -34,7 +31,7 @@ function Tile({ label, value, icon: Icon, children }: { label: string; value: st
   return (
     <article className="metric">
       <div className="metric-label"><span>{label}</span><Icon /></div>
-      <div className="metric-value">{value}</div>
+      <div className="metric-value"><CountUp value={value} /></div>
       <div className="metric-foot">{children}</div>
     </article>
   );

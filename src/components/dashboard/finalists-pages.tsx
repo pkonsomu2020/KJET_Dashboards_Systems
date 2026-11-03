@@ -1,10 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { ArrowUpRight, ExternalLink, FileText, Info, Loader2, MapPin, RotateCcw, Search, SearchX, Sheet, Trophy, Users, FolderOpen, Repeat } from 'lucide-react';
+import { ArrowUpRight, ExternalLink, FileText, Info, MapPin, RotateCcw, Search, SearchX, Sheet, Trophy, Users, FolderOpen, Repeat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { number } from '@/data/portfolio';
 import { useFinalists } from '@/hooks/usePortfolio';
 import type { Finalist } from '@/data/api';
 import { FinalistProfile } from './finalist-profile';
+import { CountUp, PageLoader } from './motion';
 
 const chain = (v: string | null | undefined) => (v ?? '').replace(/_/g, ' ');
 const num = (v: number | null | undefined, digits = 0) => (v == null ? '-' : v.toLocaleString('en-KE', { maximumFractionDigits: digits }));
@@ -17,18 +18,14 @@ const COHORT = {
 } as const;
 
 function Loading() {
-  return (
-    <div className="chart-panel" style={{ minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Loader2 size={26} className="animate-spin text-muted-foreground" />
-    </div>
-  );
+  return <PageLoader label="Loading the finalists" />;
 }
 
 export function Stat({ label: l, value, icon: Icon, children }: { label: string; value: string; icon: typeof Users; children?: ReactNode }) {
   return (
     <article className="metric">
       <div className="metric-label"><span>{l}</span><Icon /></div>
-      <div className="metric-value">{value}</div>
+      <div className="metric-value"><CountUp value={value} /></div>
       <div className="metric-foot">{children}</div>
     </article>
   );

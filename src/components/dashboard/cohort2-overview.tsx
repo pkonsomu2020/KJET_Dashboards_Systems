@@ -1,10 +1,11 @@
 import { useMemo, type ReactNode } from 'react';
 import { BarChart, Bar, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Info, Loader2, MapPin, Repeat, Trophy, FileText, Users, Layers3, TriangleAlert } from 'lucide-react';
+import { Info, MapPin, Repeat, Trophy, FileText, Users, Layers3, TriangleAlert } from 'lucide-react';
 import { number } from '@/data/portfolio';
 import { useFinalists } from '@/hooks/usePortfolio';
 import { Stat, isCohort1Alternate } from './finalists-pages';
 import { PillBars } from './general-overview';
+import { PageLoader } from './motion';
 
 const tooltipStyle = { background: 'var(--card)', borderColor: 'var(--border)', borderRadius: 6, fontSize: 11, color: 'var(--foreground)' };
 const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--muted-foreground)'];
@@ -70,7 +71,7 @@ export function Cohort2Overview() {
     };
   }, [rows]);
 
-  if (isLoading) return <div className="chart-panel" style={{ minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 size={26} className="animate-spin text-muted-foreground" /></div>;
+  if (isLoading) return <PageLoader label="Loading the Cohort 2 overview" />;
   if (error || !data) return <div className="notice"><Info size={16} /><span>The Cohort 2 finalists could not be loaded. Please refresh the page.</span></div>;
 
   const counties = new Set(rows.map((r) => r.county)).size;

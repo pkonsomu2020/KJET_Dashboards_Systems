@@ -16,6 +16,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { useDriveEvents } from "../hooks/useDrive";
 import { useSession } from "../hooks/useAuth";
+import { BrandLoader } from "../components/dashboard/motion";
 
 // Routes that are accessible without being signed in
 const PUBLIC_ROUTES = ['/login'];
@@ -133,14 +134,7 @@ function AuthGuard() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="brand-mark" style={{ width: 44, height: 44, borderRadius: 10 }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-            </svg>
-          </div>
-          <p className="text-xs text-muted-foreground">Loading KJET Dashboard...</p>
-        </div>
+        <BrandLoader />
       </div>
     );
   }
