@@ -21,7 +21,7 @@ function Panel({ title, subtitle, footer, children }: { title: string; subtitle:
 }
 
 /** Horizontal pills: the length is the count against the largest, the count sits at the end of the pill, the share follows. */
-function PillBars({ items, total, unit }: { items: Array<{ name: string; value: number; note?: string }>; total: number; unit: string }) {
+export function PillBars({ items, total, unit }: { items: Array<{ name: string; value: number; note?: string }>; total: number; unit: string }) {
   const max = Math.max(1, ...items.map((i) => i.value));
   return (
     <ul className="go-pills" aria-label={items.map((i) => `${i.name}: ${i.value}`).join('; ')}>
@@ -73,7 +73,7 @@ export function GeneralOverview() {
     const topCounties = [...(ov?.counties ?? [])].sort((a, b) => b.count - a.count || (b.average_score ?? 0) - (a.average_score ?? 0)).slice(0, 10)
       .map((c) => ({ name: c.name.length > 13 ? `${c.name.slice(0, 12)}…` : c.name, full: c.name, Clusters: c.count, 'Average score': c.average_score }));
 
-    const countyNames = [...new Set([...evaluated.map((e) => e.county), ...finalistRows.map((f) => f.county)])].sort((a, b) => a.localeCompare(b));
+    const countyNames = [...new Set(evaluated.map((e) => e.county))].sort((a, b) => a.localeCompare(b));
     return { stages, evalScores, finalistScores, tier1, tier2, topCounties, countyNames };
   }, [ov, evaluated, finalistRows]);
 
@@ -91,9 +91,10 @@ export function GeneralOverview() {
   const county = pickedCounty || (view.topCounties[0]?.full ?? view.countyNames[0] ?? '');
   const inCounty = evaluated.filter((e) => e.county === county);
   const scored = inCounty.map((e) => e.score).filter((v): v is number => v != null);
-  const countyChains = [...inCounty.reduce((m, e) => m.set(e.value_chain, (m.get(e.value_chain) ?? 0) + 1), new Map<string, number>()).entries()]
-    .map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  const countyFinalists = finalistRows.filter((f) => f.county === county);
+  const sum = (xs: Array<number | null>) => xs.reduce<number>((t, v) => t + (v ?? 0), 0);
+  const countyCost = sum(inCounty.map((e) => e.financial.total));
+  const countyGrant = sum(inCounty.map((e) => e.financial.grant));
+  const countyClusters = [...inCounty].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
   const countyAvg = avg(scored);
 
   return (
@@ -192,31 +193,30 @@ export function GeneralOverview() {
           </div>
         </Panel>
 
-        <Panel title="County analysis" subtitle="Choose a county to see its clusters and its two finalists">
+        <Panel title="County analysis" subtitle="Co-investment evaluation by county">
           <label className="go-county">
             <span className="sr-only">County</span>
             <select className="filter-select go-select" value={county} onChange={(e) => setPickedCounty(e.target.value)} aria-label="County">
-              {view.countyNames.map((c) => <option key={c} value={c}>{c} ({evaluated.filter((e) => e.county === c).length} evaluated)</option>)}
+              {view.countyNames.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </label>
           <div className="go-mini">
-            <div><small>Evaluated</small><strong>{inCounty.length}</strong></div>
+            <div><small>Clusters</small><strong>{inCounty.length}</strong></div>
             <div><small>Average score</small><strong>{countyAvg == null ? '-' : countyAvg.toFixed(1)}</strong></div>
             <div><small>Top score</small><strong>{scored.length ? Math.max(...scored).toFixed(1) : '-'}</strong></div>
           </div>
-          <div className="fn-split">
-            <strong>Value chains in {county || 'the county'}</strong>
-            {countyChains.length === 0 && <p>No cluster from this county was evaluated for co-investment.</p>}
-            {countyChains.map((c) => (
-              <div className="ev-row" key={c.name}><span>{c.name}</span><strong>{percent(c.value, inCounty.length).toFixed(1)}% · {c.value}</strong></div>
-            ))}
+          <div className="go-mini go-mini2">
+            <div><small>Project cost</small><strong>{money(countyCost)}</strong></div>
+            <div><small>Grant requested</small><strong>{money(countyGrant)}</strong></div>
           </div>
-          <div className="fn-split">
-            <strong>Finalists</strong>
-            {countyFinalists.map((f) => (
-              <div className="ev-row" key={f.applicant_id}><span>{f.cluster_name ?? `Applicant ${f.applicant_id}`}</span><strong>{f.composite == null ? '-' : f.composite}</strong></div>
-            ))}
-          </div>
+          <table className="go-table">
+            <thead><tr><th>Cluster</th><th>Value chain</th><th>Score</th></tr></thead>
+            <tbody>
+              {countyClusters.map((e) => (
+                <tr key={e.application_number}><td>{e.cluster_name}</td><td>{e.value_chain}</td><td>{e.score == null ? '-' : e.score.toFixed(1)}</td></tr>
+              ))}
+            </tbody>
+          </table>
         </Panel>
       </div>
     </>

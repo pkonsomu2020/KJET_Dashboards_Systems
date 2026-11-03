@@ -8,16 +8,22 @@
  */
 import pool from '../db/pool.js';
 import { getEvaluationList, getEvaluationDetail } from './evaluationService.js';
-import { getClusterByNumber } from './clusterService.js';
+import { getClusterByNumber, COMPLIANCE_SQL } from './clusterService.js';
 
 const MAX_ROWS = 50;
 
 // Whitelisted metrics: tool argument -> SQL expression. Nothing else can be sorted or summed.
+// Amounts are the evaluation sheet's figures (the application's where the sheet has none), as on every dashboard page.
+const COST = 'COALESCE(ev.eval_total_cost, f.total_project_cost)';
+const GRANT = 'COALESCE(ev.eval_grant_requested, f.grant_requested)';
+const CASH = 'COALESCE(ev.eval_contribution, f.cluster_contribution)';
+const BUDGET = 'COALESCE(ev.eval_s5_budget, f.section5_budget_total)';
+
 const METRICS = {
-  total_project_cost:   'f.total_project_cost',
-  section5_budget_total: 'f.section5_budget_total',
-  grant_requested:      'f.grant_requested',
-  cluster_contribution: 'f.cluster_contribution',
+  total_project_cost:   COST,
+  section5_budget_total: BUDGET,
+  grant_requested:      GRANT,
+  cluster_contribution: CASH,
   total_members:        'm.total_members',
   men:                  'm.men',
   women:                'm.women',
@@ -28,28 +34,29 @@ const METRICS = {
   jobs_year3:           'e.jobs_year3',
   women_pct:            '(100.0 * m.women / NULLIF(m.total_members, 0))',
   youth_pct:            '(100.0 * m.youth / NULLIF(m.total_members, 0))',
-  grant_share_pct:      'f.grant_share_pct',
-  cluster_share_pct:    'f.cluster_share_pct',
+  grant_share_pct:      `(100.0 * ${GRANT} / NULLIF(${COST}, 0))`,
+  cluster_share_pct:    `(100.0 * ${CASH} / NULLIF(${COST}, 0))`,
 };
 
 const GROUPS = {
   county:            'c.county',
   value_chain:       'c.value_chain',
-  compliance_status: 'f.compliance_status',
+  compliance_status: COMPLIANCE_SQL,
   legal_form:        'c.legal_form',
 };
 
 const FROM = `
   FROM clusters c
   LEFT JOIN cluster_financials f ON f.cluster_id = c.id
+  LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
   LEFT JOIN cluster_membership m ON m.cluster_id = c.id
   LEFT JOIN cluster_employment e ON e.cluster_id = c.id`;
 
 const LIST_COLUMNS = `
   c.application_number, c.cluster_name, c.county, c.constituency, c.ward,
   c.value_chain, c.legal_form,
-  f.total_project_cost, f.grant_requested, f.cluster_contribution,
-  f.section5_budget_total, f.compliance_status,
+  ${COST} AS total_project_cost, ${GRANT} AS grant_requested, ${CASH} AS cluster_contribution,
+  ${BUDGET} AS section5_budget_total, ${COMPLIANCE_SQL} AS compliance_status,
   m.total_members, m.men, m.women, m.youth, m.pwd,
   e.jobs_today, e.jobs_year1, e.jobs_year3`;
 
@@ -67,12 +74,12 @@ function buildFilters(args = {}) {
   }
   if (args.county)            add('c.county ILIKE ?', args.county);
   if (args.value_chain)       add('c.value_chain ILIKE ?', `%${args.value_chain}%`);
-  if (args.compliance_status) add('f.compliance_status = ?', args.compliance_status);
+  if (args.compliance_status) add(`${COMPLIANCE_SQL} = ?`, args.compliance_status);
   if (args.min_members != null) add('m.total_members >= ?', Number(args.min_members));
   if (args.min_women_pct != null)
     add('(100.0 * m.women / NULLIF(m.total_members, 0)) >= ?', Number(args.min_women_pct));
-  if (args.min_project_cost != null) add('f.total_project_cost >= ?', Number(args.min_project_cost));
-  if (args.max_project_cost != null) add('f.total_project_cost <= ?', Number(args.max_project_cost));
+  if (args.min_project_cost != null) add(`${COST} >= ?`, Number(args.min_project_cost));
+  if (args.max_project_cost != null) add(`${COST} <= ?`, Number(args.max_project_cost));
   return { clause: where.length ? `WHERE ${where.join(' AND ')}` : '', params };
 }
 
@@ -143,10 +150,10 @@ async function portfolioStats(args) {
   if (args.group_by && GROUPS[args.group_by]) {
     const g = GROUPS[args.group_by];
     const { rows } = await pool.query(
-      `SELECT ${g} AS group_name, ${totals} ${FROM} LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number ${clause} GROUP BY ${g} ORDER BY clusters DESC, group_name`, params);
+      `SELECT ${g} AS group_name, ${totals} ${FROM} ${clause} GROUP BY ${g} ORDER BY clusters DESC, group_name`, params);
     return { group_by: args.group_by, groups: rows };
   }
-  const { rows } = await pool.query(`SELECT ${totals} ${FROM} LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number ${clause}`, params);
+  const { rows } = await pool.query(`SELECT ${totals} ${FROM} ${clause}`, params);
   return { totals: rows[0], note: 'Jobs totals leave out applications reporting more than 5,000 jobs (not plausible); jobs_excluded_applications counts them.' };
 }
 

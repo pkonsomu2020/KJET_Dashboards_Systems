@@ -303,7 +303,7 @@ export function summariseForm(questions) {
     age_over_50: num(find(questions, /above 50/i)),
   };
   const status = find(questions, /registration status\?/i);
-  const statusOther = find(questions, /specify your registration status/i);
+  const statusOther = find(questions, /specify your registration status|registration status \(other\)/i);
   return {
     members, employees, ...latest, demographics,
     women_owned: find(questions, /wom[ae]n-owned enterprise/i) || null,
@@ -337,7 +337,8 @@ export function listDocuments(folder, root) {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (extname(e.name).toLowerCase() !== '.zip') out.push({ path: relative(root, p).split('\\').join('/'), name: e.name, type: documentType(e.name), size: statSync(p).size });
+      // the bundle's own missing-files report is read separately (missing_files); it is not a document the cluster supplied
+      else if (extname(e.name).toLowerCase() !== '.zip' && !/^MISSING_FILES_REPORT\.txt$/i.test(e.name)) out.push({ path: relative(root, p).split('\\').join('/'), name: e.name, type: documentType(e.name), size: statSync(p).size });
     }
   };
   walk(folder);

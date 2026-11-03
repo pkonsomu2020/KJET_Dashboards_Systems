@@ -4,6 +4,7 @@ import { Info, Loader2, MapPin, Repeat, Trophy, FileText, Users, Layers3, Triang
 import { number } from '@/data/portfolio';
 import { useFinalists } from '@/hooks/usePortfolio';
 import { Stat, isCohort1Alternate } from './finalists-pages';
+import { PillBars } from './general-overview';
 
 const tooltipStyle = { background: 'var(--card)', borderColor: 'var(--border)', borderRadius: 6, fontSize: 11, color: 'var(--foreground)' };
 const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--muted-foreground)'];
@@ -44,6 +45,14 @@ export function Cohort2Overview() {
     const withForm = rows.filter((r) => r.form);
     const years = ['2022', '2023', '2024'];
     const stated = years.map((y) => ({ name: y, Members: withForm.reduce((s, r) => s + (r.form?.members[y] ?? 0), 0), Employees: withForm.reduce((s, r) => s + (r.form?.employees[y] ?? 0), 0) }));
+    // gender and age of the members, as the latest year of each form states them
+    const latest = withForm.map((r) => {
+      const d = r.form?.demographics; const y = d ? Object.keys(d).filter((k) => d[k] && (d[k].females != null || d[k].males != null)).sort().pop() : undefined;
+      return y && d ? d[y] : r.form;
+    }).filter((x): x is NonNullable<typeof x> => x != null);
+    const tot = (k: 'females' | 'males' | 'age_18_35' | 'age_36_50' | 'age_over_50') => latest.reduce((t, x) => t + (x[k] ?? 0), 0);
+    const gender = [{ name: 'Women', value: tot('females') }, { name: 'Men', value: tot('males') }];
+    const age = [{ name: 'Aged 18 to 35', value: tot('age_18_35') }, { name: 'Aged 36 to 50', value: tot('age_36_50') }, { name: 'Over 50', value: tot('age_over_50') }];
     const e4 = [
       { name: 'Note says yes', value: rows.filter((r) => /^\s*yes\b/i.test(r.checks.e4 ?? '')).length },
       { name: 'Note says no', value: rows.filter((r) => /^\s*no\b/i.test(r.checks.e4 ?? '')).length },
@@ -51,7 +60,7 @@ export function Cohort2Overview() {
     ];
     const avg = rows.filter((r) => r.composite != null);
     return {
-      chains, spread, tiers, counties, withForm: withForm.length, stated, e4,
+      chains, spread, tiers, counties, withForm: withForm.length, stated, e4, gender, age,
       average: avg.length ? avg.reduce((s, r) => s + (r.composite ?? 0), 0) / avg.length : null,
       alternates: rows.filter(isCohort1Alternate).length,
       folderOther: rows.filter((r) => r.form_status === 'wrong_application').length,
@@ -162,8 +171,7 @@ export function Cohort2Overview() {
       </div>
 
       <div className="fn-grid2">
-        <Panel title="Members and employees, as the clusters stated them" subtitle={`Added up over the ${view.withForm} application forms that are the finalist's own`}
-          footer={<><span>Not verified counts</span><strong className="text-foreground">{view.withForm} forms</strong></>}>
+        <Panel title="Members and employees, as the clusters stated them" subtitle={`Added up over the ${view.withForm} application forms that are the finalist's own`}>
           <div className="chart-box" style={{ height: 270 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={view.stated} barCategoryGap="24%" margin={{ top: 12, right: 8, left: 4, bottom: 0 }}>
@@ -179,14 +187,11 @@ export function Cohort2Overview() {
           </div>
         </Panel>
 
-        <Panel title="Notes on the data" subtitle="What to know before relying on a figure">
-          <div className="fn-split fn-split-first">
-            <div className="ev-row"><span><Users size={11} /> Folders holding another cluster's application (nothing from them is shown)</span><strong className={view.folderOther ? 'ev-warn' : ''}>{view.folderOther}</strong></div>
-            <div className="ev-row"><span><TriangleAlert size={11} /> Drive links in the sheet that open another cluster's bundle (not shown)</span><strong className={view.linkHidden ? 'ev-warn' : ''}>{view.linkHidden}</strong></div>
-            <div className="ev-row"><span>Tiers left blank in the Selected tab (filled from Final Contact Info)</span><strong>{view.blankTier}</strong></div>
-            <div className="ev-row"><span>Bundles whose own report lists missing files</span><strong>{view.missingFiles}</strong></div>
-            <p className="fn-note">Members and employees come from the application forms the clusters filled in themselves. Money is judged from the attached documents, not from the form.</p>
-          </div>
+        <Panel title="Who the clusters represent" subtitle="Gender and age of the members, as the clusters stated them">
+          <p className="go-sub">Gender</p>
+          <PillBars items={view.gender} total={view.gender.reduce((t, g) => t + g.value, 0)} unit="members" />
+          <p className="go-sub">Age</p>
+          <PillBars items={view.age} total={view.age.reduce((t, g) => t + g.value, 0)} unit="members" />
         </Panel>
       </div>
     </>

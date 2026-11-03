@@ -35,10 +35,13 @@ router.get('/by-county', async (_req, res, next) => {
 router.get('/compliance', async (_req, res, next) => {
   try {
     const pool = (await import('../db/pool.js')).default;
+    const { COMPLIANCE_SQL } = await import('../services/clusterService.js');
     const { rows } = await pool.query(`
-      SELECT compliance_status, COUNT(*) AS count
-      FROM cluster_financials
-      GROUP BY compliance_status
+      SELECT ${COMPLIANCE_SQL} AS compliance_status, COUNT(*) AS count
+      FROM clusters c
+      LEFT JOIN cluster_financials f ON f.cluster_id = c.id
+      LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
+      GROUP BY 1
     `);
     res.json({ ok: true, data: rows });
   } catch (err) { next(err); }

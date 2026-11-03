@@ -43,9 +43,9 @@ export async function getPortfolioSummary() {
       COUNT(*) FILTER (WHERE NOT (${JOBS_OK}))                 AS jobs_excluded_count,
       COALESCE(json_agg(json_build_object('application_number', c.application_number, 'name', c.cluster_name, 'county', c.county,
         'jobs_today', e.jobs_today, 'jobs_year1', e.jobs_year1, 'jobs_year3', e.jobs_year3) ORDER BY c.cluster_name) FILTER (WHERE NOT (${JOBS_OK})), '[]'::json) AS jobs_excluded,
-      COUNT(CASE WHEN f.compliance_status='Within limits'      THEN 1 END) AS within_limits,
-      COUNT(CASE WHEN f.compliance_status='Review required'    THEN 1 END) AS reviews,
-      COUNT(CASE WHEN f.compliance_status='Missing financials' THEN 1 END) AS missing
+      COUNT(CASE WHEN ${COMPLIANCE_SQL}='Within limits'      THEN 1 END) AS within_limits,
+      COUNT(CASE WHEN ${COMPLIANCE_SQL}='Review required'    THEN 1 END) AS reviews,
+      COUNT(CASE WHEN ${COMPLIANCE_SQL}='Missing financials' THEN 1 END) AS missing
     FROM clusters c
     LEFT JOIN cluster_financials f  ON f.cluster_id = c.id
     LEFT JOIN cluster_membership m  ON m.cluster_id = c.id
@@ -117,6 +117,14 @@ export async function getByCounty() {
   return { data: rows, cached: false };
 }
 
+// Matching review on the evaluation sheet's amounts (the application's own when the sheet has none)
+export const COMPLIANCE_SQL = `(CASE WHEN ev.eval_total_cost IS NULL THEN f.compliance_status
+       WHEN ev.eval_total_cost = 0 THEN 'Missing financials'
+       WHEN COALESCE(ev.eval_grant_requested, f.grant_requested) > 32000000
+         OR COALESCE(ev.eval_grant_requested, f.grant_requested) > ev.eval_total_cost * 0.5
+         OR COALESCE(ev.eval_contribution, f.cluster_contribution) < ev.eval_total_cost * 0.5 THEN 'Review required'
+       ELSE 'Within limits' END)`;
+
 // ── Cluster list (with filters) ───────────────────────────────
 export async function getClusters({ county, chain, sort, q, review, page, limit }) {
   const pageNum  = Math.max(1, parseInt(page)  || 1);
@@ -133,7 +141,7 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
 
   if (county) { conditions.push(`c.county = $${idx++}`); params.push(county); }
   if (chain)  { conditions.push(`c.value_chain = $${idx++}`); params.push(chain); }
-  if (review) { conditions.push(`f.compliance_status != 'Within limits'`); }
+  if (review) { conditions.push(`${COMPLIANCE_SQL} != 'Within limits'`); }
   if (q) {
     conditions.push(`(
       c.cluster_name ILIKE $${idx} OR
@@ -146,8 +154,8 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  const order = sort === 'cost'    ? 'f.total_project_cost DESC'
-              : sort === 'grant'   ? 'f.grant_requested DESC'
+  const order = sort === 'cost'    ? 'total_project_cost DESC'
+              : sort === 'grant'   ? 'grant_requested DESC'
               : sort === 'members' ? 'm.total_members DESC'
               :                     'c.cluster_name ASC';
 
@@ -156,15 +164,21 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
       c.id, c.application_number, c.cluster_name,
       c.county, c.constituency, c.ward, c.value_chain, c.legal_form,
       c.registration_date, c.google_drive_folder,
-      f.total_project_cost, f.section5_budget_total,
-      f.grant_requested, f.cluster_contribution,
-      f.cluster_share_pct, f.grant_share_pct,
+      COALESCE(ev.eval_total_cost, f.total_project_cost) AS total_project_cost,
+      COALESCE(ev.eval_s5_budget, f.section5_budget_total) AS section5_budget_total,
+      COALESCE(ev.eval_grant_requested, f.grant_requested) AS grant_requested,
+      COALESCE(ev.eval_contribution, f.cluster_contribution) AS cluster_contribution,
+      CASE WHEN ev.eval_total_cost > 0 THEN ROUND(COALESCE(ev.eval_grant_requested, f.grant_requested) / ev.eval_total_cost * 100, 2)
+           ELSE f.grant_share_pct END AS grant_share_pct,
+      CASE WHEN ev.eval_total_cost > 0 THEN ROUND(COALESCE(ev.eval_contribution, f.cluster_contribution) / ev.eval_total_cost * 100, 2)
+           ELSE f.cluster_share_pct END AS cluster_share_pct,
       f.machinery_source, f.lead_time,
-      f.compliance_status,
+      ${COMPLIANCE_SQL} AS compliance_status,
       m.total_members, m.men, m.women, m.youth, m.pwd,
       e.jobs_today, e.jobs_year1, e.jobs_year3
     FROM clusters c
     LEFT JOIN cluster_financials f  ON f.cluster_id = c.id
+    LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
     LEFT JOIN cluster_membership m  ON m.cluster_id = c.id
     LEFT JOIN cluster_employment e  ON e.cluster_id = c.id
     ${where}
@@ -175,6 +189,7 @@ export async function getClusters({ county, chain, sort, q, review, page, limit 
   const countQ = `
     SELECT COUNT(*) FROM clusters c
     LEFT JOIN cluster_financials f ON f.cluster_id = c.id
+    LEFT JOIN cluster_evaluation ev ON ev.application_number = c.application_number
     ${where}
   `;
 
@@ -247,8 +262,33 @@ export async function getClusterByNumber(applicationNumber) {
     pool.query('SELECT item_order, details FROM cluster_vehicles WHERE cluster_id=$1 ORDER BY item_order', [clusterId]),
   ]);
 
+  // The amounts follow the evaluation sheet (Financial_Screening), the same figures the overview totals use;
+  // a cluster with no sheet row keeps the amounts from its application.
+  const { rows: [ev] } = await pool.query(
+    `SELECT eval_total_cost, eval_grant_requested, eval_contribution, eval_machinery, eval_services, eval_s5_budget
+       FROM cluster_evaluation WHERE application_number = $1`, [applicationNumber]);
+  const sheet = {};
+  if (ev && ev.eval_total_cost != null) {
+    const pick = (k, v) => { if (v != null) sheet[k] = v; };
+    pick('total_project_cost', ev.eval_total_cost);
+    pick('grant_requested', ev.eval_grant_requested);
+    pick('cluster_contribution', ev.eval_contribution);
+    pick('machinery_subtotal', ev.eval_machinery);
+    pick('services_subtotal', ev.eval_services);
+    pick('section5_budget_total', ev.eval_s5_budget);
+    const total = Number(sheet.total_project_cost ?? base[0].total_project_cost);
+    const grant = sheet.grant_requested != null ? Number(sheet.grant_requested) : (base[0].grant_requested != null ? Number(base[0].grant_requested) : null);
+    const cash = sheet.cluster_contribution != null ? Number(sheet.cluster_contribution) : (base[0].cluster_contribution != null ? Number(base[0].cluster_contribution) : null);
+    const pct = (v) => (total && v != null ? Math.round((v / total) * 10000) / 100 : null);
+    sheet.grant_share_pct = pct(grant);
+    sheet.cluster_share_pct = pct(cash);
+    sheet.compliance_status = !total ? 'Missing financials'
+      : (grant > 32000000 || grant > total * 0.5 || cash < total * 0.5) ? 'Review required' : 'Within limits';
+  }
+
   const data = {
     ...base[0],
+    ...sheet,
     contacts:       contacts.rows,
     business:       business.rows[0] || null,
     products:       products.rows,

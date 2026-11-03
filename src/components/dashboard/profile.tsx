@@ -341,7 +341,7 @@ function ProfileContent({ cluster: c }: { cluster: NonNullable<ReturnType<typeof
               <Detail label="Men"    value={`${number(Number(c.men))} (${percent(Number(c.men), Number(c.total_members)).toFixed(1)}%)`} />
               <Detail label="Women"  value={`${number(Number(c.women))} (${percent(Number(c.women), Number(c.total_members)).toFixed(1)}%)`} />
               <Detail label="Youth"  value={`${number(Number(c.youth))} (${percent(Number(c.youth), Number(c.total_members)).toFixed(1)}%)`} />
-              <Detail label="Persons with disabilities" value={`${number(Number(c.pwd))} (${percent(Number(c.pwd), Number(c.total_members)).toFixed(2)}%)`} />
+              <Detail label="Persons with disabilities" value={c.pwd == null ? 'Not stated' : `${number(Number(c.pwd))} (${percent(Number(c.pwd), Number(c.total_members)).toFixed(2)}%)`} />
             </div>
 
             <div className="chart-box">

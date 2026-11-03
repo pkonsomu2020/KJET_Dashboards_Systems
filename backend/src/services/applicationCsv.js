@@ -25,7 +25,8 @@ export function parseApplicationCsv(text) {
   let current = null;
   for (const line of String(text).replace(/^﻿/, '').split(/\r?\n/)) {
     const i = line.indexOf(',');
-    const label = i > 0 ? line.slice(0, i) : null;
+    // newer exports write the document fields as "Technical specs[],[...paths]": the label is the same with a trailing []
+    const label = i > 0 ? line.slice(0, i).replace(/\[\]$/, '') : null;
     if (label && isLabel(label)) {
       current = label;
       if (!fields.has(label)) fields.set(label, line.slice(i + 1));

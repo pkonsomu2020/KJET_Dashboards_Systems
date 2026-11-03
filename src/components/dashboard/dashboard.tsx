@@ -177,7 +177,7 @@ export function Dashboard({ view = 'general' }: { view?: DashboardView }) {
   const pretty = (v: string) => v.replace(/_/g, ' ').replace(/^./, ch => ch.toUpperCase());
   const list = (xs: Array<{ name: string; count: number }>) => xs.map(x => `${x.name}${x.count > 1 ? ` ${x.count}` : ''}`).join(', ');
   const top5: Array<{ name: string; value: number; detail?: string }> = sectors.slice(0, 5).map(v => ({
-    name: pretty(v.name.length > 20 ? v.name.slice(0, 18) + '…' : v.name),
+    name: pretty(v.name.length > 26 ? v.name.slice(0, 24) + '…' : v.name),
     value: Number(v.count),
     // "Other" is a catch-all in the application form: the evaluation sheet says which sectors are behind it
     ...(v.breakdown?.length ? { detail: list(v.breakdown.map(b => ({ name: b.sector.replace(/^Other\s*[–-]\s*/i, ''), count: b.count }))) } : {}),
@@ -187,7 +187,7 @@ export function Dashboard({ view = 'general' }: { view?: DashboardView }) {
   if (others) top5.push({ name: 'Other sectors', value: others, detail: list(rest.map(v => ({ name: pretty(v.name), count: Number(v.count) }))) });
 
   const chartSectors = sectors.slice(0, 5).map(v => ({
-    name: pretty(v.name.length > 14 ? v.name.slice(0, 12) + '…' : v.name),
+    name: pretty(v.name.replace(/ Materials$/, '').length > 14 ? v.name.replace(/ Materials$/, '').slice(0, 12) + '…' : v.name.replace(/ Materials$/, '')),
     grant: Number(v.grant) / 1e6,
     cash:  Number(v.contribution) / 1e6,
   }));

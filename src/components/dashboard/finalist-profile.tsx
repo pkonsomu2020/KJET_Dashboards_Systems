@@ -175,6 +175,14 @@ function applicationParts(d: FinalistDetail): Array<{ title: string; questions: 
       { title: 'Markets', questions: inRange(qs, 53, 60) },
       { title: 'Challenges and sustainability', questions: inRange(qs, 61, 62) },
     ]
+    : !qs.some((q) => q.section === 'Business information')
+    // the older numbered form some Cohort 2 finalists (the Cohort 1 alternates) filled in: its sections carry their own names
+    ? [
+      { title: 'Value chain', questions: inSection(qs, 'Value chain') },
+      { title: 'Business', questions: inSection(qs, 'Business') },
+      { title: 'Markets', questions: inSection(qs, 'Markets') },
+      { title: 'Challenges and sustainability', questions: inSection(qs, 'Challenges and sustainability') },
+    ]
     : [
       { title: 'Business', questions: inSection(qs, 'Business information') },
       { title: 'Operations and systems', questions: inSection(qs, 'Business operations and systems') },
@@ -247,6 +255,7 @@ function Profile({ d, rules }: { d: FinalistDetail; rules: FinalistRules | undef
   const ageTotal = (form?.age_18_35 ?? 0) + (form?.age_36_50 ?? 0) + (form?.age_over_50 ?? 0);
   const share = (v: number | null | undefined, of: number) => (v == null || !of ? '' : ` (${((v / of) * 100).toFixed(1)}%)`);
   const womenQ = qs.find((q) => /explain how your enterprise meets|describe how it meets the women-owned/i.test(q.question));
+  const yearQ = qs.find((q) => /year was your cluster/i.test(q.question));
   const valueChain = d.value_chain && /^other$/i.test(d.value_chain) && d.other_value_chain ? `Other: ${d.other_value_chain}` : chain(d.value_chain);
   const evaluationRows: Array<[string, string | number | null]> = [
     ['Tier', d.tier],
@@ -293,7 +302,8 @@ function Profile({ d, rules }: { d: FinalistDetail; rules: FinalistRules | undef
             <h3>Registration and location</h3>
             <div className="detail-grid">
               {(formOk || d.registration_status) && <Detail label="Registration status" value={d.registration_status ?? form?.registration_status} />}
-              <Detail label="Registration number" value={d.registration_number} />
+              <Detail label="Registration number" value={d.registration_number ?? (qs.find((q) => /what is your registration number/i.test(q.question))?.answer.trim() || null)} />
+              {yearQ && yearQ.answer.trim() !== '' && <Detail label="Year established" value={yearQ.answer} />}
               <Detail label="County" value={d.county} />
               <Detail label="Constituency" value={place(d.constituency ?? form?.constituency)} />
               <Detail label="Ward" value={place(d.ward ?? form?.ward)} />

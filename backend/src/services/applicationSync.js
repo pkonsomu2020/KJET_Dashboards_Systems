@@ -78,7 +78,12 @@ async function ensureSyncSchema(client) {
   await client.query('CREATE UNIQUE INDEX IF NOT EXISTS ux_cluster_documents_file ON cluster_documents(cluster_id, file_id)');
   await client.query('CREATE INDEX IF NOT EXISTS idx_cluster_documents_status ON cluster_documents(content_status)');
   // Some applications type large numbers into "contract years"; store what Drive says instead of failing.
-  await client.query('ALTER TABLE cluster_buyers ALTER COLUMN contract_years TYPE INTEGER');
+  await client.query('ALTER TABLE cluster_buyers ALTER COLUMN contract_years TYPE NUMERIC');
+  // Units and types are free text on the form: keep them whole (a 51-character unit lost its closing bracket).
+  for (const [table, column] of [['cluster_business', 'installed_capacity_unit'], ['cluster_business', 'current_output_unit'],
+    ['cluster_products', 'unit'], ['cluster_buyers', 'buyer_type'], ['clusters', 'legal_form']]) {
+    await client.query(`ALTER TABLE ${table} ALTER COLUMN ${column} TYPE TEXT`);
+  }
 }
 
 // ── helpers ──────────────────────────────────────────────────
@@ -161,7 +166,7 @@ export async function applyApplicationCsv(client, cluster, f) {
     submitted_at: t('Submitted At'),
     created_at_mis: t('Created At'),
     cluster_name: t('Cluster name') ?? t('Cluster Name'),
-    legal_form: trunc(t('Cluster legal form'), 50),
+    legal_form: t('Cluster legal form'),
     registration_date: t('Cluster registration date'),
     physical_address: t('Cluster physical address'),
     county: t('Cluster county') ?? t('County'),
@@ -208,7 +213,8 @@ export async function applyApplicationCsv(client, cluster, f) {
   const men = n('Total members men') ?? 0;
   const women = n('Total members women') ?? 0;
   await putOne(client, 'cluster_membership', cid, {
-    men, women, youth: n('Total members youth') ?? 0, pwd: n('Total members pwd') ?? 0, total_members: men + women,
+    // pwd left blank stays blank (shown as "Not stated"), not 0
+    men, women, youth: n('Total members youth') ?? 0, pwd: n('Total members pwd'), total_members: men + women,
   });
 
   // 4. financials
@@ -251,8 +257,8 @@ export async function applyApplicationCsv(client, cluster, f) {
     market_geography: t('Market geography'), market_size: t('Market size'),
     competitor_1: t('Competitor 1'), competitor_2: t('Competitor 2'), competitor_3: t('Competitor 3'),
     pricing_method: t('Pricing method'), pricing_changes: t('Pricing changes'), production_process: t('Production process'),
-    installed_capacity: n('Installed capacity'), installed_capacity_unit: trunc(t('Installed capacity unit'), 50),
-    current_output: n('Current output'), current_output_unit: trunc(t('Current output unit'), 50),
+    installed_capacity: n('Installed capacity'), installed_capacity_unit: t('Installed capacity unit'),
+    current_output: n('Current output'), current_output_unit: t('Current output unit'),
     capacity_utilisation_pct: n('Capacity utilisation'), main_bottleneck: t('Main bottleneck'),
   });
 
@@ -279,7 +285,7 @@ export async function applyApplicationCsv(client, cluster, f) {
   for (let i = 1; i <= Math.max(8, maxIndex('Product')); i++) {
     const name = t(`Product ${i} name`);
     if (!name) continue;
-    products.push({ product_order: i, product_name: name, unit: trunc(t(`Product ${i} unit`), 50), price_kes: n(`Product ${i} price`), active_months: t(`Product ${i} months`) });
+    products.push({ product_order: i, product_name: name, unit: t(`Product ${i} unit`), price_kes: n(`Product ${i} price`), active_months: t(`Product ${i} months`) });
   }
   await replaceRows(client, 'cluster_products', cid, products);
 
@@ -288,8 +294,8 @@ export async function applyApplicationCsv(client, cluster, f) {
     const name = t(`Buyer ${i} name`);
     if (!name) continue;
     buyers.push({
-      buyer_order: i, buyer_name: name, buyer_type: trunc(t(`Buyer ${i} type`), 50),
-      annual_volume: n(`Buyer ${i} volume`), unit_price: n(`Buyer ${i} price`), contract_years: intOrNull(n(`Buyer ${i} years`)),
+      buyer_order: i, buyer_name: name, buyer_type: t(`Buyer ${i} type`),
+      annual_volume: n(`Buyer ${i} volume`), unit_price: n(`Buyer ${i} price`), contract_years: n(`Buyer ${i} years`),
     });
   }
   await replaceRows(client, 'cluster_buyers', cid, buyers);

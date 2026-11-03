@@ -775,3 +775,12 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .go-mini strong { font-size:20px;color:var(--foreground); }
 @media (max-width:560px) { .go-pills li { grid-template-columns:minmax(78px,32%) minmax(0,1fr) 42px;gap:7px; } }
 @media (min-width:1001px) { .go-tiles { grid-template-columns:repeat(4,minmax(0,1fr)); } }
+.go-mini2 { grid-template-columns:repeat(2,minmax(0,1fr));margin-top:10px; }
+.go-mini2 strong { font-size:17px; }
+
+.go-table { width:100%;margin-top:14px;border-collapse:collapse;font-size:11.5px; }
+.go-table th { text-align:left;font-size:10.5px;font-weight:600;color:var(--muted-foreground);padding:6px 8px;border-bottom:1px solid var(--border); }
+.go-table td { padding:8px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--foreground); }
+.go-table th:last-child,.go-table td:last-child { text-align:right;font-weight:700;white-space:nowrap; }
+.go-sub { margin:2px 0 8px;font-size:11px;font-weight:600;color:var(--muted-foreground); }
+.go-sub:not(:first-child) { margin-top:18px; }

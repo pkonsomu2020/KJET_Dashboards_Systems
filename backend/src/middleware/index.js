@@ -47,7 +47,7 @@ export const compressionMiddleware = compression({
 // ── Rate limiting ─────────────────────────────────────────────
 export const apiRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,   // 15 minutes
-  max: 200,                    // 200 requests per window per IP
+  max: Number(process.env.API_RATE_LIMIT_MAX) || 200,   // requests per window per IP (200 unless API_RATE_LIMIT_MAX says otherwise: the audit scripts need more)
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests. Please try again later.' },
