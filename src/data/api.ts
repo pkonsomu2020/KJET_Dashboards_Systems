@@ -343,7 +343,8 @@ export interface EvalDetail extends EvalRow {
     code: string; label: string; weight: number; rating: number | null; score: number | null; justification: string | null;
     indicators: Array<{ code: string; label: string; weight: number; rating: number | null; note: string | null }>;
   }>;
-  eligibility_tests: Array<{ test: string; label: string; hint: string | null; decision: string | null; note: string | null }>;
+  eligibility_tests: Array<{ test: string; label: string; hint: string | null; decision: string | null; note: string | null; note_group?: string | null; note_see?: string | null; note_missing?: boolean }>;
+  eligibility_preamble?: string | null;
   eligibility_reasons: string | null;
   evidence_files: string | null;
   expert_remarks: string | null;

@@ -13,6 +13,7 @@
 import { createRequire } from 'module';
 import { basename } from 'path';
 import { readFileSync } from 'fs';
+import { repairHint, hasSheetError } from './evaluationHints.js';
 
 // Where the final selection report differs from the live sheet, the report's values are used (src/data/reportSnapshot.json)
 const REPORT = JSON.parse(readFileSync(new URL('../data/reportSnapshot.json', import.meta.url), 'utf8'));
@@ -228,6 +229,7 @@ function parseEvaluationWorkbook(wb, sourceFile) {
     issues: fc('Issues identified'), result: fcOpt('FINANCIAL SCREENING RESULT'),
     machinery: fc('Machinery subtotal (portal)'), services: fc('Services subtotal (portal)'), total: fc('Total investment (Evaluation'),
     contribution: fc('Cluster contribution (Evaluation'), grant: fc('KJET matching contribution (Evaluation'), s5: fc('Section 5 budget total (portal)'),
+    clusterShare: fcOpt('Cluster share of total'), kjetShare: fcOpt('KJET share of total'), meets50: fcOpt('Meets 50% cash contribution'),
   };
   const fsByApp = new Map(fsr.slice(5).filter((r) => String(r[fsCol.app]).startsWith('KJET-')).map((r) => [String(r[fsCol.app]).trim(), r]));
 
@@ -238,6 +240,14 @@ function parseEvaluationWorkbook(wb, sourceFile) {
   const minScore = prow ? numOrNull(prow[pcol + 1]) : null;
   if (minScore == null) throw new Error('Parameters: "Recommended – minimum score" not found: has the workbook layout changed?');
 
+  // Membership as recorded in the portal register (the sheet's Register tab): the figures the selection report totals
+  const reg = sheetRows(wb, 'Register');
+  const rc = columnFinder(reg[4], 'Register');
+  const regCol = { app: rc('Application No.'), men: rc('Members – men'), women: rc('Members – women'), youth: rc('Members – youth'), pwd: rc('Members – PWD') };
+  const rcOpt = (name) => { try { return rc(name); } catch { return -1; } };
+  regCol.regDate = rcOpt('Registration date'); regCol.created = rcOpt('Application created');
+  const regByApp = new Map(reg.slice(5).filter((r) => String(r[regCol.app]).startsWith('KJET-')).map((r) => [String(r[regCol.app]).trim(), r]));
+  const warnings = [];   // data problems found while reading the sheet (logged, never hidden)
   const rows = [];
   const criteria = [];
   const eligibility = [];
@@ -278,7 +288,23 @@ function parseEvaluationWorkbook(wb, sourceFile) {
     }
     for (const sc2 of subCols) criteria.push({ application_number: app, code: sc2.code, criterion: sc2.criterion, label: sc2.label, weight: sc2.weight, rating: numOrNull(sr[sc2.i]) });
     // a test the report records differently from the live sheet (E3: all 85 pass) takes the report's outcome
-    if (er) for (const t of eTests) eligibility.push({ application_number: app, test: t.test, label: t.label, hint: clean(er[t.hint]), decision: REPORT.eligibility[t.test] ?? clean(er[t.decision]) });
+    if (er) {
+      const g = regByApp.get(app);
+      const ctx = {
+        regDate: g && regCol.regDate >= 0 ? g[regCol.regDate] : null, appCreated: g && regCol.created >= 0 ? g[regCol.created] : null,
+        clusterShare: fr && fsCol.clusterShare >= 0 ? fr[fsCol.clusterShare] : null, kjetShare: fr && fsCol.kjetShare >= 0 ? fr[fsCol.kjetShare] : null,
+        meets50: fr && fsCol.meets50 >= 0 ? clean(fr[fsCol.meets50]) : null,
+      };
+      for (const t of eTests) {
+        const fixed = repairHint(t.test, clean(er[t.hint]), ctx);
+        if (fixed.repaired) warnings.push({ application_number: app, field: `${t.test} hint`, issue: fixed.repaired });
+        eligibility.push({ application_number: app, test: t.test, label: t.label, hint: fixed.hint, decision: REPORT.eligibility[t.test] ?? clean(er[t.decision]) });
+      }
+    }
+    // a spreadsheet error code must never reach a report: flag it wherever it appears in the text the system keeps
+    for (const f of ['eligibility_reasons', 'evidence_ids', 'fs_note', 'fs_issues', 'expert_remarks', 'moderation_note']) {
+      if (hasSheetError(row[f])) warnings.push({ application_number: app, field: f, issue: 'contains a spreadsheet error code' });
+    }
     rows.push(row);
   }
 
@@ -296,11 +322,6 @@ function parseEvaluationWorkbook(wb, sourceFile) {
     r.county_rank = seenInCounty.get(k);
   }
 
-  // Membership as recorded in the portal register (the sheet's Register tab): the figures the selection report totals
-  const reg = sheetRows(wb, 'Register');
-  const rc = columnFinder(reg[4], 'Register');
-  const regCol = { app: rc('Application No.'), men: rc('Members – men'), women: rc('Members – women'), youth: rc('Members – youth'), pwd: rc('Members – PWD') };
-  const regByApp = new Map(reg.slice(5).filter((r) => String(r[regCol.app]).startsWith('KJET-')).map((r) => [String(r[regCol.app]).trim(), r]));
   for (const r of rows) {
     const g = regByApp.get(r.application_number);
     r.portal_men = g ? intOrNull(g[regCol.men]) : null;
@@ -308,13 +329,13 @@ function parseEvaluationWorkbook(wb, sourceFile) {
     r.portal_youth = g ? intOrNull(g[regCol.youth]) : null;
     r.portal_pwd = g ? intOrNull(g[regCol.pwd]) : null;
   }
-  return { rows, criteria, eligibility, sourceFile, minScore };
+  return { rows, criteria, eligibility, sourceFile, minScore, warnings };
 }
 
 /** Replaces the stored evaluation with the workbook's. One transaction; all-or-nothing. */
 export async function importEvaluation(pool, source) {
   // source: a path to an .xlsx, or { buffer, name } for a workbook already in memory
-  const { rows, criteria, eligibility, sourceFile } =
+  const { rows, criteria, eligibility, sourceFile, warnings } =
     typeof source === 'string' ? readEvaluationWorkbook(source) : readEvaluationBuffer(source.buffer, source.name);
   const { rows: known } = await pool.query('SELECT application_number FROM clusters');
   const have = new Set(known.map((k) => k.application_number));
@@ -350,5 +371,5 @@ export async function importEvaluation(pool, source) {
   } finally {
     client.release();
   }
-  return { imported: rows.length, criteria: criteria.length, eligibility: eligibility.length, sourceFile };
+  return { imported: rows.length, criteria: criteria.length, eligibility: eligibility.length, sourceFile, warnings };
 }

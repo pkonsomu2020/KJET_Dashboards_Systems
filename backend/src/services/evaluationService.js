@@ -9,7 +9,7 @@ import pool from '../db/pool.js';
 import { cacheGet, cacheSet } from '../cache/redis.js';
 import { screenFinancials, RULES } from './financialScreening.js';
 import { getEvaluationSheetStatus } from './evaluationSheet.js';
-import { splitCriterionNotes, splitEligibilityNotes } from './evaluationNotes.js';
+import { splitCriterionNotes, parseEligibilityNotes } from './evaluationNotes.js';
 
 const TTL = Number(process.env.CACHE_TTL_EVALUATION) || 60;
 
@@ -181,6 +181,7 @@ export async function getEvaluationDetail(applicationNumber) {
     pool.query('SELECT COUNT(*)::int AS n FROM cluster_evaluation WHERE total_score IS NOT NULL'),
   ]);
   const tests = Object.fromEntries(elig.map((t) => [t.test, t.decision]));
+  const eligNotes = parseEligibilityNotes(r.eligibility_reasons);
   const base = shapeRow(r, tests);
   const fin = screenRow(r);
   return {
@@ -190,7 +191,19 @@ export async function getEvaluationDetail(applicationNumber) {
       rating: n(r[`c${i + 1}_rating`]), score: n(r[`c${i + 1}_score`]), justification: r[`c${i + 1}_evidence`],
       indicators: crit.filter((x) => x.criterion === c.code).map((x) => ({ code: x.code, label: x.label, weight: n(x.weight), rating: n(x.rating), note: splitCriterionNotes(r[`c${i + 1}_evidence`])[x.code] ?? null })),
     })),
-    eligibility_tests: elig.map((t) => ({ ...t, note: splitEligibilityNotes(r.eligibility_reasons)[t.test] ?? null })),
+    // one note per test; a grouped note ("E1-E3 PASS: ...") is shown once, under the first test it covers, and the others point to it
+    eligibility_tests: elig.map((t) => {
+      const nn = eligNotes.notes[t.test];
+      const g = nn?.group ?? null;
+      return {
+        ...t,
+        note: nn && nn.first === t.test ? nn.text : null,
+        note_group: g && g.length > 1 ? `${g[0]} to ${g[g.length - 1]}` : null,
+        note_see: nn && nn.first !== t.test ? nn.first : null,
+        note_missing: !nn,
+      };
+    }),
+    eligibility_preamble: eligNotes.preamble,
     eligibility_reasons: r.eligibility_reasons,
     evidence_files: r.evidence_ids,
     expert_remarks: r.expert_remarks,

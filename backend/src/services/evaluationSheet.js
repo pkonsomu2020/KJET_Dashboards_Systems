@@ -23,6 +23,7 @@ export const setEvaluationNotifier = (fn) => { notifier = fn; };
 const status = {
   enabled: false, sheet_name: null, sheet_modified: null, last_checked: null,
   last_imported: null, last_error: null, imported_clusters: null,
+  data_warnings: 0, data_warning_sample: [],   // problems found in the sheet's own data at the last import
 };
 export const getEvaluationSheetStatus = () => ({ ...status });
 
@@ -52,6 +53,9 @@ export async function syncEvaluationSheet({ force = false } = {}) {
     status.last_imported = new Date().toISOString();
     status.last_error = null;
     status.imported_clusters = r.imported;
+    status.data_warnings = r.warnings?.length ?? 0;
+    status.data_warning_sample = (r.warnings ?? []).slice(0, 25);
+    if (status.data_warnings) console.warn(`[Evaluation] ${status.data_warnings} data issue(s) in the sheet (see /api/evaluation/status): e.g. ${r.warnings[0].application_number} ${r.warnings[0].field}: ${r.warnings[0].issue}`);
     try { notifier?.(); } catch { /* nobody listening */ }
     console.log(`[Evaluation] Imported ${r.imported} clusters from the online sheet, modified ${meta.modifiedTime}`);
     return r;

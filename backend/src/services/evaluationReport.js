@@ -105,7 +105,11 @@ export async function buildEvaluationReport(applicationNumber) {
   // ── Title band ──
   doc.rect(0, 0, doc.page.width, 92).fill(COLORS.band);
   doc.font('Helvetica').fontSize(9).fillColor('#bcd3da').text('KJET CO-INVESTMENT  |  EVALUATION REPORT', M, 24);
-  doc.font('Helvetica-Bold').fontSize(17).fillColor('#ffffff').text(clean(d.cluster_name), M, 40, { width: W });
+  // the largest size at which the whole name fits on one line, so a long name never runs into the line below it
+  const title = clean(d.cluster_name);
+  doc.font('Helvetica-Bold');
+  const titleSize = [17, 15, 13.5, 12, 11, 10].find((sz) => doc.fontSize(sz).widthOfString(title) <= W) ?? 10;
+  doc.fontSize(titleSize).fillColor('#ffffff').text(title, M, 40 + (17 - titleSize) / 2, { width: W, lineBreak: false, ellipsis: true });
   doc.font('Helvetica').fontSize(9.5).fillColor('#dbe9ed')
     .text(clean(`${d.application_number}   |   ${d.county ?? ''}   |   ${(d.value_chain ?? '').replace(/_/g, ' ')}`), M, 66, { width: W });
   doc.y = 108;
@@ -172,9 +176,11 @@ export async function buildEvaluationReport(applicationNumber) {
   d.eligibility_tests.forEach((t) => {
     card(`${t.test}  ${t.label}`, t.decision ?? 'Pending', tone(t.decision), [
       ['Data check', (() => { const h = (t.hint ?? '').split(/\r?\n/)[0]; return h.length > 260 ? `${h.slice(0, 257)}...` : h || null; })()],
-      ["Assessor's note", t.note],
+      [t.note_group ? `Assessor's note (covers ${t.note_group})` : "Assessor's note",
+        t.note ?? (t.note_see ? `Covered by the note under ${t.note_see}.` : 'No note recorded in the sheet for this test.')],
     ]);
   });
+  if (d.eligibility_preamble) para(`Assessor's remark: ${d.eligibility_preamble}`, { size: 8.5, color: COLORS.muted });
   facts([['Eligibility status', d.eligibility ?? 'Not assessed', statusTone(d.eligibility)]]);
   if (d.assessment.eligibility_assessor) facts([['Assessed by', `${d.assessment.eligibility_assessor}${d.assessment.eligibility_assessed_on ? `, ${d.assessment.eligibility_assessed_on}` : ''}`]]);
 

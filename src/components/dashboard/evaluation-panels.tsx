@@ -82,10 +82,13 @@ export function EligibilityPanel({ d }: { d: EvalDetail }) {
               <StatusChip value={t.decision} empty="Pending" />
             </div>
             {t.hint && <p className="ev-hint"><em>Data check</em>{t.hint}</p>}
-            {t.note ? <p className="ev-assessor"><em>Assessor's note</em>{t.note}</p> : !t.hint && <p className="ev-hint">Nothing recorded.</p>}
+            {t.note ? <p className="ev-assessor"><em>{t.note_group ? `Assessor's note (covers ${t.note_group})` : "Assessor's note"}</em>{t.note}</p>
+              : t.note_see ? <p className="ev-hint"><em>Assessor's note</em>Covered by the note under {t.note_see}.</p>
+                : <p className="ev-hint"><em>Assessor's note</em>No note recorded in the sheet for this test.</p>}
           </div>
         ))}
       </div>
+      {d.eligibility_preamble && <p className="ev-note"><strong>Assessor's remark: </strong>{d.eligibility_preamble}</p>}
       <div className="ev-result"><span>Eligibility status</span><StatusChip value={d.eligibility} /></div>
       {d.assessment.eligibility_assessor && <p className="ev-note"><strong>Assessed by: </strong>{d.assessment.eligibility_assessor}{d.assessment.eligibility_assessed_on ? ` · ${d.assessment.eligibility_assessed_on}` : ''}</p>}
       {d.evidence_files && (
